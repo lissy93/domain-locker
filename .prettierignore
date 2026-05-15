@@ -1,0 +1,13 @@
+node_modules
+dist
+.angular
+.nx
+.output
+.vercel
+.netlify
+coverage
+out-tsc
+package-lock.json
+*.min.js
+*.min.css
+src/assets/i18n

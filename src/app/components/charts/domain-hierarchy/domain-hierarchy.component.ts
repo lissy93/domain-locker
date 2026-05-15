@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject } from '@angular/core';
+
 import { PrimeNgModule } from '~/app/prime-ng.module';
 import DatabaseService from '~/app/services/database.service';
 import { Router } from '@angular/router';
@@ -11,9 +11,13 @@ import { ErrorHandlerService } from '~/app/services/error-handler.service';
   templateUrl: './domain-hierarchy.component.html',
   styleUrls: ['./domain-hierarchy.component.scss'],
   standalone: true,
-  imports: [PrimeNgModule, CommonModule],
+  imports: [PrimeNgModule],
 })
 export class TldOrganizationChartComponent implements OnInit {
+  private db = inject(DatabaseService);
+  router = inject(Router);
+  private errorHandler = inject(ErrorHandlerService);
+
   chartData: TreeNode[] = [];
   groupByOptions = [
     { label: 'By Level', value: 'level' },
@@ -21,12 +25,6 @@ export class TldOrganizationChartComponent implements OnInit {
     { label: 'By TLD', value: 'tld' },
   ];
   groupBy = this.groupByOptions[0];
-
-  constructor(
-    private db: DatabaseService,
-    public router: Router,
-    private errorHandler: ErrorHandlerService,
-  ) {}
 
   ngOnInit() {
     this.prepareChartData();
@@ -68,7 +66,9 @@ export class TldOrganizationChartComponent implements OnInit {
           tldMap.get(tld)!.children!.push(domainNode);
         });
 
-        this.chartData = [{ label: 'Domains', expanded: true, children: Array.from(tldMap.values()) }];
+        this.chartData = [
+          { label: 'Domains', expanded: true, children: Array.from(tldMap.values()) },
+        ];
         this.setNodeStyles();
       },
       (error) => {
@@ -77,7 +77,7 @@ export class TldOrganizationChartComponent implements OnInit {
           message: 'Failed to fetch domains',
           location: 'TldOrganizationChartComponent.prepareChartData',
         });
-      }
+      },
     );
   }
 
@@ -87,7 +87,18 @@ export class TldOrganizationChartComponent implements OnInit {
 
   // Set styles based on selected grouping
   setNodeStyles() {
-    const colorClasses = ['bg-blue', 'bg-green', 'bg-yellow', 'bg-cyan', 'bg-pink', 'bg-indigo', 'bg-teal', 'bg-orange', 'bg-purple', 'bg-red'];
+    const colorClasses = [
+      'bg-blue',
+      'bg-green',
+      'bg-yellow',
+      'bg-cyan',
+      'bg-pink',
+      'bg-indigo',
+      'bg-teal',
+      'bg-orange',
+      'bg-purple',
+      'bg-red',
+    ];
     const colorShades = { tld: '-500', domain: '-400', subdomain: '-300' };
     let colorIndex = 0;
 
@@ -104,57 +115,68 @@ export class TldOrganizationChartComponent implements OnInit {
     if (groupBy === 'name') newChartData[0].styleClass = 'bg-bluegray-600';
 
     newChartData[0].children.forEach((tldNode: TreeNode) => {
+      if (groupBy === 'tld') {
+        tldNode.styleClass =
+          colorClasses[colorIndex % colorClasses.length] + colorShades.tld;
+        colorIndex++;
+      } else if (groupBy === 'name') {
+        const tldName = tldNode.label || '';
+        if (!nameColorMap.has(tldName)) {
+          nameColorMap.set(tldName, colorClasses[colorIndex % colorClasses.length]);
+          colorIndex++;
+        }
+        tldNode.styleClass = nameColorMap.get(tldName)! + colorShades.tld;
+      } else if (groupBy === 'level') {
+        tldNode.styleClass = 'bg-cyan-400';
+      }
+
+      tldNode.children?.forEach((domainNode: TreeNode) => {
+        domainNode.styleClass = '';
+
         if (groupBy === 'tld') {
-            tldNode.styleClass = colorClasses[colorIndex % colorClasses.length] + colorShades.tld;
-            colorIndex++;
+          domainNode.styleClass = tldNode.styleClass?.replace(
+            colorShades.tld,
+            colorShades.domain,
+          );
         } else if (groupBy === 'name') {
-            const tldName = tldNode.label || '';
-            if (!nameColorMap.has(tldName)) {
-                nameColorMap.set(tldName, colorClasses[colorIndex % colorClasses.length]);
-                colorIndex++;
-            }
-            tldNode.styleClass = nameColorMap.get(tldName)! + colorShades.tld;
+          const domainNameBase = domainNode.label?.split('.')[0] || '';
+          if (!nameColorMap.has(domainNameBase)) {
+            nameColorMap.set(
+              domainNameBase,
+              colorClasses[colorIndex % colorClasses.length],
+            );
+            colorIndex++;
+          }
+          domainNode.styleClass = nameColorMap.get(domainNameBase)! + colorShades.domain;
         } else if (groupBy === 'level') {
-            tldNode.styleClass = 'bg-cyan-400';
+          domainNode.styleClass = 'bg-purple-400';
         }
 
-        tldNode.children?.forEach((domainNode: TreeNode) => {
-            domainNode.styleClass = '';
+        domainNode.children?.forEach((subdomainNode: TreeNode) => {
+          subdomainNode.styleClass = '';
 
-            if (groupBy === 'tld') {
-                domainNode.styleClass = tldNode.styleClass?.replace(colorShades.tld, colorShades.domain);
-            } else if (groupBy === 'name') {
-                const domainNameBase = domainNode.label?.split('.')[0] || '';
-                if (!nameColorMap.has(domainNameBase)) {
-                    nameColorMap.set(domainNameBase, colorClasses[colorIndex % colorClasses.length]);
-                    colorIndex++;
-                }
-                domainNode.styleClass = nameColorMap.get(domainNameBase)! + colorShades.domain;
-            } else if (groupBy === 'level') {
-                domainNode.styleClass = 'bg-purple-400';
+          if (groupBy === 'tld') {
+            subdomainNode.styleClass = domainNode.styleClass?.replace(
+              colorShades.domain,
+              colorShades.subdomain,
+            );
+          } else if (groupBy === 'name') {
+            const subdomainBase = subdomainNode.label?.split('.')[0] || '';
+            if (!nameColorMap.has(subdomainBase)) {
+              nameColorMap.set(
+                subdomainBase,
+                colorClasses[colorIndex % colorClasses.length],
+              );
+              colorIndex++;
             }
-
-            domainNode.children?.forEach((subdomainNode: TreeNode) => {
-                subdomainNode.styleClass = '';
-
-                if (groupBy === 'tld') {
-                    subdomainNode.styleClass = domainNode.styleClass?.replace(colorShades.domain, colorShades.subdomain);
-                } else if (groupBy === 'name') {
-                    const subdomainBase = subdomainNode.label?.split('.')[0] || '';
-                    if (!nameColorMap.has(subdomainBase)) {
-                        nameColorMap.set(subdomainBase, colorClasses[colorIndex % colorClasses.length]);
-                        colorIndex++;
-                    }
-                    subdomainNode.styleClass = nameColorMap.get(subdomainBase)! + colorShades.subdomain;
-                } else if (groupBy === 'level') {
-                    subdomainNode.styleClass = 'bg-pink-400';
-                }
-            });
+            subdomainNode.styleClass =
+              nameColorMap.get(subdomainBase)! + colorShades.subdomain;
+          } else if (groupBy === 'level') {
+            subdomainNode.styleClass = 'bg-pink-400';
+          }
         });
+      });
     });
     this.chartData = newChartData;
-}
-
-
-  
+  }
 }

@@ -1,4 +1,4 @@
-import { Injectable, OnDestroy } from '@angular/core';
+import { Injectable, OnDestroy, inject } from '@angular/core';
 import { BehaviorSubject, combineLatest, Observable, Subject } from 'rxjs';
 import { map, takeUntil, catchError } from 'rxjs/operators';
 import DatabaseService from './database.service';
@@ -11,20 +11,18 @@ export interface RegistrarWithCount {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class RegistrarAutocompleteService implements OnDestroy {
+  private databaseService = inject(DatabaseService);
+  private errorHandler = inject(ErrorHandlerService);
+
   private registrarsWithCounts$ = new BehaviorSubject<RegistrarWithCount[]>([]);
   private isLoading$ = new BehaviorSubject<boolean>(false);
   private hasError$ = new BehaviorSubject<boolean>(false);
   private sortedTopRegistrars: string[] = [];
   private destroy$ = new Subject<void>();
   private hasLoaded = false;
-
-  constructor(
-    private databaseService: DatabaseService,
-    private errorHandler: ErrorHandlerService,
-  ) {}
 
   ngOnDestroy(): void {
     this.destroy$.next();
@@ -47,44 +45,46 @@ export class RegistrarAutocompleteService implements OnDestroy {
 
     combineLatest([
       this.databaseService.instance.registrarQueries.getRegistrars(),
-      this.databaseService.instance.registrarQueries.getDomainCountsByRegistrar()
-    ]).pipe(
-      map(([registrars, counts]) => {
-        return registrars.map(registrar => ({
-          registrar,
-          domainCount: counts[registrar.name] || 0
-        }));
-      }),
-      takeUntil(this.destroy$),
-      catchError((error) => {
-        this.errorHandler.handleError({
-          error,
-          message: 'Failed to load registrars for autocomplete',
-          location: 'RegistrarAutocompleteService.loadRegistrars',
-          showToast: false
-        });
-        this.hasError$.next(true);
-        this.isLoading$.next(false);
-        throw error;
-      })
-    ).subscribe({
-      next: (registrarsWithCounts) => {
-        this.registrarsWithCounts$.next(registrarsWithCounts);
+      this.databaseService.instance.registrarQueries.getDomainCountsByRegistrar(),
+    ])
+      .pipe(
+        map(([registrars, counts]) => {
+          return registrars.map((registrar) => ({
+            registrar,
+            domainCount: counts[registrar.name] || 0,
+          }));
+        }),
+        takeUntil(this.destroy$),
+        catchError((error) => {
+          this.errorHandler.handleError({
+            error,
+            message: 'Failed to load registrars for autocomplete',
+            location: 'RegistrarAutocompleteService.loadRegistrars',
+            showToast: false,
+          });
+          this.hasError$.next(true);
+          this.isLoading$.next(false);
+          throw error;
+        }),
+      )
+      .subscribe({
+        next: (registrarsWithCounts) => {
+          this.registrarsWithCounts$.next(registrarsWithCounts);
 
-        // Pre-compute and cache the sorted top 25 registrars
-        this.sortedTopRegistrars = [...registrarsWithCounts]
-          .sort((a, b) => b.domainCount - a.domainCount)
-          .slice(0, 25)
-          .map(r => r.registrar.name)
-          .filter(name => name != null); // Null safety
+          // Pre-compute and cache the sorted top 25 registrars
+          this.sortedTopRegistrars = [...registrarsWithCounts]
+            .sort((a, b) => b.domainCount - a.domainCount)
+            .slice(0, 25)
+            .map((r) => r.registrar.name)
+            .filter((name) => name != null); // Null safety
 
-        this.isLoading$.next(false);
-        this.hasLoaded = true;
-      },
-      error: () => {
-        // Error already handled in catchError
-      }
-    });
+          this.isLoading$.next(false);
+          this.hasLoaded = true;
+        },
+        error: () => {
+          // Error already handled in catchError
+        },
+      });
   }
 
   /**
@@ -101,9 +101,9 @@ export class RegistrarAutocompleteService implements OnDestroy {
 
     // Filter by name with null safety
     return this.registrarsWithCounts$.value
-      .filter(r => r.registrar.name?.toLowerCase().includes(trimmedQuery))
-      .map(r => r.registrar.name)
-      .filter(name => name != null); // Additional null safety
+      .filter((r) => r.registrar.name?.toLowerCase().includes(trimmedQuery))
+      .map((r) => r.registrar.name)
+      .filter((name) => name != null); // Additional null safety
   }
 
   /**

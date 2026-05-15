@@ -2,7 +2,6 @@ import { defineEventHandler, readBody } from 'h3';
 import { verifyAuth } from '../utils/auth';
 
 export default defineEventHandler(async (event) => {
-
   const authResult = await verifyAuth(event);
 
   if (!authResult.success) {
@@ -37,7 +36,7 @@ export default defineEventHandler(async (event) => {
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        Authorization: `Bearer ${RESEND_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -57,7 +56,8 @@ export default defineEventHandler(async (event) => {
     }
 
     return { info: 'Support request sent successfully.' };
-  } catch (err: any) {
-    return { error: `Unexpected error: ${err?.message}` };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { error: `Unexpected error: ${msg}` };
   }
 });

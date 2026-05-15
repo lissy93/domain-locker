@@ -14,6 +14,21 @@ export interface Notification {
   created_at: string;
 }
 
+export interface NotificationChannel {
+  enabled?: boolean;
+  [key: string]: unknown;
+}
+
+export interface NotificationChannels {
+  email?: NotificationChannel;
+  pushNotification?: NotificationChannel;
+  webHook?: NotificationChannel;
+  signal?: NotificationChannel;
+  telegram?: NotificationChannel;
+  slack?: NotificationChannel;
+  matrix?: NotificationChannel;
+}
+
 export interface Tag {
   id: string;
   name: string;
@@ -26,7 +41,7 @@ export interface Subdomain {
   id: string;
   domainId: string;
   name: string;
-  sd_info?: any; // JSONB, could be anything
+  sd_info?: string; // JSONB stored/passed as JSON string
 }
 
 export interface Valuation {

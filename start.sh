@@ -4,25 +4,29 @@
 # Load Docker secrets as environment variables (if they exist)
 #==============================================================================#
 
-load_secret() {
-  secret_file="/run/secrets/$1"
-  env_var="$2"
+# allow setting environment variables with docker secrets 
+# the format is <variable-name>__FILE
+SUFFIX="_FILE"
 
-  if [ -f "$secret_file" ]; then
-    export "$env_var=$(cat "$secret_file")"
-  fi
-}
+# loop through all environment variables
+for VAR in $(printenv | awk -F= '{print $1}'); do
+	if [[ $VAR == *"$SUFFIX" ]]; then
+		ENV_FILE_NAME="$(printenv "${VAR}")"
+		ENV_VAR="${VAR%$SUFFIX}"
 
-# Load supported Docker secrets
-load_secret "dl_pg_password" "DL_PG_PASSWORD"
-load_secret "dl_pg_user" "DL_PG_USER"
-load_secret "dl_pg_host" "DL_PG_HOST"
-load_secret "dl_pg_port" "DL_PG_PORT"
-load_secret "dl_pg_name" "DL_PG_NAME"
-load_secret "supabase_url" "SUPABASE_URL"
-load_secret "supabase_anon_key" "SUPABASE_ANON_KEY"
-load_secret "dl_turnstile_key" "DL_TURNSTILE_KEY"
-load_secret "dl_glitchtip_dsn" "DL_GLITCHTIP_DSN"
+		if printenv "$ENV_VAR" &>/dev/null; then
+			echo "warning: Both $ENV_VAR and $VAR are set. $VAR will override $ENV_VAR."
+		fi
+
+		if [[ -r "$ENV_FILE_NAME" ]]; then
+			VALUE="$(cat "$ENV_FILE_NAME")"
+			export "$ENV_VAR"="$VALUE"
+			echo "$ENV_VAR environment variable was set by secret file $ENV_FILE_NAME"
+		else
+			echo "warning: Secret file $ENV_FILE_NAME for $VAR is not readable or does not exist."
+		fi
+	fi
+done
 
 #==============================================================================#
 # This is the entrypoint script for starting Domain Locker in Docker.

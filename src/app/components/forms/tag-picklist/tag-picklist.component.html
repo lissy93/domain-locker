@@ -1,11 +1,11 @@
 <div class="p-fluid">
   <div class="field">
-    <p-pickList 
-      [source]="availableDomains" 
+    <p-pickList
+      [source]="availableDomains"
       [target]="selectedDomains"
       sourceHeader="Available Domains"
       targetHeader="Selected Domains"
-      responsive="true" 
+      responsive="true"
       [filterBy]="'domain_name'"
       [dragdrop]="true"
       [showSourceControls]="true"
@@ -20,6 +20,10 @@
   </div>
 
   <div class="flex justify-end">
-    <p-button label="Save Changes" icon="pi pi-check" (onClick)="saveDomainsForTag()"></p-button>
+    <p-button
+      label="Save Changes"
+      icon="pi pi-check"
+      (onClick)="saveDomainsForTag()"
+    ></p-button>
   </div>
 </div>

@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import type { H3Event } from 'h3';
 
 const IS_MANAGED = import.meta.env['DL_ENV_TYPE'] === 'managed';
 
@@ -20,14 +21,16 @@ if (IS_MANAGED) {
   }
 }
 
-export async function verifyAuth(event: any): Promise<{ success: boolean; error?: string }> {
+export async function verifyAuth(
+  event: H3Event,
+): Promise<{ success: boolean; error?: string }> {
   if (!IS_MANAGED) return { success: true }; // Skip auth if not in managed mode
 
   if (!SUPABASE_CLIENT) {
     return { success: false, error: 'Auth not configured' };
   }
 
-  const authHeader = event.req.headers['authorization'];
+  const authHeader = event.node.req.headers['authorization'];
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     console.error('Missing or invalid Authorization header');
     return { success: false, error: 'Missing or invalid Authorization header' };

@@ -155,10 +155,8 @@ export const features = [
 
 // Additional features: Search,
 
-
 // Alternatives: domainLocker, domainMod, domainWatchman, domainPunch
 // Features: Auto-fetch data, keep up-to-date, track changes, notifications, valuation, monitor health, view stats, open source, multi-language support, custom UI
-
 
 export interface Screenshot {
   screenshot: string; // The URL to the screenshot
@@ -180,17 +178,20 @@ export const screenshots: Screenshot[] = [
   {
     screenshot: 'https://i.postimg.cc/9M9cDVgh/change-history.png',
     title: 'Change History',
-    description: 'View a history of changes to your domains, including security, host, SSL, DNS, WHOIS, and more.',
+    description:
+      'View a history of changes to your domains, including security, host, SSL, DNS, WHOIS, and more.',
   },
   {
     screenshot: 'https://i.postimg.cc/9XBvJr7k/assets.png',
     title: 'Track Assets',
-    description: 'View all of your assets (like auto-fetchedSSL, hosts, registrars, IPs, DNS, subdomains).',
+    description:
+      'View all of your assets (like auto-fetchedSSL, hosts, registrars, IPs, DNS, subdomains).',
   },
   {
     screenshot: 'https://i.postimg.cc/GhKd8XKH/add-link.png',
     title: 'Add Links',
-    description: 'You can associate links with domains, so you never lose track of a specific URL for any of your domains.',
+    description:
+      'You can associate links with domains, so you never lose track of a specific URL for any of your domains.',
   },
   {
     screenshot: 'https://i.postimg.cc/PqPXk1mN/bulk-add.png',
@@ -200,12 +201,14 @@ export const screenshots: Screenshot[] = [
   {
     screenshot: 'https://i.postimg.cc/d38QxvGB/developer.png',
     title: 'Data Connectors',
-    description: 'Want to fetch all your domain data programmatically? We\'ve got APIs for that.',
+    description:
+      "Want to fetch all your domain data programmatically? We've got APIs for that.",
   },
   {
     screenshot: 'https://i.postimg.cc/zXFXwzzD/display.png',
     title: 'Display options',
-    description: 'Choose your own theme, fonts, language, layout, and more display options, to make Domain Locker yours.',
+    description:
+      'Choose your own theme, fonts, language, layout, and more display options, to make Domain Locker yours.',
   },
   {
     screenshot: 'https://i.postimg.cc/Bnvsx27N/domain.png',
@@ -233,7 +236,6 @@ export const screenshots: Screenshot[] = [
     description: 'View the health and availability of each website',
   },
 
-
   {
     screenshot: 'https://i.postimg.cc/L844Nc5t/notificiation-locations.png',
     title: 'Notification Channels',
@@ -242,7 +244,8 @@ export const screenshots: Screenshot[] = [
   {
     screenshot: 'https://i.postimg.cc/13yXbgCN/settings-notifications-2.png',
     title: 'Notification Events',
-    description: 'Pick which events (domain changes, expirations, etc) you want to be notified about',
+    description:
+      'Pick which events (domain changes, expirations, etc) you want to be notified about',
   },
   {
     screenshot: 'https://i.postimg.cc/wjFMz6Z4/notificiations.png',
@@ -343,7 +346,8 @@ export const screenshots: Screenshot[] = [
   {
     screenshot: 'https://i.postimg.cc/TY63WLXH/privacy.png',
     title: 'Privacy',
-    description: 'You are in full control of data, choose what is shared (nothing is shared by default).',
+    description:
+      'You are in full control of data, choose what is shared (nothing is shared by default).',
   },
   {
     screenshot: 'https://i.postimg.cc/P56XcSvB/profile.png',
@@ -358,7 +362,8 @@ export const screenshots: Screenshot[] = [
   {
     screenshot: 'https://i.postimg.cc/0jg2nrKj/delete.png',
     title: 'Deletion',
-    description: 'You are free to delete your data, account, and all associated data at any time.',
+    description:
+      'You are free to delete your data, account, and all associated data at any time.',
   },
   {
     screenshot: 'https://i.postimg.cc/tgMg1BXh/settings-db.png',
@@ -368,10 +373,10 @@ export const screenshots: Screenshot[] = [
   {
     screenshot: 'https://i.postimg.cc/Kz38ttzC/debug.png',
     title: 'Debug',
-    description: 'For developers and power users, we\'ve got comprehensive debugging tools.',
+    description:
+      "For developers and power users, we've got comprehensive debugging tools.",
   },
 ];
-
 
 export enum Has {
   Yes = 1,
@@ -420,7 +425,7 @@ export const providerInfo: Record<Providers, ProviderInfo> = {
     icon: 'https://bcdn.domainpunch.com/images/icons/products/dppro.png',
     summary: '',
   },
-}
+};
 
 export const alternativeComparison: FeatureComparison[] = [
   {
@@ -429,15 +434,18 @@ export const alternativeComparison: FeatureComparison[] = [
     comparison: {
       domainLocker: {
         has: Has.Yes,
-        notes: 'Registrar, SSL, DNS, IPs, Hosts and more is auto-fetched when you add a domain',
+        notes:
+          'Registrar, SSL, DNS, IPs, Hosts and more is auto-fetched when you add a domain',
       },
       domainMod: {
         has: Has.Some,
-        notes: 'Data is entered manually when you add a domain, but there is auto-fetching functionality for keeping it up-to-date',
+        notes:
+          'Data is entered manually when you add a domain, but there is auto-fetching functionality for keeping it up-to-date',
       },
       domainWatchman: {
         has: Has.Yes,
-        notes: 'Registrar, expiry and name servers are auto-fetched when you add a domain',
+        notes:
+          'Registrar, expiry and name servers are auto-fetched when you add a domain',
       },
       domainPunch: {
         has: Has.Yes,
@@ -473,7 +481,8 @@ export const alternativeComparison: FeatureComparison[] = [
     comparison: {
       domainLocker: {
         has: Has.Yes,
-        notes: 'View audit logs for all domain changes, including security, host, SSL, DNS, WHOIS, and more',
+        notes:
+          'View audit logs for all domain changes, including security, host, SSL, DNS, WHOIS, and more',
       },
       domainMod: {
         has: Has.No,
@@ -575,7 +584,8 @@ export const alternativeComparison: FeatureComparison[] = [
   },
   {
     feature: 'Domain Health',
-    description: 'Track uptime, web status, response code, handshake, DNS resolution time',
+    description:
+      'Track uptime, web status, response code, handshake, DNS resolution time',
     comparison: {
       domainLocker: {
         has: Has.Some,
@@ -804,4 +814,3 @@ export const businessFeatures = [
     Dedicated enterprise instances running on your own infrastructure is also available.`,
   },
 ];
-

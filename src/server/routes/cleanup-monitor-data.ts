@@ -8,7 +8,11 @@ function getEnvVar(name: string, fallback?: string): string {
   return val || fallback || '';
 }
 
-async function callPgExecutor<T>(endpoint: string, query: string, params: any[] = []): Promise<T[]> {
+async function callPgExecutor<T>(
+  endpoint: string,
+  query: string,
+  params: unknown[] = [],
+): Promise<T[]> {
   const res = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -25,7 +29,9 @@ export default defineEventHandler(async (event) => {
 
   const baseUrl = getBaseUrl(event);
   const pgUrl = `${baseUrl}/api/pg-executer`;
-  const cutoff = new Date(Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const cutoff = new Date(
+    Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000,
+  ).toISOString();
 
   const domains = await callPgExecutor<{ domain_id: string; domain_name: string }>(
     pgUrl,
@@ -33,7 +39,7 @@ export default defineEventHandler(async (event) => {
      FROM uptime u
      JOIN domains d ON u.domain_id = d.id
      WHERE u.checked_at < $1`,
-    [cutoff]
+    [cutoff],
   );
 
   if (!domains.length) {
@@ -74,20 +80,21 @@ export default defineEventHandler(async (event) => {
         SELECT
           (SELECT count(*)::int FROM inserted) as aggregated,
           (SELECT count(*)::int FROM deleted) as deleted`,
-        [domain_id, cutoff]
+        [domain_id, cutoff],
       );
 
       const { aggregated = 0, deleted = 0 } = result[0] || {};
       totalAggregated += aggregated;
       details.push(`${domain_name}: ${aggregated} days, ${deleted} deleted`);
-    } catch (err: any) {
-      details.push(`${domain_name}: FAILED - ${err.message}`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      details.push(`${domain_name}: FAILED - ${msg}`);
     }
   }
 
   return {
     domainsAggregated: domains.length,
     totalDays: totalAggregated,
-    details
+    details,
   };
 });

@@ -4,9 +4,11 @@ import { isPlatformBrowser } from '@angular/common';
 import { REQUEST } from '@analogjs/router/tokens';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class TranslationService {
+  translateService = inject(TranslateService);
+
   private platformId = inject(PLATFORM_ID);
   private defaultLang = 'en';
 
@@ -15,10 +17,10 @@ export class TranslationService {
     { code: 'en', name: 'English', flag: '🇬🇧' },
     { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
     { code: 'es', name: 'Español', flag: '🇪🇸' },
-    { code: 'fr', name: 'Français', flag: '🇫🇷' }
+    { code: 'fr', name: 'Français', flag: '🇫🇷' },
   ];
 
-  constructor(public translateService: TranslateService) {
+  constructor() {
     this.setInitialLanguage();
   }
 
@@ -42,14 +44,15 @@ export class TranslationService {
       langFromUrl = urlParams?.get('lang') || null;
     }
     if (isPlatformBrowser(this.platformId)) {
-      langFromStorage = localStorage.getItem('language') || langFromUrl || this.defaultLang;
+      langFromStorage =
+        localStorage.getItem('language') || langFromUrl || this.defaultLang;
     }
     return langFromStorage || langFromUrl || this.defaultLang;
   }
 
   // Validate if the given language code is supported
   private isLanguageAvailable(langCode: string): boolean {
-    return this.availableLanguages.some(lang => lang.code === langCode);
+    return this.availableLanguages.some((lang) => lang.code === langCode);
   }
 
   // Switch the language and store the preference

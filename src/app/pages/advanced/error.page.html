@@ -1,57 +1,58 @@
 <div class="p-card p-4 max-w-2xl mx-auto mt-4">
-  
-  @if(errorMessage) {
+  @if (errorMessage) {
     <h2 class="text-2xl font-bold text-center">An Error Occurred</h2>
 
-    <p *ngIf="errorMessage" class="text-red-500 text-lg font-mono">
-      {{ errorMessage }}
-    </p>
+    @if (errorMessage) {
+      <p class="text-red-500 text-lg font-mono">
+        {{ errorMessage }}
+      </p>
+    }
   } @else {
     <h2 class="text-2xl font-bold text-center mb-4">Facing an Error?</h2>
   }
 
   <div class="flex gap-3 flex-wrap justify-center">
-    <p-button 
-      label="Debug Info" 
-      icon="pi pi-stop" 
+    <p-button
+      label="Debug Info"
+      icon="pi pi-stop"
       routerLink="/advanced/debug-info"
       severity="success"
       styleClass="w-[12rem]"
     ></p-button>
-    <p-button 
-      label="DB Connection" 
-      icon="pi pi-server" 
+    <p-button
+      label="DB Connection"
+      icon="pi pi-server"
       routerLink="/advanced/database-connection"
       severity="info"
       styleClass="w-[12rem]"
     ></p-button>
-    <p-button 
-      label="Get Help" 
+    <p-button
+      label="Get Help"
       icon="pi pi-question-circle"
       severity="help"
       routerLink="/about/support"
       styleClass="w-[12rem]"
     ></p-button>
-      <!-- <p-button 
-        label="Try Again" 
-        icon="pi pi-refresh" 
-        (click)="reload()"
-        severity="secondary"
-        styleClass="w-[12rem]"
-      ></p-button>
-      <p-button 
-        label="Clear Cookies" 
-        icon="pi pi-trash" 
-        (click)="clearStorage()"
-        severity="warning"
-        styleClass="w-[12rem]"
-      ></p-button>
-      <p-button 
-        label="Enable Debug" 
-        icon="pi pi-eye" 
-        (click)="enableDebugging()"
-        severity="primary"
-        styleClass="w-[12rem] bg-teal-400 border-teal-600 text-teal-900"
-      ></p-button> -->
+    <!-- <p-button
+    label="Try Again"
+    icon="pi pi-refresh"
+    (click)="reload()"
+    severity="secondary"
+    styleClass="w-[12rem]"
+  ></p-button>
+  <p-button
+    label="Clear Cookies"
+    icon="pi pi-trash"
+    (click)="clearStorage()"
+    severity="warning"
+    styleClass="w-[12rem]"
+  ></p-button>
+  <p-button
+    label="Enable Debug"
+    icon="pi pi-eye"
+    (click)="enableDebugging()"
+    severity="primary"
+    styleClass="w-[12rem] bg-teal-400 border-teal-600 text-teal-900"
+  ></p-button> -->
   </div>
 </div>

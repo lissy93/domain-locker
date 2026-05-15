@@ -9,13 +9,20 @@ export async function recordDomainUpdate(
   changeDescription: string,
   changeType: string,
   oldValue: string,
-  newValue: string
+  newValue: string,
 ): Promise<void> {
-  await callPgExecutor(pgExec,
+  await callPgExecutor(
+    pgExec,
     `INSERT INTO domain_updates (domain_id, user_id, change, change_type, old_value, new_value)
      VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6)`,
-    [domainId, DEFAULT_USER_ID, changeDescription, changeType, oldValue, newValue]
+    [domainId, DEFAULT_USER_ID, changeDescription, changeType, oldValue, newValue],
   );
 
-  await notifyUser(pgExec, domainId, DEFAULT_USER_ID, changeType, `${changeDescription}: ${oldValue} → ${newValue}`);
+  await notifyUser(
+    pgExec,
+    domainId,
+    DEFAULT_USER_ID,
+    changeType,
+    `${changeDescription}: ${oldValue} → ${newValue}`,
+  );
 }

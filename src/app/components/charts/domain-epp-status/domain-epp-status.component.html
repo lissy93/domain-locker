@@ -1,18 +1,21 @@
 <div id="epp-chart">
   @if (chartOptions) {
-  <apx-chart
-    [series]="chartOptions.series"
-    [chart]="chartOptions.chart"
-    [labels]="chartOptions.labels"
-    [plotOptions]="chartOptions.plotOptions"
-  />
+    <apx-chart
+      [series]="chartOptions.series!"
+      [chart]="chartOptions.chart!"
+      [labels]="chartOptions.labels!"
+      [plotOptions]="chartOptions.plotOptions!"
+    />
   }
 </div>
 
 <a
-routerLink="/assets/statuses"
-class="text-xs text-primary-600 text-right block w-full opacity-70 hover:opacity-100">
-{{ 'DOMAIN_STATS.EPP_STATUSES.VIEW_ALL_STATUSES' | translate }}
+  routerLink="/assets/statuses"
+  class="text-xs text-primary-600 text-right block w-full opacity-70 hover:opacity-100"
+>
+  {{ 'DOMAIN_STATS.EPP_STATUSES.VIEW_ALL_STATUSES' | translate }}
 </a>
 
-<p-progressSpinner *ngIf="loading" class="flex items-center mx-auto my-0 h-full" />
+@if (loading) {
+  <p-progressSpinner class="flex items-center mx-auto my-0 h-full" />
+}

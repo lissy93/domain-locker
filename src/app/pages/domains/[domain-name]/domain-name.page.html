@@ -1,136 +1,183 @@
-
 <!-- Domain not found -->
-<app-not-found *ngIf="domainNotFound" [name]="name || 'Domain'" />
+@if (domainNotFound) {
+  <app-not-found [name]="name || 'Domain'" />
+}
 
-<div *ngIf="domain && !domainNotFound; else loading" class="domain-details p-4 flex flex-col gap-1">
-  <!-- Domain name, icon and actions header -->
-  <div class="flex gap-2 justify-between align-items-center flex-wrap mb-4">
-    <h1 class="text-3xl flex items-center">
-      <app-domain-favicon [domain]="domain.domain_name" [size]="32" class="mr-3"></app-domain-favicon>
-      <span class="text-primary">{{ domainUtils.splitDomain(domain.domain_name).domain }}</span>
-      <span class="text-default">.</span>
-      <span class="text-secondary">{{ domainUtils.splitDomain(domain.domain_name).tld }}</span>
-    </h1>
-    <div class="flex">
-      <p-button
-        severity="danger"
-        label="Delete"
-        icon="pi pi-trash"
-        (click)="confirmDelete($event)"
-        class="p-button-primary no-underline m-0 flex gap-2 w-fit ml-2 font-medium"
-      />
-      <a pButton
-        [href]="'https://'+domain.domain_name"
-        target="_blank"
-        class="p-button-secondary no-underline m-0 flex gap-2 w-fit ml-2 font-medium" >
-        <i class="pi pi-external-link"></i>
-        Visit
-      </a>
-      <a pButton
-        [routerLink]="'/domains/'+domain.domain_name+'/edit'"
-        class="p-button-primary no-underline m-0 flex gap-2 w-fit ml-2 font-medium">
-        <i class="pi pi-pencil"></i>
-        Edit
-      </a>
-    </div>
-  </div>
-
-  <!-- Domain Info -->
-  <app-domain-info [domain]="domain" />
-
-  <!-- History -->
-  <p-card styleClass="mt-4">
-    <ng-template pTemplate="header">
-      <h4 class="text-surface-600 text-2xl font-bold m-0 pt-4 pl-4 block z-1 relative">Change History</h4>
-      <div class="absolute top-4 right-4 h-16 w-16 opacity-70">
-        <dl-icon icon="history" classNames="w-full h-full" color= "var(--surface-200)"></dl-icon>
+@if (domain && !domainNotFound) {
+  <div class="domain-details p-4 flex flex-col gap-1">
+    <!-- Domain name, icon and actions header -->
+    <div class="flex gap-2 justify-between align-items-center flex-wrap mb-4">
+      <h1 class="text-3xl flex items-center">
+        <app-domain-favicon
+          [domain]="domain.domain_name"
+          [size]="32"
+          class="mr-3"
+        ></app-domain-favicon>
+        <span class="text-primary">{{
+          domainUtils.splitDomain(domain.domain_name).domain
+        }}</span>
+        <span class="text-default">.</span>
+        <span class="text-secondary">{{
+          domainUtils.splitDomain(domain.domain_name).tld
+        }}</span>
+      </h1>
+      <div class="flex">
+        <p-button
+          severity="danger"
+          label="Delete"
+          icon="pi pi-trash"
+          (click)="confirmDelete($event)"
+          class="p-button-primary no-underline m-0 flex gap-2 w-fit ml-2 font-medium"
+        />
+        <a
+          pButton
+          [href]="'https://' + domain.domain_name"
+          target="_blank"
+          class="p-button-secondary no-underline m-0 flex gap-2 w-fit ml-2 font-medium"
+        >
+          <i class="pi pi-external-link"></i>
+          Visit
+        </a>
+        <a
+          pButton
+          [routerLink]="'/domains/' + domain.domain_name + '/edit'"
+          class="p-button-primary no-underline m-0 flex gap-2 w-fit ml-2 font-medium"
+        >
+          <i class="pi pi-pencil"></i>
+          Edit
+        </a>
       </div>
-    </ng-template>
-      @if (name) {
-        <app-domain-updates *ngIf="shouldMountHistory; else historyWaiting" [domainName]="name"></app-domain-updates>
-        <div appLazyLoad (visible)="onHistoryVisible()"></div>
-        <ng-template #historyWaiting>
-          <p-progressSpinner class="flex mx-auto" ariaLabel="loading" />
-        </ng-template>
-      }
-  </p-card>
-
-  <!-- Monitor -->
-  @if (monitorEnabled$ | async) {
+    </div>
+    <!-- Domain Info -->
+    <app-domain-info [domain]="domain" />
+    <!-- History -->
     <p-card styleClass="mt-4">
       <ng-template pTemplate="header">
-        <h4 class="text-surface-600 text-2xl font-bold m-0 pt-4 pl-4 block z-1 relative">Monitor</h4>
+        <h4 class="text-surface-600 text-2xl font-bold m-0 pt-4 pl-4 block z-1 relative">
+          Change History
+        </h4>
         <div class="absolute top-4 right-4 h-16 w-16 opacity-70">
-          <dl-icon icon="monitor" viewBox="0 0 576 512" classNames="w-full h-full" color= "var(--surface-200)"></dl-icon>
+          <app-dl-icon
+            icon="history"
+            classNames="w-full h-full"
+            color="var(--surface-200)"
+          ></app-dl-icon>
         </div>
       </ng-template>
-      <div *ngIf="shouldMountMonitor; else monitorWaiting" class="flex flex-col domain-perf-monitor">
-        <app-domain-sparklines
-          [domainId]="domain.id"
-          [userId]="domain.user_id"
-          *ngIf="domain && domain.id && domain.user_id && !domainNotFound"
-        />
-
-        <app-uptime-history
-          *ngIf="domain && domain.id && domain.user_id && !domainNotFound"
-          [domainId]="domain.id"
-          [userId]="domain.user_id"
-        />
-      </div>
-      <ng-template #monitorWaiting>
-        <p-progressSpinner class="flex mx-auto" ariaLabel="loading" />
-      </ng-template>
+      @if (name) {
+        @if (shouldMountHistory) {
+          <app-domain-updates [domainName]="name"></app-domain-updates>
+        } @else {
+          <p-progressSpinner class="flex mx-auto" ariaLabel="loading" />
+        }
+        <div appLazyLoad (visible)="onHistoryVisible()"></div>
+      }
     </p-card>
+    <!-- Monitor -->
+    @if (monitorEnabled$ | async) {
+      <p-card styleClass="mt-4">
+        <ng-template pTemplate="header">
+          <h4
+            class="text-surface-600 text-2xl font-bold m-0 pt-4 pl-4 block z-1 relative"
+          >
+            Monitor
+          </h4>
+          <div class="absolute top-4 right-4 h-16 w-16 opacity-70">
+            <app-dl-icon
+              icon="monitor"
+              viewBox="0 0 576 512"
+              classNames="w-full h-full"
+              color="var(--surface-200)"
+            ></app-dl-icon>
+          </div>
+        </ng-template>
+        @if (shouldMountMonitor) {
+          <div class="flex flex-col domain-perf-monitor">
+            @if (domain && domain.id && domain.user_id && !domainNotFound) {
+              <app-domain-sparklines [domainId]="domain.id" [userId]="domain.user_id" />
+            }
+            @if (domain && domain.id && domain.user_id && !domainNotFound) {
+              <app-uptime-history [domainId]="domain.id" [userId]="domain.user_id" />
+            }
+          </div>
+        } @else {
+          <p-progressSpinner class="flex mx-auto" ariaLabel="loading" />
+        }
+      </p-card>
+    }
+    <div appLazyLoad (visible)="onMonitorVisible()"></div>
+    <!-- Empty Subdomains -->
+    <p-card styleClass="mt-4">
+      <ng-template pTemplate="header">
+        <h4 class="text-surface-600 text-2xl font-bold m-0 pt-4 pl-4 block z-1 relative">
+          Subdomains
+        </h4>
+        <div class="absolute top-4 right-4 h-16 w-16 opacity-70">
+          <app-dl-icon
+            icon="subdomains"
+            classNames="w-full h-full"
+            color="var(--surface-200)"
+          ></app-dl-icon>
+        </div>
+      </ng-template>
+      @if (!domain.sub_domains || domain.sub_domains.length === 0) {
+        <div class="flex flex-col text-center items-center">
+          <p class="my-4 text-2xl text-center italic text-surface-400">
+            <i class="pi pi-info-circle text-2xl mr-2"></i>
+            No subdomains configured yet
+          </p>
+          <p-button
+            label="Manage Subdomains"
+            icon="pi pi-file-import"
+            [routerLink]="'/assets/subdomains/' + domain.domain_name"
+            class="p-button-primary no-underline m-0 flex gap-2 w-fit ml-2 font-medium"
+          />
+        </div>
+      } @else {
+        @if (domain.sub_domains) {
+          <app-subdomain-list
+            [domain]="domain.domain_name"
+            [subdomains]="domain.sub_domains"
+            [embeddedView]="true"
+          />
+        }
+      }
+    </p-card>
+    <p-card styleClass="mt-4">
+      <ng-template pTemplate="header">
+        <h4 class="text-surface-600 text-2xl font-bold m-0 pt-4 pl-4 block z-1 relative">
+          External Tools
+        </h4>
+        <div class="absolute top-4 right-4 h-16 w-16 opacity-70">
+          <app-dl-icon
+            icon="external"
+            viewBox="0 0 448 512"
+            classNames="w-full h-full"
+            color="var(--surface-200)"
+          />
+        </div>
+      </ng-template>
+      <div class="flex flex-col">
+        <app-additional-resources [url]="domain.domain_name" />
+      </div>
+    </p-card>
+  </div>
+} @else {
+  @if (!domainNotFound) {
+    <app-loading
+      loadingTitle="Loading"
+      loadingDescription="Fetching details for domain..."
+    />
   }
-  <div appLazyLoad (visible)="onMonitorVisible()"></div>
-
-  <!-- Empty Subdomains -->
-  <p-card styleClass="mt-4">
-    <ng-template pTemplate="header">
-      <h4 class="text-surface-600 text-2xl font-bold m-0 pt-4 pl-4 block z-1 relative">Subdomains</h4>
-      <div class="absolute top-4 right-4 h-16 w-16 opacity-70">
-        <dl-icon icon="subdomains" classNames="w-full h-full" color= "var(--surface-200)"></dl-icon>
-      </div>
-    </ng-template>
-    <div *ngIf="!domain.sub_domains || domain.sub_domains.length === 0; else show_subdomains" class="flex flex-col text-center items-center">
-      <p class="my-4 text-2xl text-center italic text-surface-400">
-        <i class="pi pi-info-circle text-2xl mr-2"></i>
-        No subdomains configured yet
-      </p>
-      <p-button
-        label="Manage Subdomains"
-        icon="pi pi-file-import"
-        [routerLink]="'/assets/subdomains/'+domain.domain_name"
-        class="p-button-primary no-underline m-0 flex gap-2 w-fit ml-2 font-medium"
-      />
-    </div>
-    <ng-template #show_subdomains>
-      <app-subdomain-list
-        *ngIf="domain.sub_domains"
-        [domain]="domain.domain_name"
-        [subdomains]="domain.sub_domains"
-        [embeddedView]="true"
-      />
-    </ng-template>
-  </p-card>
-
-  <p-card styleClass="mt-4">
-    <ng-template pTemplate="header">
-      <h4 class="text-surface-600 text-2xl font-bold m-0 pt-4 pl-4 block z-1 relative">External Tools</h4>
-      <div class="absolute top-4 right-4 h-16 w-16 opacity-70">
-        <dl-icon icon="external" viewBox="0 0 448 512" classNames="w-full h-full" color= "var(--surface-200)" />
-      </div>
-    </ng-template>
-    <div class="flex flex-col">
-      <app-additional-resources [url]="domain.domain_name" />
-    </div>
-  </p-card>
-
-</div>
-
+}
 
 <ng-template #loading>
-  <loading *ngIf="!domainNotFound" loadingTitle="Loading" loadingDescription="Fetching details for domain..." />
+  @if (!domainNotFound) {
+    <app-loading
+      loadingTitle="Loading"
+      loadingDescription="Fetching details for domain..."
+    />
+  }
 </ng-template>
 
 <p-confirmPopup />

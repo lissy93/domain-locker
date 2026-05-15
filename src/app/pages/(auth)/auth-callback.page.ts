@@ -1,6 +1,6 @@
-import { Component, Inject, OnInit, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { isPlatformBrowser } from '@angular/common';
 import { SupabaseService } from '~/app/services/supabase.service';
 import { GlobalMessageService } from '~/app/services/messaging.service';
 import { ErrorHandlerService } from '~/app/services/error-handler.service';
@@ -8,20 +8,18 @@ import { HitCountingService } from '~/app/services/hit-counting.service';
 
 @Component({
   standalone: true,
-  selector: 'app-auth-callback',
+  selector: 'app-auth-callback-page',
   template: `<p>Processing social login...</p>`,
 })
 export default class AuthCallbackComponent implements OnInit {
-  constructor(
-    private supabaseService: SupabaseService,
-    private router: Router,
-    private messagingService: GlobalMessageService,
-    private errorHandlerService: ErrorHandlerService,
-    private hitCountingService: HitCountingService,
-    @Inject(PLATFORM_ID) private platformId: Object,
-  ) {}
+  private supabaseService = inject(SupabaseService);
+  private router = inject(Router);
+  private messagingService = inject(GlobalMessageService);
+  private errorHandlerService = inject(ErrorHandlerService);
+  private hitCountingService = inject(HitCountingService);
+  private platformId = inject<object>(PLATFORM_ID);
 
-  private errorHappened(error: Error | any) {
+  private errorHappened(error: Error | unknown) {
     this.errorHandlerService.handleError({
       message: 'Unable to authenticate with your social account',
       error,
@@ -34,9 +32,12 @@ export default class AuthCallbackComponent implements OnInit {
     if (!isPlatformBrowser(this.platformId)) {
       return;
     }
-    
+
     try {
-    const { data, error } = await this.supabaseService.supabase.auth.exchangeCodeForSession(window.location.href);
+      const { data: _data, error } =
+        await this.supabaseService.supabase.auth.exchangeCodeForSession(
+          window.location.href,
+        );
       if (error) {
         this.errorHappened(error);
         return;
@@ -45,7 +46,7 @@ export default class AuthCallbackComponent implements OnInit {
       this.errorHappened(error);
       return;
     }
-    
+
     // Successfully logged in
     this.hitCountingService.trackEvent('auth_login_done', { method: 'social' });
     this.messagingService.showSuccess('Authenticated', 'Successfully logged in');

@@ -1,13 +1,13 @@
-
-@if ((enablePreviewDomain$ | async))  {
-  <section *ngIf="name" class="flex items-center justify-between">
-    <h1 class="text-3xl flex items-center my-3">
-      <app-domain-favicon [domain]="name" [size]="32" class="mr-3"></app-domain-favicon>
-      <span class="text-primary">{{ domainUtils.splitDomain(name).domain }}</span>
-      <span class="text-default">.</span>
-      <span class="text-secondary">{{ domainUtils.splitDomain(name).tld }}</span>
-    </h1>
-    <div class="flex">
+@if (enablePreviewDomain$ | async) {
+  @if (name) {
+    <section class="flex items-center justify-between">
+      <h1 class="text-3xl flex items-center my-3">
+        <app-domain-favicon [domain]="name" [size]="32" class="mr-3"></app-domain-favicon>
+        <span class="text-primary">{{ domainUtils.splitDomain(name).domain }}</span>
+        <span class="text-default">.</span>
+        <span class="text-secondary">{{ domainUtils.splitDomain(name).tld }}</span>
+      </h1>
+      <div class="flex">
         <p-button
           severity="primary"
           label="Monitor Domain"
@@ -17,11 +17,19 @@
           [queryParams]="{ domain: name }"
         />
       </div>
-  </section>
-    
-  <app-domain-info *ngIf="domain" [domain]="domain" />
+    </section>
+  }
 
-  <loading *ngIf="loading && domain" loadingTitle="Loading" loadingDescription="Crunching stats for {{name}}" />
+  @if (domain) {
+    <app-domain-info [domain]="domain" />
+  }
+
+  @if (loading && domain) {
+    <app-loading
+      loadingTitle="Loading"
+      loadingDescription="Crunching stats for {{ name }}"
+    />
+  }
 
   <app-cta [businessVersion]="true" />
 } @else {

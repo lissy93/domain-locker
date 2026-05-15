@@ -1,36 +1,34 @@
-import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, ChangeDetectorRef, OnDestroy, inject } from '@angular/core';
+
 import { PrimeNgModule } from '../../prime-ng.module';
 import DatabaseService from '~/app/services/database.service';
 import { DbDomain } from '~/app/../types/Database';
 import { DomainCollectionComponent } from '~/app/components/domain-things/domain-collection/domain-collection.component';
-import { LoadingComponent } from '~/app/components/misc/loading.component';
 import { ErrorHandlerService } from '~/app/services/error-handler.service';
 import { Subscription } from 'rxjs';
 
 @Component({
   standalone: true,
-  selector: 'domain-all-page',
-  imports: [DomainCollectionComponent, PrimeNgModule, CommonModule, LoadingComponent],
+  selector: 'app-domains-page',
+  imports: [DomainCollectionComponent, PrimeNgModule],
   template: `
-    <app-domain-view
-      *ngIf="!loading"
-      [loading]="loading"
-      [domains]="domains"
-      ($triggerReload)="newDomainAdded()"
-    />
+    @if (!loading) {
+      <app-domain-view
+        [loading]="loading"
+        [domains]="domains"
+        ($triggerReload)="newDomainAdded()"
+      />
+    }
   `,
 })
 export default class DomainAllPageComponent implements OnInit, OnDestroy {
-  domains: DbDomain[] = [];
-  loading: boolean = true;
-  private subscriptions: Subscription = new Subscription();
+  private databaseService = inject(DatabaseService);
+  private errorHandlerService = inject(ErrorHandlerService);
+  private cdr = inject(ChangeDetectorRef);
 
-  constructor(
-    private databaseService: DatabaseService,
-    private errorHandlerService: ErrorHandlerService,
-    private cdr: ChangeDetectorRef,
-  ) {}
+  domains: DbDomain[] = [];
+  loading = true;
+  private subscriptions: Subscription = new Subscription();
 
   ngOnInit() {
     this.loadDomains();
@@ -57,14 +55,14 @@ export default class DomainAllPageComponent implements OnInit, OnDestroy {
         error: (error) => {
           this.errorHandlerService.handleError({
             error,
-            message: 'Couldn\'t fetch domains from database',
+            message: "Couldn't fetch domains from database",
             showToast: true,
             location: 'DomainAllPageComponent.loadDomains',
           });
           this.loading = false;
           this.cdr.markForCheck();
-        }
-      })
+        },
+      }),
     );
   }
 }

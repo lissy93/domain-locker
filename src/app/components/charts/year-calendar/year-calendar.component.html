@@ -1,41 +1,67 @@
 <div class="calendar-container">
   <div class="calendar-header flex justify-between items-center">
-    <ng-container *ngIf="selectedYear !== currentYear; else emptyPlaceholder">
-      <button pButton
-      icon="pi pi-chevron-left"
-      (click)="navigateYear(-1)"></button>
-    </ng-container>
-    <ng-template #emptyPlaceholder>
+    @if (selectedYear !== currentYear) {
+      <button
+        pButton
+        icon="pi pi-chevron-left"
+        aria-label="Previous year"
+        (click)="navigateYear(-1)"
+      ></button>
+    } @else {
       <p></p>
-    </ng-template>
+    }
     <h2>{{ selectedYear }}</h2>
-    <button pButton
+    <button
+      pButton
       icon="pi pi-chevron-right"
-      (click)="navigateYear(1)"></button>
+      aria-label="Next year"
+      (click)="navigateYear(1)"
+    ></button>
   </div>
 
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-    <div *ngFor="let month of monthsData" class="month-box p-3 flex flex-col space-between">
-      <h3 class="text-center font-semibold">{{ getMonthName(month.month) }}</h3>
-      <ul class="domain-list">
-        <li
-          *ngFor="let domain of month.domains"
-          pTooltip="{{ domain.domain_name }} is expiring on {{ domain.expiry_date | date:'fullDate' }}, and needs to be renewed at {{ domain.registrar }} for a cost of ${{ domain.renewal_cost || 0 }}. Auto-renew is {{ domain.auto_renew ? 'enabled' : 'disabled' }}."
-          tooltipPosition="top"
-          class="flex justify-between items-center domain-item"
-          (click)="onDomainClick(domain.domain_name)">
-          <span class="expiry-date text-surface-400">{{ domain.expiry_date | date:'EEE d' }}</span>
-          <span class="domain-expiry font-semibold">{{ domain.domain_name }}</span>
-        </li>
-      </ul>
-      @if (month.domains.length > 0) {
-        <small class="summary-text text-xs block mt-2 text-surface-400 text-left opacity-70">{{ month.summaryText }}</small>
-      } @else {
-        <small class="summary-text text-justify text-sm text-green-400 block mt-2">{{ month.summaryText }}</small>
-      }
-    </div>
+    @for (month of monthsData; track month) {
+      <div class="month-box p-3 flex flex-col space-between">
+        <h3 class="text-center font-semibold">{{ getMonthName(month.month) }}</h3>
+        <ul class="domain-list">
+          @for (domain of month.domains; track domain) {
+            <li
+              pTooltip="{{ domain.domain_name }} is expiring on {{
+                domain.expiry_date | date: 'fullDate'
+              }}, and needs to be renewed at {{ domain.registrar }} for a cost of ${{
+                domain.renewal_cost || 0
+              }}. Auto-renew is {{ domain.auto_renew ? 'enabled' : 'disabled' }}."
+              tooltipPosition="top"
+              class="flex justify-between items-center domain-item"
+              role="button"
+              tabindex="0"
+              (click)="onDomainClick(domain.domain_name)"
+              (keydown.enter)="onDomainClick(domain.domain_name)"
+              (keydown.space)="$event.preventDefault(); onDomainClick(domain.domain_name)"
+            >
+              <span class="expiry-date text-surface-400">{{
+                domain.expiry_date | date: 'EEE d'
+              }}</span>
+              <span class="domain-expiry font-semibold">{{ domain.domain_name }}</span>
+            </li>
+          }
+        </ul>
+        @if (month.domains.length > 0) {
+          <small
+            class="summary-text text-xs block mt-2 text-surface-400 text-left opacity-70"
+            >{{ month.summaryText }}</small
+          >
+        } @else {
+          <small class="summary-text text-justify text-sm text-green-400 block mt-2">{{
+            month.summaryText
+          }}</small>
+        }
+      </div>
+    }
   </div>
-  <p *ngIf="noExpirations" class="text-center italic text-surface-400">
-    No domains are due to expire in {{ selectedYear }}
-  </p>
+  @if (noExpirations) {
+    <p class="text-center italic text-surface-400">
+      No domains are due to expire in {{ selectedYear }}
+    </p>
+  }
 </div>

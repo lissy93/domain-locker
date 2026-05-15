@@ -1,15 +1,30 @@
-
 ::ng-deep .apexcharts-svg {
   g.apexcharts-series.apexcharts-radial-series {
     path.apexcharts-radialbar-area {
-      &.apexcharts-radialbar-slice-0 { stroke: var(--blue-400); }
-      &.apexcharts-radialbar-slice-1 { stroke: var(--green-400); }
-      &.apexcharts-radialbar-slice-2 { stroke: var(--yellow-400); }
-      &.apexcharts-radialbar-slice-3 { stroke: var(--red-400); }
-      &.apexcharts-radialbar-slice-4 { stroke: var(--indigo-400); }
-      &.apexcharts-radialbar-slice-5 { stroke: var(--teal-400); }
-      &.apexcharts-radialbar-slice-6 { stroke: var(--orange-400); }
-      &.apexcharts-radialbar-slice-7 { stroke: var(--purple-400); }
+      &.apexcharts-radialbar-slice-0 {
+        stroke: var(--blue-400);
+      }
+      &.apexcharts-radialbar-slice-1 {
+        stroke: var(--green-400);
+      }
+      &.apexcharts-radialbar-slice-2 {
+        stroke: var(--yellow-400);
+      }
+      &.apexcharts-radialbar-slice-3 {
+        stroke: var(--red-400);
+      }
+      &.apexcharts-radialbar-slice-4 {
+        stroke: var(--indigo-400);
+      }
+      &.apexcharts-radialbar-slice-5 {
+        stroke: var(--teal-400);
+      }
+      &.apexcharts-radialbar-slice-6 {
+        stroke: var(--orange-400);
+      }
+      &.apexcharts-radialbar-slice-7 {
+        stroke: var(--purple-400);
+      }
     }
   }
 }

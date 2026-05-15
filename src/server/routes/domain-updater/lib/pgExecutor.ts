@@ -1,4 +1,8 @@
-export async function callPgExecutor<T>(endpoint: string, query: string, params: unknown[] = []): Promise<T[]> {
+export async function callPgExecutor<T>(
+  endpoint: string,
+  query: string,
+  params: unknown[] = [],
+): Promise<T[]> {
   const res = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

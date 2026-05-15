@@ -1,19 +1,26 @@
-import { catchError, forkJoin, from, map, Observable, of, switchMap, throwError } from 'rxjs';
+import { catchError, from, map, Observable, switchMap, throwError } from 'rxjs';
 import { PgApiUtilService } from '~/app/utils/pg-api.util';
+
+interface SubdomainRow {
+  id?: string;
+  name: string;
+  sd_info?: string | null;
+  domain_name?: string;
+}
 
 export class SubdomainsQueries {
   constructor(
     private pgApiUtil: PgApiUtilService,
-    private handleError: (error: any) => Observable<never>,
+    private handleError: (error: unknown) => Observable<never>,
   ) {}
 
   saveSubdomainsForDomainName(
     domain: string,
-    subdomains: { name: string; sd_info?: string }[]
+    subdomains: { name: string; sd_info?: string }[],
   ): Observable<void> {
     return this.fetchDomainId(domain).pipe(
       switchMap((domainId) => from(this.saveSubdomains(domainId, subdomains))),
-      catchError((error) => this.handleError(error))
+      catchError((error) => this.handleError(error)),
     );
   }
 
@@ -21,23 +28,26 @@ export class SubdomainsQueries {
     const query = `SELECT id FROM domains WHERE domain_name = $1 LIMIT 1`;
     const params = [domain];
 
-    return this.pgApiUtil.postToPgExecutor(query, params).pipe(
-      map(({ data }: any) => {
+    return this.pgApiUtil.postToPgExecutor<{ id: string }>(query, params).pipe(
+      map(({ data }) => {
         if (!data || data.length === 0) {
           throw new Error(`Domain ID not found for domain name: ${domain}`);
         }
         return data[0].id;
       }),
-      catchError((error) => this.handleError(error))
+      catchError((error) => this.handleError(error)),
     );
   }
 
-  async saveSubdomains(domainId: string, subdomains: { name: string; sd_info?: string }[]): Promise<void> {
+  async saveSubdomains(
+    domainId: string,
+    subdomains: { name: string; sd_info?: string }[],
+  ): Promise<void> {
     if (!subdomains || subdomains.length === 0) {
       throw new Error('Skipping subdomains, none found');
     }
 
-    const validSubdomains = subdomains.filter(sd => sd.name?.trim());
+    const validSubdomains = subdomains.filter((sd) => sd.name?.trim());
     if (validSubdomains.length === 0) {
       throw new Error('Skipping subdomains, no valid subdomains listed');
     }
@@ -45,10 +55,14 @@ export class SubdomainsQueries {
     const query = `SELECT name FROM sub_domains WHERE domain_id = $1`;
     const params = [domainId];
 
-    const { data: existingData } = await this.pgApiUtil.postToPgExecutor(query, params).toPromise() as any;
-    const existingNames = (existingData || []).map((sd: { name: string }) => sd.name);
+    const result = await this.pgApiUtil
+      .postToPgExecutor<{ name: string }>(query, params)
+      .toPromise();
+    const existingNames = (result?.data || []).map((sd) => sd.name);
 
-    const subdomainsToInsert = validSubdomains.filter(sd => !existingNames.includes(sd.name));
+    const subdomainsToInsert = validSubdomains.filter(
+      (sd) => !existingNames.includes(sd.name),
+    );
 
     if (subdomainsToInsert.length === 0) {
       throw new Error('Skipping subdomains, all already exist');
@@ -60,7 +74,7 @@ export class SubdomainsQueries {
     `;
     const insertParams = [
       domainId,
-      ...subdomainsToInsert.flatMap(sd => [sd.name, sd.sd_info || null])
+      ...subdomainsToInsert.flatMap((sd) => [sd.name, sd.sd_info || null]),
     ];
 
     await this.pgApiUtil.postToPgExecutor(insertQuery, insertParams).toPromise();
@@ -75,20 +89,25 @@ export class SubdomainsQueries {
     await this.pgApiUtil.postToPgExecutor(query, params).toPromise();
   }
 
-  async updateSubdomains(domainId: string, subdomains: { name: string; sd_info?: string }[]): Promise<void> {
+  async updateSubdomains(
+    domainId: string,
+    subdomains: { name: string; sd_info?: string }[],
+  ): Promise<void> {
     const query = `SELECT name, sd_info FROM sub_domains WHERE domain_id = $1`;
     const params = [domainId];
 
-    const { data: existingData } = await this.pgApiUtil.postToPgExecutor(query, params).toPromise() as any;
-    const existingSubdomains = existingData || [];
+    const result = await this.pgApiUtil
+      .postToPgExecutor<SubdomainRow>(query, params)
+      .toPromise();
+    const existingSubdomains = result?.data || [];
 
     const subdomainsToAdd = subdomains.filter(
-      (sd) => !existingSubdomains.some((existing: any) => existing.name === sd.name)
+      (sd) => !existingSubdomains.some((existing) => existing.name === sd.name),
     );
 
     const subdomainsToRemove = existingSubdomains
-      .filter((existing: any) => !subdomains.some((sd) => sd.name === existing.name))
-      .map((sd: any) => sd.name);
+      .filter((existing) => !subdomains.some((sd) => sd.name === existing.name))
+      .map((sd) => sd.name);
 
     if (subdomainsToAdd.length > 0) {
       const addQuery = `
@@ -97,7 +116,7 @@ export class SubdomainsQueries {
       `;
       const addParams = [
         domainId,
-        ...subdomainsToAdd.flatMap(sd => [sd.name, sd.sd_info || null])
+        ...subdomainsToAdd.flatMap((sd) => [sd.name, sd.sd_info || null]),
       ];
 
       await this.pgApiUtil.postToPgExecutor(addQuery, addParams).toPromise();
@@ -113,7 +132,7 @@ export class SubdomainsQueries {
     }
 
     for (const sd of subdomains) {
-      const existing = existingSubdomains.find((e: any) => e.name === sd.name);
+      const existing = existingSubdomains.find((e) => e.name === sd.name);
       if (existing && sd.sd_info && sd.sd_info !== existing.sd_info) {
         const updateQuery = `
           UPDATE sub_domains SET sd_info = $1 WHERE domain_id = $2 AND name = $3
@@ -125,7 +144,7 @@ export class SubdomainsQueries {
     }
   }
 
-  getAllSubdomains(): Observable<any[]> {
+  getAllSubdomains(): Observable<SubdomainRow[]> {
     const query = `
       SELECT DISTINCT
         sub_domains.name,
@@ -134,15 +153,15 @@ export class SubdomainsQueries {
       FROM sub_domains
       INNER JOIN domains ON sub_domains.domain_id = domains.id
     `;
-  
-    return this.pgApiUtil.postToPgExecutor(query).pipe(
+
+    return this.pgApiUtil.postToPgExecutor<SubdomainRow>(query).pipe(
       map(({ data }) => data || []),
-      catchError((error) => this.handleError(error))
+      catchError((error) => this.handleError(error)),
     );
   }
 
-getSubdomainsByDomain(domain: string): Observable<any[]> {
-  const query = `
+  getSubdomainsByDomain(domain: string): Observable<SubdomainRow[]> {
+    const query = `
     SELECT DISTINCT
       sub_domains.id,
       sub_domains.name,
@@ -151,15 +170,15 @@ getSubdomainsByDomain(domain: string): Observable<any[]> {
     INNER JOIN domains ON sub_domains.domain_id = domains.id
     WHERE domains.domain_name = $1
   `;
-  const params = [domain];
+    const params = [domain];
 
-  return this.pgApiUtil.postToPgExecutor(query, params).pipe(
-    map(({ data }) => data || []),
-    catchError((error) => this.handleError(error))
-  );
-}
+    return this.pgApiUtil.postToPgExecutor<SubdomainRow>(query, params).pipe(
+      map(({ data }) => data || []),
+      catchError((error) => this.handleError(error)),
+    );
+  }
 
-  getSubdomainInfo(domain: string, subdomain: string): Observable<any> {
+  getSubdomainInfo(domain: string, subdomain: string): Observable<SubdomainRow | null> {
     const query = `
       SELECT sub_domains.name, sub_domains.sd_info, domains.domain_name
       FROM sub_domains
@@ -168,10 +187,14 @@ getSubdomainsByDomain(domain: string): Observable<any[]> {
     `;
     const params = [domain, subdomain];
 
-    return this.pgApiUtil.postToPgExecutor(query, params).pipe(
+    return this.pgApiUtil.postToPgExecutor<SubdomainRow>(query, params).pipe(
       map(({ data }) => {
-        const firstResult = Array.isArray(data) && data.length > 0 ? data[0] : null as any;
-        if (firstResult && firstResult.sd_info && typeof firstResult.sd_info === 'string') {
+        const firstResult = Array.isArray(data) && data.length > 0 ? data[0] : null;
+        if (
+          firstResult &&
+          firstResult.sd_info &&
+          typeof firstResult.sd_info === 'string'
+        ) {
           try {
             firstResult.sd_info = JSON.parse(firstResult.sd_info);
           } catch (error) {
@@ -180,7 +203,7 @@ getSubdomainsByDomain(domain: string): Observable<any[]> {
         }
         return firstResult;
       }),
-      catchError((error) => this.handleError(error))
+      catchError((error) => this.handleError(error)),
     );
   }
 
@@ -189,16 +212,20 @@ getSubdomainsByDomain(domain: string): Observable<any[]> {
       switchMap((domainId) => {
         const query = `DELETE FROM sub_domains WHERE domain_id = $1 AND name = $2`;
         const params = [domainId, subdomain];
-        return this.pgApiUtil.postToPgExecutor(query, params); // presumably returns Observable<any>
+        return this.pgApiUtil.postToPgExecutor(query, params);
       }),
-      map(() => {}), // map result to void
-      catchError((err) =>
-        throwError(() => new Error(`Failed to delete subdomain: ${err.message || err}`))
-      )
+      map(() => undefined as void),
+      catchError((err: unknown) => {
+        const message = err instanceof Error ? err.message : String(err);
+        return throwError(() => new Error(`Failed to delete subdomain: ${message}`));
+      }),
     );
   }
 
-  saveSubdomainForDomain(domainName: string, subdomain: string): Observable<any> {
+  saveSubdomainForDomain(
+    domainName: string,
+    subdomain: string,
+  ): Observable<{ data: unknown[] }> {
     const fetchDomainIdQuery = `
       SELECT id FROM domains WHERE domain_name = $1
     `;
@@ -206,16 +233,21 @@ getSubdomainsByDomain(domain: string): Observable<any[]> {
       INSERT INTO sub_domains (domain_id, name) VALUES ($1, $2)
     `;
 
-    return this.pgApiUtil.postToPgExecutor(fetchDomainIdQuery, [domainName]).pipe(
-      switchMap(({ data }: any) => {
-        if (!data || data.length === 0) {
-          return throwError(() => new Error(`Domain not found: ${domainName}`));
-        }
+    return this.pgApiUtil
+      .postToPgExecutor<{ id: string }>(fetchDomainIdQuery, [domainName])
+      .pipe(
+        switchMap(({ data }) => {
+          if (!data || data.length === 0) {
+            return throwError(() => new Error(`Domain not found: ${domainName}`));
+          }
 
-        const domainId = data[0].id;
-        return this.pgApiUtil.postToPgExecutor(insertSubdomainQuery, [domainId, subdomain]);
-      }),
-      catchError((error) => this.handleError(error))
-    );
+          const domainId = data[0].id;
+          return this.pgApiUtil.postToPgExecutor(insertSubdomainQuery, [
+            domainId,
+            subdomain,
+          ]);
+        }),
+        catchError((error) => this.handleError(error)),
+      );
   }
 }

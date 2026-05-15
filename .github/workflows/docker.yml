@@ -1,144 +1,311 @@
-# This is a GitHub Actions workflow to make the Docker image
-
-# It's triggered on either:
-# A) Pushes to the main branch, which will update the :latest tag
-# B) The creation of a new git tag, which will create a new version tag :x.x.x
-# C) Manual workflow runs with a custom tag, to publish a temp feature image
-
-# The workflow does the following:
-# 1. Checks out the code
-# 2. Sets up QEMU for multi-arch builds, and Buildx for advanced building
-# 3. Authenticates with registries (DockerHub, GHCR)
-# 4. Determines the Docker tags based on the branch or tag
-# 5. Builds the Docker image for specified architectures
-# 6. Pushes the Docker image to authenticated registries
-# 7. Generates an SBOM in SPDX for the included dependencies
-# 8. Attests and pushes the build provenance and SBOM to registries
+# Builds and publishes the multi-arch Docker image
+# - On git tag push, publishes to :X.Y.Z, :X.Y, and :latest
+# - On manual dispatch from main, rebuilds and updates :latest
+# - On weekly schedule, rebuilds :latest from main for recent patches
+# - Multi-arch (amd64 + arm64) built in parallel on native runners
+# - Trivy scans each arch before push, fails on fixable CRITICAL CVEs
+# - Publishes to GHCR, and to Docker Hub if creds are configured
+# - Attests the manifest with a SPDX SBOM published to GHCR
 
 name: 🐳 Build & Push Docker Image
 
 on:
   push:
-    branches:
-      - main
-    paths:
-      - 'src/**'
-      - 'Dockerfile'
     tags:
-      - 'v*'
+      - 'v[0-9]*.[0-9]*.[0-9]*'
+      - '[0-9]*.[0-9]*.[0-9]*'
+  schedule:
+    - cron: '0 4 * * 0'
   workflow_dispatch:
     inputs:
       dry_run:
-        description: 'Run build without pushing image?'
+        description: 'Build without pushing'
         required: false
-        default: 'false'
+        default: false
+        type: boolean
 
 permissions:
-  id-token: write
   contents: read
-  attestations: write
   packages: write
+  id-token: write
+  attestations: write
+
+env:
+  GHCR_IMAGE: ghcr.io/${{ github.repository }}
+  DH_IMAGE: lissy93/domain-locker
+  PUSH: ${{ github.event_name != 'workflow_dispatch' || inputs.dry_run != true }}
+  DOCKER_BUILD_SUMMARY: false
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
-
+  build:
+    name: 🔨 Build (${{ matrix.arch }})
     strategy:
+      fail-fast: false
       matrix:
-        target: [dockerhub, ghcr]
         include:
-          - target: dockerhub
-            registry: docker.io
-            image: lissy93/domain-locker
-          - target: ghcr
-            registry: ghcr.io
-            image: ghcr.io/lissy93/domain-locker
-
+          - platform: linux/amd64
+            runner: ubuntu-latest
+            arch: amd64
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
     steps:
-      - name: 🛎️ Check out repo
-        uses: actions/checkout@v4
+      - name: 🔢 Validate dispatch ref
+        if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::Manual dispatch only allowed from main (got: ${{ github.ref }})"
+          exit 1
 
-      - name: 🔌 Set up QEMU
-        uses: docker/setup-qemu-action@v3
+      - name: 🛎️ Checkout
+        uses: actions/checkout@v6
 
-      - name: 🔌 Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: 🔌 Set up Buildx
+        uses: docker/setup-buildx-action@v4
 
-      - name: 🔑 Login to Docker Hub
-        if: matrix.target == 'dockerhub'
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: 🔑 Login to GitHub Container Registry
-        if: matrix.target == 'ghcr'
-        uses: docker/login-action@v3
+      - name: 🔑 Login to GHCR
+        if: env.PUSH == 'true'
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 🏷️ Determine Docker Tags
-        id: docker_tags
-        run: |
-          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
-            RAW_VERSION="${GITHUB_REF#refs/tags/v}"
-            echo "tag_name=${RAW_VERSION}" >> $GITHUB_OUTPUT
-            echo "is_tagged=true" >> $GITHUB_OUTPUT
-            echo "tags=${{ matrix.image }}:${RAW_VERSION}" >> $GITHUB_OUTPUT
-          else
-            echo "tag_name=latest" >> $GITHUB_OUTPUT
-            echo "is_tagged=false" >> $GITHUB_OUTPUT
-            echo "tags=${{ matrix.image }}:latest" >> $GITHUB_OUTPUT
-          fi
-
-      - name: 🔨 Build & Push Multi-Arch Docker Image
-        id: build
-        uses: docker/build-push-action@v5
+      - name: 🔨 Build image (local load for scan)
+        uses: docker/build-push-action@v7
         with:
           context: .
-          push: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true' }}
-          tags: ${{ steps.docker_tags.outputs.tags }}
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ matrix.platform }}
+          cache-from: type=gha,scope=build-${{ matrix.arch }}
+          cache-to: type=gha,scope=build-${{ matrix.arch }},mode=max
+          load: true
+          tags: dl-scan:${{ matrix.arch }}
           provenance: false
-          outputs: type=registry
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+
+      - name: 🛡️ Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        env:
+          TRIVY_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-db:2
+          TRIVY_JAVA_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-java-db:1
+        with:
+          image-ref: dl-scan:${{ matrix.arch }}
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: ${{ github.event_name == 'schedule' && '1' || '0' }}
+          vuln-type: 'os,library'
+          format: 'table'
+          timeout: '10m'
+
+      - name: 🚀 Push by digest
+        id: push
+        if: env.PUSH == 'true'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          cache-from: type=gha,scope=build-${{ matrix.arch }}
+          outputs: type=image,name=${{ env.GHCR_IMAGE }},push-by-digest=true,name-canonical=true,push=true
+          provenance: false
+
+      - name: 🧬 Export build metadata
+        if: env.PUSH == 'true'
+        run: |
+          mkdir -p "${{ runner.temp }}/digests"
+          # Merge job consumes one of these per arch — used both to build the
+          # manifest (via .digest) and to enrich the consolidated summary.
+          cat > "${{ runner.temp }}/digests/${{ matrix.arch }}.json" <<EOF
+          {
+            "arch": "${{ matrix.arch }}",
+            "platform": "${{ matrix.platform }}",
+            "runner": "${{ matrix.runner }}",
+            "digest": "${{ steps.push.outputs.digest }}"
+          }
+          EOF
+
+      - name: 📤 Upload digest
+        if: env.PUSH == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: digest-${{ matrix.arch }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    name: 🧩 Merge & Push Manifests
+    needs: build
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.dry_run != true }}
+    runs-on: ubuntu-latest
+    env:
+      HAS_DH: ${{ secrets.DOCKER_USERNAME != '' && secrets.DOCKER_PASSWORD != '' }}
+    steps:
+      - name: 📥 Download digests
+        uses: actions/download-artifact@v7
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digest-*
+          merge-multiple: true
+
+      - name: 🔌 Set up Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: 🔑 Login to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🔑 Login to Docker Hub
+        if: env.HAS_DH == 'true'
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: 🏷️ Generate tags & labels
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: |
+            ${{ env.GHCR_IMAGE }}
+            ${{ env.HAS_DH == 'true' && env.DH_IMAGE || '' }}
+          tags: |
+            type=raw,value=latest,enable=${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+          flavor: |
+            latest=auto
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.version=${{ steps.docker_tags.outputs.tag_name }}
             org.opencontainers.image.revision=${{ github.sha }}
 
-      - name: 🧬 Extract digest from Docker image
-        id: digest
+      - name: 🧩 Create & push manifest
+        id: manifest
+        working-directory: ${{ runner.temp }}/digests
         run: |
-          echo "digest=${{ steps.build.outputs.digest }}" >> $GITHUB_OUTPUT
+          set -euo pipefail
 
-      - name: 🧼 Sanitize tag for artifact names
-        id: safe_tag
+          # Build the -t flags from metadata-action's tag list
+          TAGS=()
+          while IFS= read -r tag; do TAGS+=(-t "$tag"); done \
+            < <(jq -r '.tags[]' <<< "$DOCKER_METADATA_OUTPUT_JSON")
+
+          # Build source refs by reading each arch's metadata JSON
+          SOURCES=()
+          for f in *.json; do SOURCES+=("${GHCR_IMAGE}@$(jq -r .digest "$f")"); done
+
+          docker buildx imagetools create "${TAGS[@]}" "${SOURCES[@]}"
+
+          PRIMARY=$(jq -r --arg img "$GHCR_IMAGE" \
+            '.tags[] | select(startswith($img + ":"))' \
+            <<< "$DOCKER_METADATA_OUTPUT_JSON" | head -1)
+          DIGEST=$(docker buildx imagetools inspect "$PRIMARY" \
+            --format '{{.Manifest.Digest}}')
+          echo "primary_tag=$PRIMARY" >> "$GITHUB_OUTPUT"
+          echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
+
+      - name: 🔍 Inspect manifest
         run: |
-          RAW_TAG="${{ steps.docker_tags.outputs.tag_name }}"
-          SAFE_TAG=$(echo "$RAW_TAG" | tr -cd '[:alnum:]-')
-          echo "safe_tag=${SAFE_TAG}" >> $GITHUB_OUTPUT
+          for tag in $(jq -r '.tags[]' <<< "$DOCKER_METADATA_OUTPUT_JSON"); do
+            echo "::group::$tag"
+            docker buildx imagetools inspect "$tag" || true
+            echo "::endgroup::"
+          done
 
       - name: 🔐 Generate SBOM (SPDX)
-        if: matrix.target == 'ghcr' && (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true')
-        id: sbom
-        uses: anchore/sbom-action@v0.20.1
+        uses: anchore/sbom-action@v0.24.0
         with:
-          image: ${{ matrix.image }}:${{ steps.docker_tags.outputs.tag_name }}
+          image: ${{ steps.manifest.outputs.primary_tag }}
           format: spdx-json
           output-file: sbom.spdx.json
           upload-artifact: false
 
-      - name: 🪪 Attest SBOM to registry
-        if: matrix.target == 'ghcr' && (github.event_name != 'workflow_dispatch' || github.event.inputs.dry_run != 'true')
-        uses: actions/attest-sbom@v1
+      - name: 🪪 Attest SBOM
+        id: attest
+        uses: actions/attest-sbom@v3
         continue-on-error: true
         with:
-          subject-name: ${{ matrix.image }}
-          subject-digest: ${{ steps.digest.outputs.digest }}
+          subject-name: ${{ env.GHCR_IMAGE }}
+          subject-digest: ${{ steps.manifest.outputs.digest }}
           sbom-path: sbom.spdx.json
           push-to-registry: true
-          github-token: ${{ secrets.BOT_TOKEN }}
+          github-token: ${{ secrets.BOT_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: 📋 Summary
+        if: always()
+        env:
+          TAGS_JSON: ${{ steps.meta.outputs.json }}
+          PRIMARY_TAG: ${{ steps.manifest.outputs.primary_tag }}
+          MANIFEST_DIGEST: ${{ steps.manifest.outputs.digest }}
+          ATTEST_OUTCOME: ${{ steps.attest.outcome }}
+          ATTEST_URL: ${{ steps.attest.outputs.attestation-url }}
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+          SHA: ${{ github.sha }}
+          REF_NAME: ${{ github.ref_name }}
+          ACTOR: ${{ github.actor }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          {
+            echo "## 🪪 Attestation"
+            echo ""
+            if [ "$ATTEST_OUTCOME" = "success" ]; then
+              echo "✅ SPDX SBOM attested for \`$PRIMARY_TAG\`"
+              echo ""
+              echo "- Subject digest: \`$MANIFEST_DIGEST\`"
+              [ -n "$ATTEST_URL" ] && echo "- [View attestation]($ATTEST_URL)"
+            elif [ -n "$ATTEST_OUTCOME" ]; then
+              echo "⚠️ Attestation outcome: \`$ATTEST_OUTCOME\`"
+            else
+              echo "⏭️ Attestation skipped"
+            fi
+            echo ""
+
+            echo "## 🐳 Docker Image"
+            echo ""
+            [ -n "$MANIFEST_DIGEST" ] && echo "**Manifest digest:** \`$MANIFEST_DIGEST\`" && echo ""
+            TAGS=$(jq -r '.tags[]' <<< "$TAGS_JSON")
+            TAG_COUNT=$(echo "$TAGS" | grep -c . || true)
+            echo "**Tags pushed (${TAG_COUNT}):**"
+            echo ""
+            echo '```bash'
+            # shellcheck disable=SC2001  # sed is clearer than param-subst for line-prefix
+            echo "$TAGS" | sed 's|^|docker pull |'
+            echo '```'
+            echo ""
+
+            echo "## 🔨 Build Summaries"
+            echo ""
+            for f in "${{ runner.temp }}/digests"/*.json; do
+              [ -f "$f" ] || continue
+              arch=$(jq -r .arch "$f")
+              platform=$(jq -r .platform "$f")
+              runner_label=$(jq -r .runner "$f")
+              digest=$(jq -r .digest "$f")
+
+              # Compressed image size by summing the layers in the per-arch manifest
+              size_bytes=$(docker buildx imagetools inspect "${GHCR_IMAGE}@${digest}" --raw 2>/dev/null \
+                | jq -r '[.layers[].size] | add' 2>/dev/null || echo "")
+              size_human=""
+              if [ -n "$size_bytes" ] && [ "$size_bytes" != "null" ]; then
+                size_human=$(numfmt --to=iec --suffix=B --format='%.1f' "$size_bytes")
+              fi
+
+              echo "### \`$arch\` Build"
+              echo ""
+              echo "- Platform: \`$platform\`"
+              echo "- Runner: \`$runner_label\`"
+              echo "- Digest: \`$digest\`"
+              [ -n "$size_human" ] && echo "- Compressed size: \`$size_human\`"
+              echo ""
+            done
+
+            echo "---"
+            echo ""
+            echo "**Source:** [\`${SHA:0:7}\`](${REPO_URL}/commit/${SHA}) (\`${REF_NAME}\`)  "
+            echo "**Trigger:** \`${EVENT_NAME}\` by @${ACTOR}"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,4 +1,14 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef, ChangeDetectorRef, Inject, PLATFORM_ID } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  ViewChild,
+  ElementRef,
+  ChangeDetectorRef,
+  PLATFORM_ID,
+  inject,
+  AfterViewInit,
+} from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router, NavigationEnd } from '@angular/router';
 import { PrimeNgModule } from '~/app/prime-ng.module';
@@ -9,15 +19,22 @@ import { FeatureNotEnabledComponent } from '~/app/components/misc/feature-not-en
 @Component({
   standalone: true,
   imports: [CommonModule, PrimeNgModule, FeatureNotEnabledComponent],
-  selector: 'stats-index-page',
+  selector: 'app-stats-layout-page',
   templateUrl: './stats/index.page.html',
-  styles: [`
-    ::ng-deep .content-container {
-      max-width: 1600px;
-    }
-  `],
+  styles: [
+    `
+      ::ng-deep .content-container {
+        max-width: 1600px;
+      }
+    `,
+  ],
 })
-export default class StatsIndexPage implements OnInit, OnDestroy {
+export default class StatsIndexPage implements OnInit, OnDestroy, AfterViewInit {
+  private router = inject(Router);
+  private cdr = inject(ChangeDetectorRef);
+  private featureService = inject(FeatureService);
+  private platformId = inject(PLATFORM_ID);
+
   @ViewChild('sidebarNav', { static: false }) sidebarNav!: ElementRef;
 
   items: ExtendedMenuItem[] | undefined;
@@ -26,25 +43,22 @@ export default class StatsIndexPage implements OnInit, OnDestroy {
   hideTextLabels = false;
 
   private resizeObserver!: ResizeObserver;
-  private isBrowser = false;   // Keep track if we’re in the browser
+  private isBrowser = false; // Keep track if we’re in the browser
 
-  constructor(
-    private router: Router,
-    private cdr: ChangeDetectorRef,
-    private featureService: FeatureService,
-    @Inject(PLATFORM_ID) private platformId: object,
-  ) {
+  constructor() {
+    const platformId = this.platformId;
+
     this.isBrowser = isPlatformBrowser(platformId);
   }
 
   ngOnInit() {
     this.items = statsLinks as ExtendedMenuItem[];
-    this.hideSideBar = (this.router.url === '/stats');
+    this.hideSideBar = this.router.url === '/stats';
 
     // If route changes, update whether sidebar is hidden
-    this.router.events.subscribe(event => {
+    this.router.events.subscribe((event) => {
       if (event instanceof NavigationEnd) {
-        this.hideSideBar = (event.urlAfterRedirects === '/stats');
+        this.hideSideBar = event.urlAfterRedirects === '/stats';
         this.cdr.detectChanges();
       }
     });
@@ -56,7 +70,7 @@ export default class StatsIndexPage implements OnInit, OnDestroy {
 
     // Slightly delay the creation so the DOM is stable
     setTimeout(() => {
-      this.resizeObserver = new ResizeObserver(entries => {
+      this.resizeObserver = new ResizeObserver((entries) => {
         for (const entry of entries) {
           if (entry.contentRect.width < 150) {
             this.hideTextLabels = true;

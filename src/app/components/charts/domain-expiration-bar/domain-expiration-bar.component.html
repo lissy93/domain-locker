@@ -1,58 +1,63 @@
-<ng-container *ngIf="!loading && meterValues.length > 0; noData">
-  <p-meterGroup 
-    [value]="meterValues" 
-    [min]="0"
-    [max]="100"
-    showLegend="false"
-  />
-
+@if (!loading && meterValues.length > 0) {
+  <p-meterGroup [value]="meterValues" [min]="0" [max]="100" showLegend="false" />
   <div class="mt-2">
-    <ng-container *ngFor="let item of meterValues">
-      <div class="inline-block mr-4" [pTooltip]="getTooltipContent((item.label || '').split(' ')[0].toLowerCase())" tooltipPosition="top">
+    @for (item of meterValues; track item) {
+      <div
+        class="inline-block mr-4"
+        [pTooltip]="getTooltipContent((item.label || '').split(' ')[0].toLowerCase())"
+        tooltipPosition="top"
+      >
         <i [class]="item.icon" [style.color]="item.color"></i>
         {{ item.label }}
       </div>
-    </ng-container>
+    }
   </div>
-
-  <div *ngIf="!showFull" class="float-right">
-    <p-button
-      (click)="toggleTimeline()"
-      [label]="showTimeline ? ('DOMAIN_STATS.EXPIRATION_BAR.TIMELINE_HIDE' | translate) : ('DOMAIN_STATS.EXPIRATION_BAR.TIMELINE_SHOW' | translate)"
-      severity="secondary"
-      size="small"
-      icon="pi pi-calendar"
-      class="opacity-70"
-    />
-  </div>
-
-  <ng-container *ngIf="upcomingDomains.length > 0; else nextExpiring">
+  @if (!showFull) {
+    <div class="float-right">
+      <p-button
+        (click)="toggleTimeline()"
+        [label]="
+          showTimeline
+            ? ('DOMAIN_STATS.EXPIRATION_BAR.TIMELINE_HIDE' | translate)
+            : ('DOMAIN_STATS.EXPIRATION_BAR.TIMELINE_SHOW' | translate)
+        "
+        severity="secondary"
+        size="small"
+        icon="pi pi-calendar"
+        class="opacity-70"
+      />
+    </div>
+  }
+  @if (upcomingDomains.length > 0) {
     <p class="mt-2 mb-0 text-sm text-red-400">{{ getUpcomingDomainsMessage() }}</p>
-  </ng-container>
-
-  <ng-template #nextExpiring>
-    <ng-container *ngIf="nextExpiringDomain">
+  } @else {
+    @if (nextExpiringDomain) {
       <p class="mt-2 mb-0 text-sm text-surface-400">
-        {{ 'DOMAIN_STATS.EXPIRATION_BAR.NEXT_EXPIRING' | translate }} {{ formatExpirationMessage(nextExpiringDomain) }}
+        {{ 'DOMAIN_STATS.EXPIRATION_BAR.NEXT_EXPIRING' | translate }}
+        {{ formatExpirationMessage(nextExpiringDomain) }}
       </p>
-    </ng-container>
-  </ng-template>
-
-  <div [@slideInOut]="showTimeline || showFull ? 'in' : 'out'" class="overflow-hidden domain-timeline-thing">
-    <p-timeline [value]="timelineEvents" align="left" styleClass="mt-4" *ngIf="showTimeline || showFull">
-      <ng-template pTemplate="content" let-event>
-        <small class="p-text-secondary">{{ event.date | date:'mediumDate' }}</small>
-        <a [routerLink]="'/domains/'+event.domain" class="text-default no-underline">
-          <h5 class="mb-1">{{ event.domain }}</h5>
-        </a>
-      </ng-template>
-      <ng-template pTemplate="opposite" let-event>
-        <i [class]="event.icon" [style.color]="event.color"></i>
-      </ng-template>
-    </p-timeline>
+    }
+  }
+  <div
+    [@slideInOut]="showTimeline || showFull ? 'in' : 'out'"
+    class="overflow-hidden domain-timeline-thing"
+  >
+    @if (showTimeline || showFull) {
+      <p-timeline [value]="timelineEvents" align="left" styleClass="mt-4">
+        <ng-template pTemplate="content" let-event>
+          <small class="p-text-secondary">{{ event.date | date: 'mediumDate' }}</small>
+          <a [routerLink]="'/domains/' + event.domain" class="text-default no-underline">
+            <h5 class="mb-1">{{ event.domain }}</h5>
+          </a>
+        </ng-template>
+        <ng-template pTemplate="opposite" let-event>
+          <i [class]="event.icon" [style.color]="event.color"></i>
+        </ng-template>
+      </p-timeline>
+    }
   </div>
-</ng-container>
-
-<ng-template #noData>
-  <p class="text-center text-surface-500">{{ 'DOMAIN_STATS.EXPIRATION_BAR.NO_DATA' | translate }}</p>
-</ng-template>
+} @else {
+  <p class="text-center text-surface-500">
+    {{ 'DOMAIN_STATS.EXPIRATION_BAR.NO_DATA' | translate }}
+  </p>
+}

@@ -9,7 +9,7 @@ interface MessageOptions {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class GlobalMessageService {
   private messageSubject = new BehaviorSubject<Message | null>(null);
@@ -18,13 +18,21 @@ export class GlobalMessageService {
     return this.messageSubject.asObservable();
   }
 
-  public showMessage(message: Message, options?: { position?: string, life?: number }): void {
+  public showMessage(
+    message: Message,
+    options?: { position?: string; life?: number },
+  ): void {
     const defaultOptions = { position: 'top-right', life: 3000 };
     const finalOptions = { ...defaultOptions, ...options };
     this.messageSubject.next({ ...message, ...finalOptions });
   }
 
-  private showTypedMessage(severity: string, summary: string, detail: string, options?: MessageOptions): void {
+  private showTypedMessage(
+    severity: string,
+    summary: string,
+    detail: string,
+    options?: MessageOptions,
+  ): void {
     this.showMessage({ severity, summary, detail }, options);
   }
 

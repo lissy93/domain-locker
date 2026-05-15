@@ -2,17 +2,20 @@
 <p-tabView>
   <!-- TXT Records Tab -->
   <p-tabPanel header="TXT">
-    <p-table 
-      [value]="txtRecords" 
-      [loading]="loadingTxt" 
-      [paginator]="true" 
-      [rows]="10" 
-      sortable="true" 
-      [tableStyle]="{'min-width': '50rem'}"
-      class="p-datatable">
+    <p-table
+      [value]="txtRecords"
+      [loading]="loadingTxt"
+      [paginator]="true"
+      [rows]="10"
+      sortable="true"
+      [tableStyle]="{ 'min-width': '50rem' }"
+      class="p-datatable"
+    >
       <ng-template pTemplate="header">
         <tr>
-          <th pSortableColumn="record_value" style="width: 300px;">Record Value <p-sortIcon field="record_value"></p-sortIcon></th>
+          <th pSortableColumn="record_value" style="width: 300px">
+            Record Value <p-sortIcon field="record_value"></p-sortIcon>
+          </th>
           <th>Associated Domains</th>
         </tr>
       </ng-template>
@@ -20,12 +23,14 @@
         <tr>
           <td>{{ record.record_value }}</td>
           <td>
-            <a 
-              *ngFor="let domain of record.domains; let last = last" 
-              [routerLink]="'/domains/'+domain" 
-              class="text-primary">
-              {{ domain }}<br *ngIf="!last"/>
-            </a>
+            @for (domain of record.domains; track domain; let last = $last) {
+              <a [routerLink]="'/domains/' + domain" class="text-primary">
+                {{ domain }}
+                @if (!last) {
+                  <br />
+                }
+              </a>
+            }
           </td>
         </tr>
       </ng-template>
@@ -34,17 +39,20 @@
 
   <!-- NS Records Tab -->
   <p-tabPanel header="NS">
-    <p-table 
-      [value]="nsRecords" 
-      [loading]="loadingNs" 
-      [paginator]="true" 
-      [rows]="10" 
-      sortable="true" 
-      [tableStyle]="{'min-width': '50rem'}"
-      class="p-datatable">
+    <p-table
+      [value]="nsRecords"
+      [loading]="loadingNs"
+      [paginator]="true"
+      [rows]="10"
+      sortable="true"
+      [tableStyle]="{ 'min-width': '50rem' }"
+      class="p-datatable"
+    >
       <ng-template pTemplate="header">
         <tr>
-          <th pSortableColumn="record_value" style="width: 300px;">Record Value <p-sortIcon field="record_value"></p-sortIcon></th>
+          <th pSortableColumn="record_value" style="width: 300px">
+            Record Value <p-sortIcon field="record_value"></p-sortIcon>
+          </th>
           <th>Associated Domains</th>
         </tr>
       </ng-template>
@@ -52,12 +60,14 @@
         <tr>
           <td>{{ record.record_value }}</td>
           <td>
-            <a 
-              *ngFor="let domain of record.domains; let last = last" 
-              [routerLink]="'/domains/'+domain" 
-              class="text-primary">
-              {{ domain }}<br *ngIf="!last"/>
-            </a>
+            @for (domain of record.domains; track domain; let last = $last) {
+              <a [routerLink]="'/domains/' + domain" class="text-primary">
+                {{ domain }}
+                @if (!last) {
+                  <br />
+                }
+              </a>
+            }
           </td>
         </tr>
       </ng-template>
@@ -66,17 +76,20 @@
 
   <!-- MX Records Tab -->
   <p-tabPanel header="MX">
-    <p-table 
-      [value]="mxRecords" 
-      [loading]="loadingMx" 
-      [paginator]="true" 
-      [rows]="10" 
-      sortable="true" 
-      [tableStyle]="{'min-width': '50rem'}"
-      class="p-datatable">
+    <p-table
+      [value]="mxRecords"
+      [loading]="loadingMx"
+      [paginator]="true"
+      [rows]="10"
+      sortable="true"
+      [tableStyle]="{ 'min-width': '50rem' }"
+      class="p-datatable"
+    >
       <ng-template pTemplate="header">
         <tr>
-          <th pSortableColumn="record_value" style="width: 300px;">Record Value <p-sortIcon field="record_value"></p-sortIcon></th>
+          <th pSortableColumn="record_value" style="width: 300px">
+            Record Value <p-sortIcon field="record_value"></p-sortIcon>
+          </th>
           <th>Associated Domains</th>
         </tr>
       </ng-template>
@@ -84,12 +97,14 @@
         <tr>
           <td>{{ record.record_value }}</td>
           <td>
-            <a 
-              *ngFor="let domain of record.domains; let last = last" 
-              [routerLink]="'/domains/'+domain" 
-              class="text-primary">
-              {{ domain }}<br *ngIf="!last"/>
-            </a>
+            @for (domain of record.domains; track domain; let last = $last) {
+              <a [routerLink]="'/domains/' + domain" class="text-primary">
+                {{ domain }}
+                @if (!last) {
+                  <br />
+                }
+              </a>
+            }
           </td>
         </tr>
       </ng-template>
@@ -98,18 +113,21 @@
 
   <!-- Domains (TXT) -->
   <p-tabPanel header="Domains (TXT)">
-    <p-table 
-      [value]="txtDomains" 
-      [loading]="loadingTxt" 
-      [paginator]="true" 
-      [rows]="10" 
-      sortable="true" 
-      [tableStyle]="{'min-width': '50rem'}"
+    <p-table
+      [value]="txtDomains"
+      [loading]="loadingTxt"
+      [paginator]="true"
+      [rows]="10"
+      sortable="true"
+      [tableStyle]="{ 'min-width': '50rem' }"
       selectionMode="single"
-      class="p-datatable">
+      class="p-datatable"
+    >
       <ng-template pTemplate="header">
         <tr>
-          <th pSortableColumn="domain" style="width: 300px;">Domain <p-sortIcon field="domain"></p-sortIcon></th>
+          <th pSortableColumn="domain" style="width: 300px">
+            Domain <p-sortIcon field="domain"></p-sortIcon>
+          </th>
           <th>TXT Records</th>
         </tr>
       </ng-template>
@@ -117,7 +135,14 @@
         <tr (click)="navigateToDomain(domain.domain)" class="cursor-pointer">
           <td>{{ domain.domain }}</td>
           <td>
-            <span *ngFor="let record of domain.records; let last = last">{{ record }}<br *ngIf="!last"/></span>
+            @for (record of domain.records; track record; let last = $last) {
+              <span
+                >{{ record }}
+                @if (!last) {
+                  <br />
+                }
+              </span>
+            }
           </td>
         </tr>
       </ng-template>
@@ -126,18 +151,21 @@
 
   <!-- Domains (NS) -->
   <p-tabPanel header="Domains (NS)">
-    <p-table 
-      [value]="nsDomains" 
-      [loading]="loadingNs" 
-      [paginator]="true" 
-      [rows]="10" 
-      sortable="true" 
-      [tableStyle]="{'min-width': '50rem'}"
+    <p-table
+      [value]="nsDomains"
+      [loading]="loadingNs"
+      [paginator]="true"
+      [rows]="10"
+      sortable="true"
+      [tableStyle]="{ 'min-width': '50rem' }"
       selectionMode="single"
-      class="p-datatable">
+      class="p-datatable"
+    >
       <ng-template pTemplate="header">
         <tr>
-          <th pSortableColumn="domain" style="width: 300px;">Domain <p-sortIcon field="domain"></p-sortIcon></th>
+          <th pSortableColumn="domain" style="width: 300px">
+            Domain <p-sortIcon field="domain"></p-sortIcon>
+          </th>
           <th>NS Records</th>
         </tr>
       </ng-template>
@@ -145,7 +173,14 @@
         <tr (click)="navigateToDomain(domain.domain)" class="cursor-pointer">
           <td>{{ domain.domain }}</td>
           <td>
-            <span *ngFor="let record of domain.records; let last = last">{{ record }}<br *ngIf="!last"/></span>
+            @for (record of domain.records; track record; let last = $last) {
+              <span
+                >{{ record }}
+                @if (!last) {
+                  <br />
+                }
+              </span>
+            }
           </td>
         </tr>
       </ng-template>
@@ -154,18 +189,21 @@
 
   <!-- Domains (MX) -->
   <p-tabPanel header="Domains (MX)">
-    <p-table 
-      [value]="mxDomains" 
-      [loading]="loadingMx" 
-      [paginator]="true" 
-      [rows]="10" 
-      sortable="true" 
-      [tableStyle]="{'min-width': '50rem'}"
+    <p-table
+      [value]="mxDomains"
+      [loading]="loadingMx"
+      [paginator]="true"
+      [rows]="10"
+      sortable="true"
+      [tableStyle]="{ 'min-width': '50rem' }"
       selectionMode="single"
-      class="p-datatable">
+      class="p-datatable"
+    >
       <ng-template pTemplate="header">
         <tr>
-          <th pSortableColumn="domain" style="width: 300px;">Domain <p-sortIcon field="domain"></p-sortIcon></th>
+          <th pSortableColumn="domain" style="width: 300px">
+            Domain <p-sortIcon field="domain"></p-sortIcon>
+          </th>
           <th>MX Records</th>
         </tr>
       </ng-template>
@@ -173,7 +211,14 @@
         <tr (click)="navigateToDomain(domain.domain)" class="cursor-pointer">
           <td>{{ domain.domain }}</td>
           <td>
-            <span *ngFor="let record of domain.records; let last = last">{{ record }}<br *ngIf="!last"/></span>
+            @for (record of domain.records; track record; let last = $last) {
+              <span
+                >{{ record }}
+                @if (!last) {
+                  <br />
+                }
+              </span>
+            }
           </td>
         </tr>
       </ng-template>

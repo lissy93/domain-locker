@@ -1,43 +1,54 @@
-<div class="flex gap-2 items-center justify-between h-full flex-wrap md:flex-nowrap h-full w-full">
-
+<div
+  class="flex gap-2 items-center justify-between h-full flex-wrap md:flex-nowrap w-full"
+>
   <div class="w-full sm:w-1/2 flex flex-col gap-2 pl-2 py-2">
-    <p class="m-0 text-primary opacity-70 font-semibold text-lg">{{ 'HOME.HERO.BRAND' | translate }}</p>
-    <h2 class="m-0 text-3xl font-semibold text-primary">{{ 'HOME.HERO.HEADLINE' | translate }}</h2>
-    <h3 class="m-0 text-xl font-normal italic opacity-80">{{ 'HOME.HERO.SUBHEADLINE' | translate }}</h3>
+    <p class="m-0 text-primary opacity-70 font-semibold text-lg">
+      {{ 'HOME.HERO.BRAND' | translate }}
+    </p>
+    <h2 class="m-0 text-3xl font-semibold text-primary">
+      {{ 'HOME.HERO.HEADLINE' | translate }}
+    </h2>
+    <h3 class="m-0 text-xl font-normal italic opacity-80">
+      {{ 'HOME.HERO.SUBHEADLINE' | translate }}
+    </h3>
 
     <ul class="m-0 my-3 list-inside pl-0 list-none">
-      <li *ngFor="let feature of features">
-        <i class="mr-2 pi {{ feature.icon }}"></i>
-        {{ feature.text | translate }}
-      </li>
+      @for (feature of features; track feature) {
+        <li>
+          <i class="mr-2 pi {{ feature.icon }}"></i>
+          {{ feature.text | translate }}
+        </li>
+      }
     </ul>
 
     <div class="flex flex-wrap gap-4 items-center justify-center md:justify-end">
       <a href="https://github.com/lissy93/domain-locker">
-        <p-button 
+        <p-button
           [label]="'HOME.HERO.BUTTON.VIEW_GITHUB' | translate"
-          severity="secondary" 
-          icon="pi pi-github" 
+          severity="secondary"
+          icon="pi pi-github"
           class="min-w-48"
           [outlined]="true"
-          styleClass="w-full" 
+          styleClass="w-full"
         />
       </a>
       <p-button
         routerLink="/login"
         [queryParams]="{ newUser: 'true' }"
         [label]="'HOME.HERO.BUTTON.GET_STARTED' | translate"
-        class="min-w-48" 
-        icon="pi pi-arrow-circle-right" 
-        styleClass="w-full" 
+        class="min-w-48"
+        icon="pi pi-arrow-circle-right"
+        styleClass="w-full"
       />
     </div>
-    
   </div>
 
-  <a class="w-full sm:w-1/2 flex flex-col gap-2 pl-4 py-2 items-center" routerLink="/about/demo">
-    <p-image 
-      src="/screenshots/homepage.png" 
+  <a
+    class="w-full sm:w-1/2 flex flex-col gap-2 pl-4 py-2 items-center"
+    routerLink="/about/demo"
+  >
+    <p-image
+      src="https://cdn.as93.net/project-screens/domain-locker-homepage/w1024"
       alt="A screenshot of Domain Locker homepage showing a list of domains"
       title="Domain Locker Homepage"
       imageClass="rounded p-card w-full border-primary border-2"

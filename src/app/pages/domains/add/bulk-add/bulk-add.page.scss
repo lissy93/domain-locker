@@ -2,7 +2,8 @@
   border-bottom: 1px solid var(--surface-200);
 }
 
-.add-domain-wrap, .bulk-add-wrap {
+.add-domain-wrap,
+.bulk-add-wrap {
   max-width: 800px;
   margin: 1rem auto;
 
@@ -17,7 +18,7 @@
     align-items: flex-start;
     border-bottom: 1px dashed var(--primary-900);
     padding: 0 0 1rem 0;
-    
+
     @media (max-width: 768px) {
       display: block;
       flex-direction: column;
@@ -83,7 +84,6 @@
   }
 }
 
-
 :host ::ng-deep {
   .p-accordion {
     margin-top: 1rem;
@@ -92,13 +92,13 @@
         background-color: var(--surface-100);
         color: var(--text-color);
         font-weight: 600;
-        
+
         &:hover {
           background-color: var(--surface-200);
         }
       }
     }
-    
+
     .p-accordion-content {
       background-color: var(--surface-0);
       color: var(--text-color);

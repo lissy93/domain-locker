@@ -1,4 +1,10 @@
-import { Injectable, inject, PLATFORM_ID, Renderer2, RendererFactory2 } from '@angular/core';
+import {
+  Injectable,
+  inject,
+  PLATFORM_ID,
+  Renderer2,
+  RendererFactory2,
+} from '@angular/core';
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { BehaviorSubject } from 'rxjs';
 
@@ -18,7 +24,7 @@ export interface FontOption {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ThemeService {
   private document = inject(DOCUMENT);
@@ -27,15 +33,51 @@ export class ThemeService {
 
   // Define themes, and set default
   private themes: Theme[] = [
-    { name: 'Lara Purple', code: 'lara-purple', color: '#8B5CF6', darkLink: '/themes/purple-dark.css', lightLink: '/themes/purple-light.css' },
-    { name: 'Vela Orange', code: 'vela-orange', color: '#FF9800', darkLink: '/themes/orange-dark.css', lightLink: '/themes/orange-light.css' },
-    { name: 'Material Indigo', code: 'md-indigo', color: '#3F51B5', darkLink: '/themes/indigo-dark.css', lightLink: '/themes/indigo-light.css' },
-    { name: 'Bootstrap Blue', code: 'bootstrap-blue', color: '#007BFF', darkLink: '/themes/blue-dark.css', lightLink: '/themes/blue-light.css' },
-    { name: 'Lara Teal', code: 'lara-teal', color: '#14B8A6', darkLink: '/themes/teal-dark.css', lightLink: '/themes/teal-light.css' },
-    { name: 'Arya Green', code: 'arya-green', color: '#4CAF50', darkLink: '/themes/green-dark.css', lightLink: '/themes/green-light.css' }
+    {
+      name: 'Lara Purple',
+      code: 'lara-purple',
+      color: '#8B5CF6',
+      darkLink: '/themes/purple-dark.css',
+      lightLink: '/themes/purple-light.css',
+    },
+    {
+      name: 'Vela Orange',
+      code: 'vela-orange',
+      color: '#FF9800',
+      darkLink: '/themes/orange-dark.css',
+      lightLink: '/themes/orange-light.css',
+    },
+    {
+      name: 'Material Indigo',
+      code: 'md-indigo',
+      color: '#3F51B5',
+      darkLink: '/themes/indigo-dark.css',
+      lightLink: '/themes/indigo-light.css',
+    },
+    {
+      name: 'Bootstrap Blue',
+      code: 'bootstrap-blue',
+      color: '#007BFF',
+      darkLink: '/themes/blue-dark.css',
+      lightLink: '/themes/blue-light.css',
+    },
+    {
+      name: 'Lara Teal',
+      code: 'lara-teal',
+      color: '#14B8A6',
+      darkLink: '/themes/teal-dark.css',
+      lightLink: '/themes/teal-light.css',
+    },
+    {
+      name: 'Arya Green',
+      code: 'arya-green',
+      color: '#4CAF50',
+      darkLink: '/themes/green-dark.css',
+      lightLink: '/themes/green-light.css',
+    },
   ];
   private defaultTheme = this.themes[0];
-  
+
   // Themes
   private selectedThemeSubject = new BehaviorSubject<Theme>(this.themes[0]);
   selectedTheme$ = this.selectedThemeSubject.asObservable();
@@ -100,7 +142,9 @@ export class ThemeService {
     },
   ];
 
-  constructor(rendererFactory: RendererFactory2) {
+  constructor() {
+    const rendererFactory = inject(RendererFactory2);
+
     this.renderer = rendererFactory.createRenderer(null, null);
     this.initializeTheme();
     this.initializeFont();
@@ -126,13 +170,15 @@ export class ThemeService {
       // Get users saved preferences from local storage
       const savedTheme = localStorage.getItem('selectedTheme');
       const savedIsDark = localStorage.getItem('isDarkTheme');
-      
+
       // Determine if should use dark mode (either user's preference, or system preference)
-      const prefersDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const prefersDarkMode =
+        window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
       const useDarkMode = savedIsDark ? savedIsDark === 'true' : prefersDarkMode;
 
       // Determine current theme to apply (either user's saved theme, or fallback to default)
-      const theme = this.themes.find(t => t.code === savedTheme || '') || this.defaultTheme;
+      const theme =
+        this.themes.find((t) => t.code === savedTheme || '') || this.defaultTheme;
 
       // Set the theme and dark mode
       this.selectedThemeSubject.next(theme);
@@ -154,7 +200,7 @@ export class ThemeService {
   toggleDarkMode() {
     const newIsDark = !this.isDarkThemeSubject.value;
     this.isDarkThemeSubject.next(newIsDark);
-    this.applyTheme(this.selectedThemeSubject.value, newIsDark);  
+    this.applyTheme(this.selectedThemeSubject.value, newIsDark);
     if (isPlatformBrowser(this.platformId)) {
       localStorage.setItem('isDarkTheme', newIsDark.toString());
     }
@@ -184,7 +230,6 @@ export class ThemeService {
     }
   }
 
-  
   getFonts(): FontOption[] {
     return this.fonts;
   }
@@ -214,7 +259,12 @@ export class ThemeService {
     this.document.documentElement.style.setProperty('--heading-font', font.headingFont);
   }
 
-  public getUserPreferences(): { theme: string, darkMode: boolean, font: string, scale: string } {
+  public getUserPreferences(): {
+    theme: string;
+    darkMode: boolean;
+    font: string;
+    scale: string;
+  } {
     return {
       theme: this.selectedThemeSubject.value.name,
       darkMode: this.isDarkThemeSubject.value,

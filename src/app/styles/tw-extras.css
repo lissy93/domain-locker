@@ -1,63 +1,61 @@
-
 /* Create new variable, --surface-25 */
 :root {
   --surface-25: rgba(0, 0, 0, 0.25);
 }
 
 /* Light mode surface-25 for each theme */
-[data-theme="lara-purple"][data-mode="light"] {
-  --surface-25: rgba(139, 92, 246, 0.08)
+[data-theme='lara-purple'][data-mode='light'] {
+  --surface-25: rgba(139, 92, 246, 0.08);
 }
 
-[data-theme="md-indigo"][data-mode="light"] {
+[data-theme='md-indigo'][data-mode='light'] {
   --surface-25: rgba(63, 81, 181, 0.08); /* Indigo */
 }
 
-[data-theme="bootstrap-blue"][data-mode="light"] {
+[data-theme='bootstrap-blue'][data-mode='light'] {
   --surface-25: rgb(223, 224, 227);
 }
 
-[data-theme="lara-teal"][data-mode="light"] {
+[data-theme='lara-teal'][data-mode='light'] {
   --surface-25: rgba(20, 184, 166, 0.08); /* Teal */
 }
 
-[data-theme="vela-orange"][data-mode="light"] {
+[data-theme='vela-orange'][data-mode='light'] {
   --surface-25: rgba(255, 152, 0, 0.08); /* Orange */
 }
 
-[data-theme="arya-green"][data-mode="light"] {
+[data-theme='arya-green'][data-mode='light'] {
   --surface-25: rgba(76, 175, 80, 0.08); /* Green */
 }
 
 /* Dark mode surface-25 for each theme */
-[data-theme="lara-purple"][data-mode="dark"] {
+[data-theme='lara-purple'][data-mode='dark'] {
   --surface-25: #14131b5e;
 }
 
-[data-theme="md-indigo"][data-mode="dark"] {
+[data-theme='md-indigo'][data-mode='dark'] {
   --surface-25: #2a2a2a5e;
 }
 
-[data-theme="bootstrap-blue"][data-mode="dark"] {
+[data-theme='bootstrap-blue'][data-mode='dark'] {
   --surface-25: #1c222a;
 }
 
-[data-theme="lara-teal"][data-mode="dark"] {
+[data-theme='lara-teal'][data-mode='dark'] {
   --surface-25: #14131b5e;
 }
 
-[data-theme="vela-orange"][data-mode="dark"] {
+[data-theme='vela-orange'][data-mode='dark'] {
   --surface-25: #151d2a;
 }
 
-[data-theme="arya-green"][data-mode="dark"] {
+[data-theme='arya-green'][data-mode='dark'] {
   --surface-25: #2a2a2a5e;
 }
 
 .bg-surface-25 {
   background-color: var(--surface-25);
 }
-
 
 /* Tailwind-like classes to use PrimeNG's color variables */
 /* Background color utilities */
@@ -201,7 +199,6 @@
 .fill-primary {
   fill: var(--primary-color);
 }
-
 
 .border-surface-50 {
   border-color: var(--surface-50);

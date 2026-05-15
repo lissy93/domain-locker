@@ -1,5 +1,5 @@
-import { Component, OnInit, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, Input, inject } from '@angular/core';
+
 import { PrimeNgModule } from '~/app/prime-ng.module';
 import { NgApexchartsModule } from 'ng-apexcharts';
 import DatabaseService from '~/app/services/database.service';
@@ -16,22 +16,20 @@ interface UptimeData {
 @Component({
   selector: 'app-uptime-history',
   standalone: true,
-  imports: [CommonModule, PrimeNgModule, NgApexchartsModule],
+  imports: [PrimeNgModule, NgApexchartsModule],
   templateUrl: './uptime-history.component.html',
   styleUrls: ['./uptime-history.component.scss'],
 })
 export class UptimeHistoryComponent implements OnInit {
+  private databaseService = inject(DatabaseService);
+  private errorHandler = inject(ErrorHandlerService);
+
   @Input() domainId!: string;
   @Input() userId!: string;
 
   uptimeData: UptimeData[] = [];
-  calendarHeatmap: ApexOptions | any = null;
-  responseCodePieChart: ApexOptions | any = null;
-
-  constructor(
-    private databaseService: DatabaseService,
-    private errorHandler: ErrorHandlerService
-  ) {}
+  calendarHeatmap: ApexOptions | null = null;
+  responseCodePieChart: ApexOptions | null = null;
 
   ngOnInit(): void {
     this.fetchUptimeHistory();
@@ -40,7 +38,12 @@ export class UptimeHistoryComponent implements OnInit {
   fetchUptimeHistory(): void {
     this.databaseService.instance
       .getDomainUptime(this.userId, this.domainId, 'year')
-      .then((data: any) => {
+      .then((raw: unknown) => {
+        const data = raw as {
+          data?: UptimeData[];
+          length?: number;
+          error?: unknown;
+        } & UptimeData[];
         if (!data.data && data.length) data.data = data; // wtf.
         if (data.data) {
           this.uptimeData = data.data;
@@ -59,15 +62,15 @@ export class UptimeHistoryComponent implements OnInit {
 
   generateCalendarHeatmap(): void {
     const daysInYear = this.getDaysInPastYear();
-    const groupedByDay: { [day: string]: number[] } = {};
-  
+    const groupedByDay: Record<string, number[]> = {};
+
     // Group response times by day
     this.uptimeData.forEach((entry) => {
       const day = new Date(entry.checked_at).toISOString().split('T')[0]; // YYYY-MM-DD
       if (!groupedByDay[day]) groupedByDay[day] = [];
       if (entry.response_time_ms) groupedByDay[day].push(entry.response_time_ms);
     });
-  
+
     // Calculate daily averages
     const dailyAverages = daysInYear.map((day) => ({
       day,
@@ -76,7 +79,7 @@ export class UptimeHistoryComponent implements OnInit {
           groupedByDay[day].length
         : null,
     }));
-  
+
     // Split data into 7 series (one for each day of the week)
     const series = Array.from({ length: 7 }, (_, i) => ({
       name: this.getDayName(i),
@@ -88,7 +91,7 @@ export class UptimeHistoryComponent implements OnInit {
           fullDate: item.day,
         })),
     }));
-  
+
     // Configure the heatmap chart
     this.calendarHeatmap = {
       chart: {
@@ -146,7 +149,18 @@ export class UptimeHistoryComponent implements OnInit {
       },
       tooltip: {
         enabled: true,
-        custom: ({ series, seriesIndex, dataPointIndex, w }: { series: any; seriesIndex: number; dataPointIndex: number; w: any }) => {
+        custom: ({
+          seriesIndex,
+          dataPointIndex,
+          w,
+        }: {
+          series: unknown;
+          seriesIndex: number;
+          dataPointIndex: number;
+          w: {
+            globals: { initialSeries: { data: { y: number; fullDate: string }[] }[] };
+          };
+        }) => {
           const data = w.globals.initialSeries[seriesIndex].data[dataPointIndex];
           if (data.y === -1) {
             return `<div class="tooltip-text">
@@ -162,7 +176,7 @@ export class UptimeHistoryComponent implements OnInit {
           });
           const dayOfMonth = date.getDate();
           const ordinalSuffix = this.getOrdinalSuffix(dayOfMonth);
-  
+
           return `<div class="tooltip-text">
             <strong>${day} ${dayOfMonth}${ordinalSuffix} ${month}</strong>: 
             <span style="color: var(--cyan-400)">${data.y.toFixed(2)} ms</span>
@@ -170,11 +184,11 @@ export class UptimeHistoryComponent implements OnInit {
         },
       },
       series,
-    } as any;
+    };
   }
-  
+
   generateResponseCodePieChart(): void {
-    const codeCounts: { [key: string]: number } = {};
+    const codeCounts: Record<string, number> = {};
 
     this.uptimeData.forEach(({ response_code, is_up }) => {
       const statusCode = response_code ?? (is_up ? 200 : 500);
@@ -196,10 +210,11 @@ export class UptimeHistoryComponent implements OnInit {
       colors,
       tooltip: {
         y: {
-          formatter: (value: number, { seriesIndex }: { seriesIndex: number }) =>
-            `${value} checks (${((value / this.uptimeData.length) * 100).toFixed(
-              2
-            )}%)`,
+          formatter: (
+            value: number,
+            { seriesIndex: _seriesIndex }: { seriesIndex: number },
+          ) =>
+            `${value} checks (${((value / this.uptimeData.length) * 100).toFixed(2)}%)`,
         },
       },
       legend: {
@@ -208,14 +223,14 @@ export class UptimeHistoryComponent implements OnInit {
     };
   }
 
-  getResponseCodeColor(code: number, prefix: string = ''): string {
+  getResponseCodeColor(code: number, prefix = ''): string {
     if (code >= 200 && code < 300) return `var(--${prefix}green-400)`; // Green for success
     if (code >= 300 && code < 400) return `var(--${prefix}blue-400)`; // Blue for redirects
     if (code >= 400 && code < 500) return `var(--${prefix}yellow-400)`; // Yellow for client errors
     if (code >= 500) return `var(--${prefix}red-400)`; // Red for server errors
     return `var(--${prefix}grey-400)`; // Grey for unknown
   }
-  
+
   /**
    * Helper function to get the ordinal suffix for a number (e.g., 1st, 2nd, 3rd).
    */
@@ -232,7 +247,6 @@ export class UptimeHistoryComponent implements OnInit {
         return 'th';
     }
   }
-  
 
   /**
    * Gets all days in the past year.
@@ -269,7 +283,7 @@ export class UptimeHistoryComponent implements OnInit {
   /**
    * Gets the hex color value of a CSS variable.
    */
-  getCssVariableColor(cssVarName: string, fallback: string = '#cccccc'): string {
+  getCssVariableColor(cssVarName: string, fallback = '#cccccc'): string {
     if (typeof window === 'undefined' || !window?.getComputedStyle) {
       return fallback;
     }

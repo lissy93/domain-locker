@@ -1,5 +1,5 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
+
 import { PrimeNgModule } from '~/app/prime-ng.module';
 import DatabaseService from '~/app/services/database.service';
 import { MessageService } from 'primeng/api';
@@ -9,23 +9,26 @@ import { ErrorHandlerService } from '~/app/services/error-handler.service';
   selector: 'app-domain-tag-picklist',
   templateUrl: './tag-picklist.component.html',
   standalone: true,
-  imports: [PrimeNgModule, CommonModule],
-  styles: [`
-    ::ng-deep .p-picklist-target-controls, ::ng-deep .p-picklist-source-controls { display: none; }
-  `],
+  imports: [PrimeNgModule],
+  styles: [
+    `
+      ::ng-deep .p-picklist-target-controls,
+      ::ng-deep .p-picklist-source-controls {
+        display: none;
+      }
+    `,
+  ],
 })
 export class TagPickListComponent implements OnInit {
+  private databaseService = inject(DatabaseService);
+  private messageService = inject(MessageService);
+  private errorHandler = inject(ErrorHandlerService);
+
   @Input() tagId: string | undefined;
   @Output() $afterSave = new EventEmitter();
 
-  availableDomains: any[] = [];
-  selectedDomains: any[] = [];
-
-  constructor(
-    private databaseService: DatabaseService,
-    private messageService: MessageService,
-    private errorHandler: ErrorHandlerService,
-  ) {}
+  availableDomains: Record<string, unknown>[] = [];
+  selectedDomains: { id?: string }[] = [];
 
   ngOnInit(): void {
     if (this.tagId) {
@@ -37,9 +40,12 @@ export class TagPickListComponent implements OnInit {
   private loadDomainsForTag(tagId: string) {
     this.databaseService.instance.tagQueries.getDomainsForTag(tagId).subscribe({
       next: ({ available, selected }) => {
-        const selectedDomainIds = selected.map(domain => domain.id);
-        this.availableDomains = available.filter(domain => !selectedDomainIds.includes(domain.id));
-        this.selectedDomains = selected;
+        const selectedTyped = selected as { id?: string }[];
+        const selectedDomainIds = selectedTyped.map((domain) => domain.id);
+        this.availableDomains = available.filter(
+          (domain) => !selectedDomainIds.includes(domain['id'] as string),
+        );
+        this.selectedDomains = selectedTyped;
       },
       error: (error) => {
         this.errorHandler.handleError({
@@ -62,23 +68,25 @@ export class TagPickListComponent implements OnInit {
       });
       return;
     }
-    this.databaseService.instance.tagQueries.saveDomainsForTag(this.tagId, this.selectedDomains).subscribe({
-      next: () => {
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Success',
-          detail: 'Domains saved successfully',
-        });
-        this.$afterSave.emit();
-      },
-      error: (error) => {
-        this.errorHandler.handleError({
-          error,
-          message: 'Failed to save domains for this tag',
-          location: 'TagPickListComponent.saveDomainsForTag',
-          showToast: true,
-        });
-      },
-    });
+    this.databaseService.instance.tagQueries
+      .saveDomainsForTag(this.tagId, this.selectedDomains as { id: string }[])
+      .subscribe({
+        next: () => {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Success',
+            detail: 'Domains saved successfully',
+          });
+          this.$afterSave.emit();
+        },
+        error: (error) => {
+          this.errorHandler.handleError({
+            error,
+            message: 'Failed to save domains for this tag',
+            location: 'TagPickListComponent.saveDomainsForTag',
+            showToast: true,
+          });
+        },
+      });
   }
 }

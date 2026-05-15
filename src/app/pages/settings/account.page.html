@@ -1,39 +1,67 @@
 <h2>User Settings</h2>
 
-<app-feature-not-enabled *ngIf="!writePermissions" feature="writePermissions" />
-  
-<div class="p-4 grid grid-cols-1 xl:grid-cols-2 gap-4 grid-flow-dense auto-rows-auto user-settings-container relative">
-  <div *ngIf="!writePermissions"
-    class="absolute h-full w-full z-10 opacity-25 cursor-not-allowed"
-    title="Access disabled on this instance."></div>
-  
+@if (!writePermissions) {
+  <app-feature-not-enabled feature="writePermissions" />
+}
+
+<div
+  class="p-4 grid grid-cols-1 xl:grid-cols-2 gap-4 grid-flow-dense auto-rows-auto user-settings-container relative"
+>
+  @if (!writePermissions) {
+    <div
+      class="absolute h-full w-full z-10 opacity-25 cursor-not-allowed"
+      title="Access disabled on this instance."
+    ></div>
+  }
+
   <!-- Profile Settings Panel -->
   <p-card header="Profile" styleClass="h-full">
-    <form [formGroup]="profileForm" (ngSubmit)="updateProfile()" class="h-full flex flex-col justify-between pb-2">
-      <div >
+    <form
+      [formGroup]="profileForm"
+      (ngSubmit)="updateProfile()"
+      class="h-full flex flex-col justify-between pb-2"
+    >
+      <div>
         <p class="mt-0 mb-4 text-sm opacity-70">
           Update your profile information for a more personalized experience.
         </p>
         <div class="p-field">
           <label for="name">Full Name</label>
-          <input id="name" type="text" pInputText formControlName="name" placeholder="Enter your full name" />
+          <input
+            id="name"
+            type="text"
+            pInputText
+            formControlName="name"
+            placeholder="Enter your full name"
+          />
         </div>
         <div class="p-field">
           <label for="avatar_url">Profile Picture URL</label>
           <div class="flex flex-col w-full">
-            <input id="avatar_url" type="url" pInputText formControlName="avatar_url" placeholder="Enter a valid image URL" />
-            <small *ngIf="profileForm.get('avatar_url')?.invalid && profileForm.get('avatar_url')?.touched" class="p-error">
-              Please enter a valid image URL.
-            </small>
+            <input
+              id="avatar_url"
+              type="url"
+              pInputText
+              formControlName="avatar_url"
+              placeholder="Enter a valid image URL"
+            />
+            @if (
+              profileForm.get('avatar_url')?.invalid &&
+              profileForm.get('avatar_url')?.touched
+            ) {
+              <small class="p-error"> Please enter a valid image URL. </small>
+            }
           </div>
         </div>
         <div class="p-field justify-end">
-          <img
-            *ngIf="profileForm.get('avatar_url')?.value" [src]="profileForm.get('avatar_url')?.value"
-            alt="Profile Preview"
-            class="rounded-full"
-            width="100"
-          />
+          @if (profileForm.get('avatar_url')?.value) {
+            <img
+              [src]="profileForm.get('avatar_url')?.value"
+              alt="Profile Preview"
+              class="rounded-full"
+              width="100"
+            />
+          }
         </div>
       </div>
       <p-button
@@ -47,22 +75,26 @@
     </form>
   </p-card>
 
-
   <!-- Email Settings Panel -->
   <p-card header="Email" styleClass="h-full">
-    <form [formGroup]="emailForm" (ngSubmit)="updateEmail()" class="h-full flex flex-col justify-between pb-2">
+    <form
+      [formGroup]="emailForm"
+      (ngSubmit)="updateEmail()"
+      class="h-full flex flex-col justify-between pb-2"
+    >
       <div>
         <p class="mt-0 mb-4 text-sm opacity-70">
           Set or update your account email address. This is what you will use to log in.
-          If you want to revive notifications to a different email, you can set this in the Notifications settings.
+          If you want to revive notifications to a different email, you can set this in
+          the Notifications settings.
         </p>
         <div class="p-field">
           <label for="email">Email</label>
           <div class="flex flex-col gap-2 w-full">
             <input id="email" type="email" pInputText formControlName="email" />
-            <small *ngIf="emailForm.get('email')?.invalid && emailForm.get('email')?.touched" class="p-error">
-              Please enter a valid email address.
-            </small>
+            @if (emailForm.get('email')?.invalid && emailForm.get('email')?.touched) {
+              <small class="p-error"> Please enter a valid email address. </small>
+            }
           </div>
         </div>
       </div>
@@ -77,32 +109,51 @@
     </form>
   </p-card>
 
-<!-- Password Settings Panel (spans multiple rows) -->
+  <!-- Password Settings Panel (spans multiple rows) -->
   <p-card header="Password" class="row-span-2" styleClass="h-full">
-    <form [formGroup]="passwordForm" (ngSubmit)="updatePassword()" class="flex flex-col gap-2 h-full justify-between pb-2">
+    <form
+      [formGroup]="passwordForm"
+      (ngSubmit)="updatePassword()"
+      class="flex flex-col gap-2 h-full justify-between pb-2"
+    >
       <div>
         <p class="mt-0 mb-4 text-sm opacity-70">
           @if (hasPassword) {
             Update your account password to keep your account secure.
           } @else {
-            Setting a password will enable you to login with email + password, as well as with your social login.
+            Setting a password will enable you to login with email + password, as well as
+            with your social login.
           }
         </p>
-        <div class="p-field" *ngIf="hasPassword">
-          <label for="currentPassword">Current Password</label>
-          <p-password id="currentPassword" formControlName="currentPassword" [feedback]="false"></p-password>
-        </div>
+        @if (hasPassword) {
+          <div class="p-field">
+            <label for="currentPassword">Current Password</label>
+            <p-password
+              id="currentPassword"
+              formControlName="currentPassword"
+              [feedback]="false"
+            ></p-password>
+          </div>
+        }
         <div class="p-field">
           <label for="newPassword">New Password</label>
-          <p-password id="newPassword" formControlName="newPassword" [toggleMask]="true"></p-password>
+          <p-password
+            id="newPassword"
+            formControlName="newPassword"
+            [toggleMask]="true"
+          ></p-password>
         </div>
         <div class="p-field">
           <label for="confirmPassword">Confirm New Password</label>
-          <p-password id="confirmPassword" formControlName="confirmPassword" [feedback]="false"></p-password>
+          <p-password
+            id="confirmPassword"
+            formControlName="confirmPassword"
+            [feedback]="false"
+          ></p-password>
         </div>
-        <small *ngIf="passwordForm.hasError('mismatch')" class="p-error">
-          Passwords do not match.
-        </small>
+        @if (passwordForm.hasError('mismatch')) {
+          <small class="p-error"> Passwords do not match. </small>
+        }
       </div>
       <p-button
         type="submit"
@@ -115,92 +166,120 @@
     </form>
   </p-card>
 
-<!-- Multi-Factor Authentication Panel -->
-<p-card header="Multi-Factor Authentication" class="row-span-2" styleClass="h-full">
-  <form [formGroup]="mfaForm" class="h-full flex flex-col justify-between pb-2">
-    <div>
-    <p class="mt-0 mb-2 text-sm opacity-70">
-      Secure your account with an additional layer of protection using Multi-Factor Authentication.
-      This is highly recommended for all users who authenticate with a password.
-    </p>
-
-    <!-- MFA Setup Form -->
-    <div *ngIf="mfaEnabled" class="mfa-setup">
-      <div *ngIf="(qrCode && !verified)" class="flex flex-col gap-2">
-        <p class="m-0 text-sm opacity-70">
-          To complete MFA setup, scan the QR code using your authenticator app, or enter the seed.
-          Then enter the 6-digit code below to verify.
+  <!-- Multi-Factor Authentication Panel -->
+  <p-card header="Multi-Factor Authentication" class="row-span-2" styleClass="h-full">
+    <form [formGroup]="mfaForm" class="h-full flex flex-col justify-between pb-2">
+      <div>
+        <p class="mt-0 mb-2 text-sm opacity-70">
+          Secure your account with an additional layer of protection using Multi-Factor
+          Authentication. This is highly recommended for all users who authenticate with a
+          password.
         </p>
-        <p-tabView>
-          <p-tabPanel header="QR Code">
-            <img [src]="qrCode" alt="MFA QR Code" class="qr-code" />
-          </p-tabPanel>
-          <p-tabPanel header="Text Code">
-            <code class="bg-highlight text-highlight rounded px-3 py-1 break-words w-full">{{secret}}</code>
-          </p-tabPanel>
-        </p-tabView>
-        <p-inputOtp id="otpCode" formControlName="otpCode" [length]="6"></p-inputOtp>
+
+        <!-- MFA Setup Form -->
+        @if (mfaEnabled) {
+          <div class="mfa-setup">
+            @if (qrCode && !verified) {
+              <div class="flex flex-col gap-2">
+                <p class="m-0 text-sm opacity-70">
+                  To complete MFA setup, scan the QR code using your authenticator app, or
+                  enter the seed. Then enter the 6-digit code below to verify.
+                </p>
+                <p-tabView>
+                  <p-tabPanel header="QR Code">
+                    <img [src]="qrCode" alt="MFA QR Code" class="qr-code" />
+                  </p-tabPanel>
+                  <p-tabPanel header="Text Code">
+                    <code
+                      class="bg-highlight text-highlight rounded px-3 py-1 break-words w-full"
+                      >{{ secret }}</code
+                    >
+                  </p-tabPanel>
+                </p-tabView>
+                <p-inputOtp
+                  id="otpCode"
+                  formControlName="otpCode"
+                  [length]="6"
+                ></p-inputOtp>
+              </div>
+            }
+            <!-- MFA Enabled view -->
+            @if (mfaEnabled) {
+              <div>
+                <p class="text-green-400">
+                  <i class="pi pi-check"></i>
+                  Multi-Factor Authentication is active on your account.
+                </p>
+              </div>
+            }
+          </div>
+        }
       </div>
 
-      <!-- MFA Enabled view -->
-      <div *ngIf="mfaEnabled">
-        <p class="text-green-400">
-          <i class="pi pi-check"></i>
-          Multi-Factor Authentication is active on your account.
-        </p>
+      <div class="flex gap-2 justify-end">
+        @if (qrCode && !verified) {
+          <p-button
+            label="Verify MFA"
+            icon="pi pi-check"
+            severity="success"
+            (click)="verifyMFA()"
+            [loading]="loading.mfa"
+            [disabled]="mfaForm.invalid || loading.mfa"
+          >
+          </p-button>
+        }
+        @if (mfaEnabled) {
+          <p-button
+            label="Disable MFA"
+            icon="pi pi-times"
+            severity="warning"
+            (click)="disableMFA()"
+            [loading]="loading.mfa"
+            [disabled]="loading.mfa"
+          >
+          </p-button>
+        }
+        @if (showResetMfaButton && !qrCode && !verified) {
+          <p-button
+            label="Reset MFA"
+            icon="pi pi-refresh"
+            severity="warning"
+            (click)="resetMFA()"
+            [loading]="loading.mfa"
+          >
+          </p-button>
+        }
+        @if (!mfaEnabled && !qrCode) {
+          <p-button
+            label="Enable MFA"
+            icon="pi pi-key"
+            (click)="startEnableMFA()"
+            [loading]="loading.mfa"
+            [disabled]="loading.mfa || mfaEnabled"
+          >
+          </p-button>
+        }
       </div>
-    </div>
-    </div>
+    </form>
+  </p-card>
 
-    <div class="flex gap-2 justify-end">
-      <p-button 
-        *ngIf="(qrCode && !verified)"
-        label="Verify MFA" 
-        icon="pi pi-check"
-        severity="success"
-        (click)="verifyMFA()" 
-        [loading]="loading.mfa"
-        [disabled]="mfaForm.invalid || loading.mfa">
-      </p-button>
-      <p-button 
-        *ngIf="mfaEnabled"
-        label="Disable MFA" 
-        icon="pi pi-times" 
-        severity="warning"
-        (click)="disableMFA()" 
-        [loading]="loading.mfa"
-        [disabled]="loading.mfa">
-      </p-button>
-      <p-button 
-        *ngIf="showResetMfaButton && (!qrCode && !verified)"
-        label="Reset MFA" 
-        icon="pi pi-refresh" 
-        severity="warning"
-        (click)="resetMFA()"
-        [loading]="loading.mfa">
-      </p-button>
-      <p-button 
-        *ngIf="!mfaEnabled && !qrCode"
-        label="Enable MFA" 
-        icon="pi pi-key" 
-        (click)="startEnableMFA()" 
-        [loading]="loading.mfa"
-        [disabled]="loading.mfa || mfaEnabled">
-      </p-button>
-    </div>
-  </form>
-</p-card>
-
-
-<!-- Session Settings Panel -->
+  <!-- Session Settings Panel -->
   <p-card header="Session Settings" styleClass="h-full">
-    <form [formGroup]="sessionForm" (ngSubmit)="updateSessionTimeout()" class="flex flex-col gap-2 h-full justify-between pb-2">
+    <form
+      [formGroup]="sessionForm"
+      (ngSubmit)="updateSessionTimeout()"
+      class="flex flex-col gap-2 h-full justify-between pb-2"
+    >
       <p class="mt-0 mb-4 text-sm opacity-70">
-        Set the session timeout for your account. This is the time after which you will be logged out automatically.
+        Set the session timeout for your account. This is the time after which you will be
+        logged out automatically.
       </p>
       <div class="p-field">
         <label for="sessionTimeout">Session Timeout (minutes)</label>
-        <p-inputNumber id="sessionTimeout" formControlName="sessionTimeout"></p-inputNumber>
+        <p-inputNumber
+          id="sessionTimeout"
+          formControlName="sessionTimeout"
+        ></p-inputNumber>
       </div>
       <p-button
         type="submit"
@@ -213,7 +292,7 @@
     </form>
   </p-card>
 
-<!-- Account Actions Panel -->
+  <!-- Account Actions Panel -->
   <p-card header="Account Actions" styleClass="h-full">
     <div class="flex flex-col gap-2 h-full justify-between pb-2">
       <p class="mt-0 mb-4 text-sm opacity-70">
@@ -221,9 +300,18 @@
       </p>
       <div class="flex gap-2">
         <a routerLink="/domains/export">
-          <p-button label="Export Data" icon="pi pi pi-download" severity="info"></p-button>
+          <p-button
+            label="Export Data"
+            icon="pi pi pi-download"
+            severity="info"
+          ></p-button>
         </a>
-        <p-button label="Delete Account" icon="pi pi-trash" (click)="confirmDeleteAccount()" severity="danger"></p-button>
+        <p-button
+          label="Delete Account"
+          icon="pi pi-trash"
+          (click)="confirmDeleteAccount()"
+          severity="danger"
+        ></p-button>
       </div>
     </div>
   </p-card>

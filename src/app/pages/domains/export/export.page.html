@@ -1,22 +1,26 @@
-
 <div class="p-card p-4">
   <h1>Export Domain Data</h1>
   <p>Select filters and export your domain data in the desired format.</p>
 
   <p-messages severity="info">
     <ng-template pTemplate>
-        <i class="pi pi-check-circle"></i>
-        <div class="ml-2">
-          With Domain Locker, you always own your data.
-          Export at anytime, to migrate to an alternative platform.
-        </div>
+      <i class="pi pi-check-circle"></i>
+      <div class="ml-2">
+        With Domain Locker, you always own your data. Export at anytime, to migrate to an
+        alternative platform.
+      </div>
     </ng-template>
   </p-messages>
 
   <form [formGroup]="exportForm" (ngSubmit)="exportData()">
     <div class="flex flex-wrap gap-4 mb-4 flex-row">
       <!-- Domain input for filtering -->
-      <input pInputText formControlName="domains" placeholder="Domain (leave blank for all domains)" styleClass="w-full md:w-2/6 flex-1" />
+      <input
+        pInputText
+        formControlName="domains"
+        placeholder="Domain (leave blank for all domains)"
+        styleClass="w-full md:w-2/6 flex-1"
+      />
 
       <!-- Fields to include in export -->
       <p-multiSelect
@@ -30,17 +34,26 @@
       <!-- Format selection -->
       <p-dropdown
         formControlName="format"
-        [options]="[{ label: 'CSV', value: 'csv' }, { label: 'JSON', value: 'json' }, { label: 'TXT', value: 'txt' }]"
+        [options]="[
+          { label: 'CSV', value: 'csv' },
+          { label: 'JSON', value: 'json' },
+          { label: 'TXT', value: 'txt' },
+        ]"
         placeholder="Select Format"
         styleClass="w-full md:w-2/6 flex-1"
       ></p-dropdown>
 
-      <button pButton label="Export" icon="pi pi-download" [disabled]="loading"></button>
+      <button
+        pButton
+        label="Export"
+        aria-label="Export"
+        icon="pi pi-download"
+        [disabled]="loading"
+      ></button>
     </div>
   </form>
 
   @if (loading) {
     <p-progressSpinner class="mx-auto my-4 flex" />
   }
-
 </div>

@@ -1,43 +1,67 @@
-<div *ngIf="loading" class="text-center">
-  <p-progressSpinner></p-progressSpinner>
-</div>
-<div *ngIf="!loading" class="gantt-container">
-  <!-- Header -->
-
-  <div class="gantt-header">
-    <div *ngFor="let year of yearRange" class="gantt-year truncate" [pTooltip]="year">
-      @if (groupDates) {
-        {{ year }}
-      } @else {
-        {{ ('01-01-' + year) | date: 'yy' }}
+@if (loading) {
+  <div class="text-center">
+    <p-progressSpinner></p-progressSpinner>
+  </div>
+}
+@if (!loading) {
+  <div class="gantt-container">
+    <!-- Header -->
+    <div class="gantt-header">
+      @for (year of yearRange; track year) {
+        <div class="gantt-year truncate" [pTooltip]="year">
+          @if (groupDates) {
+            {{ year }}
+          } @else {
+            {{ '01-01-' + year | date: 'yy' }}
+          }
+        </div>
+      }
+      <div class="gantt-today-line" [ngStyle]="{ left: todayPosition }"></div>
+    </div>
+    <!-- Rows -->
+    <div class="gantt-body">
+      @for (domain of domains; track domain; let i = $index) {
+        <div class="gantt-row">
+          <a
+            [routerLink]="['/domains', domain.name]"
+            class="gantt-domain-name no-underline hover:underline cursor-pointer text-primary"
+          >
+            {{ domain.name }}
+          </a>
+          <div
+            class="gantt-bar"
+            [ngStyle]="{
+              left: calculateBarPosition(domain).left,
+              width: calculateBarPosition(domain).width,
+            }"
+          >
+            <!-- Past portion -->
+            <div
+              class="gantt-bar-past"
+              [ngStyle]="{
+                width: calculateBarPosition(domain).pastWidth,
+                backgroundColor: getBarColor(i),
+              }"
+              pTooltip="{{ domain.name }}: {{ domain.start | date }} - {{
+                domain.end | date
+              }} (Registered {{
+                calculateBarPosition(domain).daysSinceRegistration
+              }} days ago)"
+            ></div>
+            <!-- Future portion -->
+            <div
+              class="gantt-bar-future"
+              [ngStyle]="{
+                width: 'calc(100% - ' + calculateBarPosition(domain).pastWidth + ')',
+                backgroundColor: getBarColor(i),
+              }"
+              pTooltip="{{ domain.name }}: {{ domain.start | date }} - {{
+                domain.end | date
+              }} (Expires in {{ calculateBarPosition(domain).daysUntilExpiration }} days)"
+            ></div>
+          </div>
+        </div>
       }
     </div>
-    <div class="gantt-today-line" [ngStyle]="{ left: todayPosition }"></div>
   </div>
-
-
-  <!-- Rows -->
-  <div class="gantt-body">
-    <div *ngFor="let domain of domains; let i = index" class="gantt-row">
-      <a 
-        [routerLink]="['/domains', domain.name]" 
-        class="gantt-domain-name no-underline hover:underline cursor-pointer text-primary">
-        {{ domain.name }}
-      </a>
-      <div class="gantt-bar" [ngStyle]="{ left: calculateBarPosition(domain).left, width: calculateBarPosition(domain).width }">
-      <!-- Past portion -->
-      <div 
-        class="gantt-bar-past" 
-        [ngStyle]="{ width: calculateBarPosition(domain).pastWidth, backgroundColor: getBarColor(i) }"
-        pTooltip="{{ domain.name }}: {{ domain.start | date }} - {{ domain.end | date }} (Registered {{ calculateBarPosition(domain).daysSinceRegistration }} days ago)">
-      </div>
-      <!-- Future portion -->
-      <div 
-        class="gantt-bar-future" 
-        [ngStyle]="{ width: 'calc(100% - ' + calculateBarPosition(domain).pastWidth + ')', backgroundColor: getBarColor(i) }"
-        pTooltip="{{ domain.name }}: {{ domain.start | date }} - {{ domain.end | date }} (Expires in {{ calculateBarPosition(domain).daysUntilExpiration }} days)">
-      </div>
-      </div>
-    </div>
-  </div>
-</div>
+}

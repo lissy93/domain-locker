@@ -3,6 +3,7 @@ import { DomainValuationChartComponent } from '~/app/components/charts/domain-va
 
 @Component({
   standalone: true,
+  selector: 'app-stats-cost-analysis-page',
   template: `
     <h1>Cost Analysis</h1>
     <app-domain-valuation-chart />
@@ -10,8 +11,7 @@ import { DomainValuationChartComponent } from '~/app/components/charts/domain-va
       <app-tag-cloud />
     </div> -->
   `,
-  imports: [ DomainValuationChartComponent ],
-  styles: []
+  imports: [DomainValuationChartComponent],
+  styles: [],
 })
 export default class CostAnalysisPage {}
-

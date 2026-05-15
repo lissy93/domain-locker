@@ -1,47 +1,59 @@
-
 <!-- Domain Name -->
-<div *ngIf="domain && !domainNotFound; else loading" class="flex gap-2 justify-between align-items-center flex-wrap my-4">
-  <h1 class="text-2xl flex items-center">
-    <app-domain-favicon [domain]="domain.domain_name" [size]="32" class="mr-3"></app-domain-favicon>
-    <span class="text-primary">{{ domainUtils.splitDomain(domain.domain_name).domain }}</span>
-    <span class="text-default">.</span>
-    <span class="text-secondary">{{ domainUtils.splitDomain(domain.domain_name).tld }}</span>
-    <i class="mx-2 pi pi-angle-right"></i>
-    <span class="opacity-70">Web Monitor</span>
-  </h1>
-  <button pButton
-  [routerLink]="'/domains/'+domain.domain_name"
-  label="View Domain"
-  size="small"
-  icon="pi pi-arrow-up-right"
-  ></button>
-</div>
+@if (domain && !domainNotFound) {
+  <div class="flex gap-2 justify-between align-items-center flex-wrap my-4">
+    <h1 class="text-2xl flex items-center">
+      <app-domain-favicon
+        [domain]="domain.domain_name"
+        [size]="32"
+        class="mr-3"
+      ></app-domain-favicon>
+      <span class="text-primary">{{
+        domainUtils.splitDomain(domain.domain_name).domain
+      }}</span>
+      <span class="text-default">.</span>
+      <span class="text-secondary">{{
+        domainUtils.splitDomain(domain.domain_name).tld
+      }}</span>
+      <i class="mx-2 pi pi-angle-right"></i>
+      <span class="opacity-70">Web Monitor</span>
+    </h1>
+    <button
+      pButton
+      [routerLink]="'/domains/' + domain.domain_name"
+      label="View Domain"
+      aria-label="View domain"
+      size="small"
+      icon="pi pi-arrow-up-right"
+    ></button>
+  </div>
+} @else {
+  @if (!domainNotFound) {
+    <app-loading
+      loadingTitle="Loading"
+      loadingDescription="Fetching details for domain..."
+    />
+  }
+}
 
-@if (!(monitorEnabled$ | async)) {
+@if ((monitorEnabled$ | async) === false) {
   <app-feature-not-enabled feature="domainMonitor" />
 } @else {
-  <app-domain-sparklines
-    [domainId]="domain.id"
-    [userId]="domain.user_id"
-    *ngIf="domain && domain.id && domain.user_id && !domainNotFound"
-  />
+  @if (domain && domain.id && domain.user_id && !domainNotFound) {
+    <app-domain-sparklines [domainId]="domain.id" [userId]="domain.user_id" />
+  }
 
-
-  <ng-container *ngIf="shouldMountCalendar">
-    <app-uptime-history
-      *ngIf="domain && domain.id && domain.user_id && !domainNotFound"
-      [domainId]="domain.id"
-      [userId]="domain.user_id"
-    />
-  </ng-container>
+  @if (shouldMountCalendar) {
+    @if (domain && domain.id && domain.user_id && !domainNotFound) {
+      <app-uptime-history [domainId]="domain.id" [userId]="domain.user_id" />
+    }
+  }
 
   <div appLazyLoad (visible)="onCalendarVisible()"></div>
 }
 
 <!-- Domain not found -->
-<app-not-found *ngIf="domainNotFound" [name]="name || 'Domain'" />
+@if (domainNotFound) {
+  <app-not-found [name]="name || 'Domain'" />
+}
 
 <!-- Loading domain info -->
-<ng-template #loading>
-  <loading *ngIf="!domainNotFound" loadingTitle="Loading" loadingDescription="Fetching details for domain..." />
-</ng-template>

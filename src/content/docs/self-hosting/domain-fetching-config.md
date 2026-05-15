@@ -3,7 +3,7 @@ slug: domain-fetching-config
 title: Domain Fetching Config
 description: How to configure domain data fetching and subdomain discovery for self-hosted Domain Locker instances
 coverImage:
-index: 6
+index: 10
 ---
 
 When you add a domain to Domain Locker, the app automatically fetches information about it from WHOIS servers and other sources where available. This includes details like registration dates, expiration dates, nameservers, registrar info, and more.
@@ -147,4 +147,3 @@ curl "https://api.shodan.io/dns/domain/example.com?key=${SHODAN_TOKEN}"
 # Verify DNSDumpster API key
 curl -H "X-Api-Key: ${DNS_DUMPSTER_TOKEN}" "https://api.dnsdumpster.com/domain/example.com"
 ```
-

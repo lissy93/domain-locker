@@ -1,16 +1,18 @@
-import { catchError,  map, Observable } from 'rxjs';
+import { catchError, map, Observable } from 'rxjs';
 import { PgApiUtilService } from '~/app/utils/pg-api.util';
 import { DbDomain, SaveDomainData } from '~/app/../types/Database';
 
 export class SslQueries {
   constructor(
     private pgApiUtil: PgApiUtilService,
-    private handleError: (error: any) => Observable<never>,
+    private handleError: (error: unknown) => Observable<never>,
     private getFullDomainQuery: () => string,
-    private formatDomainData: (domain: any) => DbDomain,
+    private formatDomainData: (domain: Record<string, unknown>) => DbDomain,
   ) {}
 
-  getSslIssuersWithDomainCounts(): Observable<{ issuer: string; domain_count: number }[]> {
+  getSslIssuersWithDomainCounts(): Observable<
+    { issuer: string; domain_count: number }[]
+  > {
     const query = `
       SELECT ssl_certificates.issuer, COUNT(domains.id) AS domain_count
       FROM ssl_certificates
@@ -18,10 +20,12 @@ export class SslQueries {
       GROUP BY ssl_certificates.issuer
     `;
 
-    return this.pgApiUtil.postToPgExecutor<{ issuer: string; domain_count: number }>(query).pipe(
-      map(response => response.data),
-      catchError(error => this.handleError(error))
-    );
+    return this.pgApiUtil
+      .postToPgExecutor<{ issuer: string; domain_count: number }>(query)
+      .pipe(
+        map((response) => response.data),
+        catchError((error) => this.handleError(error)),
+      );
   }
 
   getDomainsBySslIssuer(issuer: string): Observable<DbDomain[]> {
@@ -61,12 +65,11 @@ export class SslQueries {
     `;
     const params = [issuer];
 
-    return this.pgApiUtil.postToPgExecutor(query, params).pipe(
-      map(response => response.data.map(domain => this.formatDomainData(domain))),
-      catchError(error => this.handleError(error))
+    return this.pgApiUtil.postToPgExecutor<Record<string, unknown>>(query, params).pipe(
+      map((response) => response.data.map((domain) => this.formatDomainData(domain))),
+      catchError((error) => this.handleError(error)),
     );
   }
-    
 
   async saveSslInfo(domainId: string, ssl: SaveDomainData['ssl']): Promise<void> {
     if (!ssl) return;

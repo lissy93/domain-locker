@@ -3,25 +3,42 @@
   Manage notifications for each domain and notification type.
 </p>
 
-<app-feature-not-enabled *ngIf="!(changeNotificationsFeatureEnabled$ | async)" feature="changeNotifications" />
+@if ((changeNotificationsFeatureEnabled$ | async) === false) {
+  <app-feature-not-enabled feature="changeNotifications" />
+}
 
-<form [formGroup]="notificationForm" class="space-y-6 mt-4 relative" *ngIf="!loading">
-  <div *ngIf="!(changeNotificationsFeatureEnabled$ | async)" class="absolute bg-surface-50 h-full w-full z-10 opacity-25 cursor-not-allowed"></div>
-  <div *ngFor="let type of notificationTypes" class="p-card p-4 shadow-sm rounded-lg mb-4">
-    <h3>{{ type.label }}</h3>
-    <p>{{ type.description }}</p>
-    <p *ngIf="type.note" class="text-yellow-500">{{ type.note }}</p>
-
-    <p-multiSelect 
-      [options]="domains" 
-      optionLabel="domain_name" 
-      optionValue="id" 
-      [formControlName]="type.key"
-      placeholder="Select domains" 
-      display="chip" 
-      styleClass="w-full mt-2"
-    />
-  </div>
-
-  <button pButton label="Save Preferences" icon="pi pi-save" class="p-button-primary" (click)="savePreferences()"></button>
-</form>
+@if (!loading) {
+  <form [formGroup]="notificationForm" class="space-y-6 mt-4 relative">
+    @if ((changeNotificationsFeatureEnabled$ | async) === false) {
+      <div
+        class="absolute bg-surface-50 h-full w-full z-10 opacity-25 cursor-not-allowed"
+      ></div>
+    }
+    @for (type of notificationTypes; track type) {
+      <div class="p-card p-4 shadow-sm rounded-lg mb-4">
+        <h3>{{ type.label }}</h3>
+        <p>{{ type.description }}</p>
+        @if (type.note) {
+          <p class="text-yellow-500">{{ type.note }}</p>
+        }
+        <p-multiSelect
+          [options]="domains"
+          optionLabel="domain_name"
+          optionValue="id"
+          [formControlName]="type.key"
+          placeholder="Select domains"
+          display="chip"
+          styleClass="w-full mt-2"
+        />
+      </div>
+    }
+    <button
+      pButton
+      label="Save Preferences"
+      aria-label="Save preferences"
+      icon="pi pi-save"
+      class="p-button-primary"
+      (click)="savePreferences()"
+    ></button>
+  </form>
+}

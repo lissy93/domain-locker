@@ -4,6 +4,7 @@ import StatusesIndexPageComponent from '~/app/pages/assets/statuses/index.page';
 
 @Component({
   standalone: true,
+  selector: 'app-stats-security-profile-page',
   template: `
     <h1>EPP Security Status</h1>
     <div class="flex flex-col gap-8">
@@ -12,6 +13,6 @@ import StatusesIndexPageComponent from '~/app/pages/assets/statuses/index.page';
     </div>
   `,
   imports: [EppStatusChartComponent, StatusesIndexPageComponent],
-  styles: ['::ng-deep app-statuses-index h1 { display: none !important; } ']
+  styles: ['::ng-deep app-statuses-index h1 { display: none !important; } '],
 })
 export default class SecurityProfilePage {}

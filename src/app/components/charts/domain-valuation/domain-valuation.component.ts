@@ -1,10 +1,10 @@
-import { Component, OnInit } from '@angular/core';
-import { ApexOptions } from 'ng-apexcharts';
+import { Component, OnInit, inject } from '@angular/core';
+import { ApexOptions, ApexAxisChartSeries, ApexYAxis } from 'ng-apexcharts';
 import DatabaseService from '~/app/services/database.service';
 import { Router } from '@angular/router';
 import { PrimeNgModule } from '~/app/prime-ng.module';
 import { NgApexchartsModule } from 'ng-apexcharts';
-import { CommonModule } from '@angular/common';
+
 import { ErrorHandlerService } from '~/app/services/error-handler.service';
 
 interface DomainCostingPoint {
@@ -12,36 +12,40 @@ interface DomainCostingPoint {
   y?: number;
   z?: number;
   domainName?: string;
-  tooltipInfo?: { purchasePrice: any; currentValue: any; renewalCost: any; profitLoss: number; autoRenew: any; };
+  tooltipInfo?: {
+    purchasePrice: number;
+    currentValue: number;
+    renewalCost: number;
+    profitLoss: number;
+    autoRenew: boolean;
+  };
   fillColor?: string;
-};
+}
 
-interface DomainCostingPoints extends Array<DomainCostingPoint> {};
+type DomainCostingPoints = DomainCostingPoint[];
 
 @Component({
   standalone: true,
   selector: 'app-domain-valuation-chart',
-  imports: [CommonModule, PrimeNgModule, NgApexchartsModule],
+  imports: [PrimeNgModule, NgApexchartsModule],
   templateUrl: './domain-valuation.component.html',
   styleUrls: ['./domain-valuation.component.scss'],
 })
 export class DomainValuationChartComponent implements OnInit {
-  chartOptions: ApexOptions | any;
-  dataLoaded = false;
+  private databaseService = inject(DatabaseService);
+  private errorHandler = inject(ErrorHandlerService);
+  private router = inject(Router);
 
-  constructor(
-    private databaseService: DatabaseService,
-    private errorHandler: ErrorHandlerService,
-    private router: Router
-  ) {}
+  chartOptions: ApexOptions = {};
+  dataLoaded = false;
 
   ngOnInit(): void {
     this.loadDomainCostings();
   }
 
   loadDomainCostings(): void {
-    this.databaseService.instance.valuationQueries.getDomainCostings().subscribe(
-      (domains) => {
+    this.databaseService.instance.valuationQueries.getDomainCostings().subscribe({
+      next: (domains) => {
         const autoRenewData: DomainCostingPoints = [] as DomainCostingPoints;
         const noAutoRenewData: DomainCostingPoints = [] as DomainCostingPoints;
 
@@ -50,13 +54,16 @@ export class DomainValuationChartComponent implements OnInit {
           const dataPoint = {
             x: domain.current_value ?? domain.purchase_price,
             y: domain.renewal_cost,
-            z: Math.abs((domain.current_value ?? domain.purchase_price) - domain.purchase_price),
+            z: Math.abs(
+              (domain.current_value ?? domain.purchase_price) - domain.purchase_price,
+            ),
             domainName: domain.domain_name,
             tooltipInfo: {
               purchasePrice: domain.purchase_price,
               currentValue: domain.current_value,
               renewalCost: domain.renewal_cost,
-              profitLoss: (domain.current_value ?? domain.purchase_price) - domain.purchase_price,
+              profitLoss:
+                (domain.current_value ?? domain.purchase_price) - domain.purchase_price,
               autoRenew: domain.auto_renew,
             },
             fillColor: this.getColor(index),
@@ -72,25 +79,32 @@ export class DomainValuationChartComponent implements OnInit {
         this.chartOptions = this.createChartOptions(autoRenewData, noAutoRenewData);
         this.dataLoaded = true;
       },
-      (error) => {
+      error: (error) => {
         this.errorHandler.handleError({
           error,
           message: 'Failed to load domain costings',
           location: 'DomainValuationChartComponent.loadDomainCostings',
           showToast: true,
         });
-      }
-    );
+      },
+    });
   }
 
-  createChartOptions(autoRenewData: any, noAutoRenewData: DomainCostingPoints): ApexOptions | any {
+  createChartOptions(
+    autoRenewData: DomainCostingPoints,
+    noAutoRenewData: DomainCostingPoints,
+  ): ApexOptions {
     return {
       chart: {
         type: 'bubble',
         height: 450,
         toolbar: { show: false },
         events: {
-          dataPointSelection: (event: any, chartContext: any, config: { seriesIndex: number; dataPointIndex: string | number; }) => {
+          dataPointSelection: (
+            _event: object,
+            _chartContext: object,
+            config: { seriesIndex: number; dataPointIndex: number },
+          ) => {
             const series = config.seriesIndex === 0 ? autoRenewData : noAutoRenewData;
             const selectedDomain = series[config.dataPointIndex];
             this.router.navigate(['/domains', selectedDomain.domainName]);
@@ -100,12 +114,12 @@ export class DomainValuationChartComponent implements OnInit {
       series: [
         {
           name: 'Auto-Renew Domains',
-          data: autoRenewData,
+          data: autoRenewData as unknown as ApexAxisChartSeries[number]['data'],
           color: 'var(--teal-400)',
         },
         {
           name: 'Non-Auto-Renew Domains',
-          data: noAutoRenewData,
+          data: noAutoRenewData as unknown as ApexAxisChartSeries[number]['data'],
           color: 'var(--red-400)',
         },
       ],
@@ -114,14 +128,21 @@ export class DomainValuationChartComponent implements OnInit {
         labels: { formatter: (val: string) => `$${val}` },
       },
       yaxis: {
-        title: { text: 'Renewal Cost' },
-        labels: { formatter: (val: string) => `$${val}` },
-      },
+        title: 'Renewal Cost',
+        labels: { formatter: (val: number) => `$${val}` },
+      } as ApexYAxis,
       tooltip: {
-        custom: ({ seriesIndex, dataPointIndex }: { seriesIndex: number; dataPointIndex: number }) => {
+        custom: ({
+          seriesIndex,
+          dataPointIndex,
+        }: {
+          seriesIndex: number;
+          dataPointIndex: number;
+        }) => {
           const series = seriesIndex === 0 ? autoRenewData : noAutoRenewData;
           const info = series[dataPointIndex].tooltipInfo;
-          return info ? `
+          return info
+            ? `
             <div style="padding: 10px;">
               <strong>${series[dataPointIndex].domainName}</strong><br>
               Purchase Price: $${info.purchasePrice}<br>
@@ -130,7 +151,8 @@ export class DomainValuationChartComponent implements OnInit {
               Profit/Loss: $${info.profitLoss}<br>
               Auto-Renew: ${info.autoRenew ? 'Yes' : 'No'}
             </div>
-          ` : '';
+          `
+            : '';
         },
       },
     };
@@ -138,7 +160,13 @@ export class DomainValuationChartComponent implements OnInit {
 
   // Get a color from a preset list or a color variable
   getColor(index: number): string {
-    const colors = ['var(--red-400)', 'var(--teal-400)', 'var(--blue-400)', 'var(--purple-400)', 'var(--green-400)'];
+    const colors = [
+      'var(--red-400)',
+      'var(--teal-400)',
+      'var(--blue-400)',
+      'var(--purple-400)',
+      'var(--green-400)',
+    ];
     return colors[index % colors.length];
   }
 }

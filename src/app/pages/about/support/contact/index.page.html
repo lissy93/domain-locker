@@ -1,25 +1,44 @@
 <p-card header="Contact">
   <p class="mt-0 text-lg italic opacity-70">
-    We're here to help! If you have any questions or need assistance, please don't hesitate to reach out.
+    We're here to help! If you have any questions or need assistance, please don't
+    hesitate to reach out.
   </p>
   <p>
-    Users on the hobby plan or above, can reach out to us at 
-    <a href="mailto:support&#64;as93.freshdesk.com"><code>support&#64;as93.freshdesk.com</code></a>.
-    If your running Domain Locker on your own servers, please see
-    <a routerLink="/about/support/self-hosted-support">Self-Hosted Support Portal</a>.
-    If referencing a bug, please attach the <a routerLink="/advanced/debug-info">this debug info</a>
+    Users on the hobby plan or above, can reach out to us at
+    <a href="mailto:support&#64;as93.freshdesk.com"
+      ><code>support&#64;as93.freshdesk.com</code></a
+    >. If your running Domain Locker on your own servers, please see
+    <a routerLink="/about/support/self-hosted-support">Self-Hosted Support Portal</a>. If
+    referencing a bug, please attach the
+    <a routerLink="/advanced/debug-info">this debug info</a>
     as well as include the steps to reproduce, expected behavior, and actual behavior.
   </p>
 
   <div class="flex gap-2 justify-end flex-wrap">
     <!-- <a href="mailto:support&#64;as93.freshdesk.com"> -->
-      <p-button (click)="openFreshChat()" size="small" severity="success" label="Contact Support" icon="pi pi-envelope"></p-button>
+    <p-button
+      (click)="openFreshChat()"
+      size="small"
+      severity="success"
+      label="Contact Support"
+      icon="pi pi-envelope"
+    ></p-button>
     <!-- </a> -->
     <a routerLink="/advanced/debug-info">
-      <p-button size="small" severity="warning" label="Debug Info" icon="pi pi-play"></p-button>
+      <p-button
+        size="small"
+        severity="warning"
+        label="Debug Info"
+        icon="pi pi-play"
+      ></p-button>
     </a>
     <a routerLink="/about/support/self-hosted-support">
-      <p-button size="small" severity="info" label="Self-Hosted Support" icon="pi pi-server"></p-button>
+      <p-button
+        size="small"
+        severity="info"
+        label="Self-Hosted Support"
+        icon="pi pi-server"
+      ></p-button>
     </a>
   </div>
 </p-card>
@@ -59,59 +78,65 @@
       </div>
     </div>
 
-    <div class="flex-[2_2_0%] flex flex-col" *ngIf="contactForm.get('queryType')?.value">
-      
-      <p-messages severity="info" *ngIf="queryInfo[contactForm.get('queryType')?.value]?.info">
-        <ng-template pTemplate>
-          {{ queryInfo[contactForm.get('queryType')?.value]?.info }}
-        </ng-template>
-      </p-messages>
-      
-      <p-messages severity="warn" *ngIf="!showContactForm && queryInfo[contactForm.get('queryType')?.value]?.warn">
-        <ng-template pTemplate>
-          {{ queryInfo[contactForm.get('queryType')?.value]?.warn }}
-        </ng-template>
-      </p-messages>
-      
-
-      @if (contactForm.get('queryType')?.value === 'Feedback') {
-        <div style="position: relative; height:40dvh; overflow:auto;"> 
-          <iframe 
-            src="https://app.formbricks.com/s/cm70l7z0s0000l103uiuf1y6m?embed=true" 
-            frameborder="0" style="position: absolute; left:0; top:0; width:100%; height:100%; border:0;">
-          </iframe>
-        </div>
-
-      } @else if (contactForm.get('queryType')?.value === 'Bug/Issue') {
-
-      } @else if (contactForm.get('queryType')?.value === 'Security') {
-
-      } @else if (contactForm.get('queryType')?.value === 'Custom Plan') {
-
-      } @else if (contactForm.get('queryType')?.value === 'User Support') {
-
-      } @else if (contactForm.get('queryType')?.value === 'Enterprise Support') {
-
-      } @else if (contactForm.get('queryType')?.value === 'Data') {
-        <div>
-          <p>With Domain Locker, you're in control of your data. </p>
-        </div>
-      } @else if (contactForm.get('queryType')?.value === 'Help') {
-
-      }
-      
-      <app-helpful-links [links]="queryInfo[contactForm.get('queryType')?.value]?.links" />
-
-      <div *ngIf="showContactForm" class="field">
-        <label for="body">Message</label>
-        <textarea id="body" rows="5" pInputTextarea formControlName="body"></textarea>
+    @if (contactForm.get('queryType')?.value) {
+      <div class="flex-[2_2_0%] flex flex-col">
+        @if (queryInfo[contactForm.get('queryType')?.value]?.info) {
+          <p-messages severity="info">
+            <ng-template pTemplate>
+              {{ queryInfo[contactForm.get('queryType')?.value]?.info }}
+            </ng-template>
+          </p-messages>
+        }
+        @if (!showContactForm && queryInfo[contactForm.get('queryType')?.value]?.warn) {
+          <p-messages severity="warn">
+            <ng-template pTemplate>
+              {{ queryInfo[contactForm.get('queryType')?.value]?.warn }}
+            </ng-template>
+          </p-messages>
+        }
+        @if (contactForm.get('queryType')?.value === 'Feedback') {
+          <div style="position: relative; height: 40dvh; overflow: auto">
+            <iframe
+              src="https://app.formbricks.com/s/cm70l7z0s0000l103uiuf1y6m?embed=true"
+              frameborder="0"
+              style="
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                border: 0;
+              "
+            >
+            </iframe>
+          </div>
+        } @else if (contactForm.get('queryType')?.value === 'Bug/Issue') {
+        } @else if (contactForm.get('queryType')?.value === 'Security') {
+        } @else if (contactForm.get('queryType')?.value === 'Custom Plan') {
+        } @else if (contactForm.get('queryType')?.value === 'User Support') {
+        } @else if (contactForm.get('queryType')?.value === 'Enterprise Support') {
+        } @else if (contactForm.get('queryType')?.value === 'Data') {
+          <div>
+            <p>With Domain Locker, you're in control of your data.</p>
+          </div>
+        } @else if (contactForm.get('queryType')?.value === 'Help') {}
+        <app-helpful-links
+          [links]="queryInfo[contactForm.get('queryType')?.value]?.links"
+        />
+        @if (showContactForm) {
+          <div class="field">
+            <label for="body">Message</label>
+            <textarea id="body" rows="5" pInputTextarea formControlName="body"></textarea>
+          </div>
+        }
+        @if (showContactForm) {
+          <p-button
+            type="submit"
+            label="Submit"
+            [disabled]="!showContactForm || contactForm.invalid"
+          ></p-button>
+        }
       </div>
-      <p-button
-        *ngIf="showContactForm"
-        type="submit"
-        label="Submit"
-        [disabled]="!showContactForm || contactForm.invalid"
-      ></p-button>
-  </div>
+    }
   </form>
 </p-card>

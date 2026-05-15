@@ -1,113 +1,179 @@
-<app-feature-not-enabled *ngIf="!(notificationFeatureEnabled$ | async)" feature="notificationChannels" />
+@if ((notificationFeatureEnabled$ | async) === false) {
+  <app-feature-not-enabled feature="notificationChannels" />
+}
 
 <h2 class="text-2xl font-semibold my-2">Notification Preferences</h2>
 <p class="italic text-lg opacity-70 m-0">
   Configure how you would like to receive notifications and alerts for domain activity
 </p>
 <p class="italic opacity-70 m-0">
-  You can update which notifications you receive on a per-domain basis by editing the domain
+  You can update which notifications you receive on a per-domain basis by editing the
+  domain
 </p>
 
-<form [formGroup]="notificationForm" *ngIf="notificationForm" class="space-y-6 relative">
-  <div *ngIf="!(notificationFeatureEnabled$ | async)" class="absolute bg-surface-50 h-full w-full z-10 opacity-25 cursor-not-allowed"></div>
-  <p-card *ngFor="let channel of notificationChannels" [formGroupName]="channel.formControlName" class="notification-section p-4 shadow-sm rounded-lg">
-    <div class="flex items-center justify-between">
-      <div class="flex gap-2 items-center flex-1">
-        <dl-icon [icon]="channel.formControlName" class="!w-6 h-5" color="var(--surface-200)"></dl-icon>
-        <h3 class="font-semibold text-lg m-0">{{ channel.name }}</h3>
-      </div>
-      <p-toggleButton
-        formControlName="enabled"
-        onLabel="Enabled"
-        offLabel="Disabled"
-        [onIcon]="'pi pi-check-circle'"
-        offIcon="pi pi-minus-circle"
-        [style]="{
-          'background-color': notificationForm.get(channel.formControlName + '.enabled')?.value ? 'var(--green-400)' : 'var(--gray-400)'
-        }"
-      ></p-toggleButton>
-    </div>
-
-    <div *ngIf="notificationForm.get(channel.formControlName + '.enabled')?.value" class="mt-3 space-y-4">
-      <div *ngIf="channel.requires">
-        <div *ngFor="let field of channel.requires">
-          <label [for]="field.name" class="block text-sm font-medium mb-1 mt-2">{{ field.label }}</label>
-          <input
-            pInputText
-            [formControlName]="field.name"
-            [id]="field.name"
-            [placeholder]="field.placeholder"
-            class="w-full"
-          />
-          <small *ngIf="notificationForm.get(channel.formControlName + '.' + field.name)?.invalid && notificationForm.get(channel.formControlName + '.' + field.name)?.touched" class="p-error">
-            {{ field.label }} is required
-          </small>
-        </div>
-      </div>
-
-      <!-- Webhook providers section -->
-      <div *ngIf="channel.providers" class="space-y-4">
-        <label class="block text-sm font-medium">Provider</label>
-        <div class="flex flex-wrap gap-4">
-          <p-radioButton
-            *ngFor="let provider of channel.providers"
-            [value]="provider.value"
-            formControlName="provider"
-            [label]="provider.label"
-          ></p-radioButton>
-        </div>
-
-        <!-- Conditional fields based on selected provider -->
-        <div *ngFor="let provider of channel.providers">
-          <div *ngIf="notificationForm.get(channel.formControlName + '.provider')?.value === provider.value" class="mt-3 space-y-3">
-            <div *ngFor="let field of provider.fields">
-              <label [for]="field.name" class="block text-sm font-medium mb-1">{{ field.label }}</label>
-              <input
-                pInputText
-                [formControlName]="field.name"
-                [id]="field.name"
-                [placeholder]="field.placeholder"
-                class="w-full"
-              />
-              <small *ngIf="notificationForm.get(channel.formControlName + '.' + field.name)?.invalid && notificationForm.get(channel.formControlName + '.' + field.name)?.touched" class="p-error">
-                {{ field.label }} is required
-              </small>
-            </div>
+@if (notificationForm) {
+  <form [formGroup]="notificationForm" class="space-y-6 relative">
+    @if ((notificationFeatureEnabled$ | async) === false) {
+      <div
+        class="absolute bg-surface-50 h-full w-full z-10 opacity-25 cursor-not-allowed"
+      ></div>
+    }
+    @for (channel of notificationChannels; track channel) {
+      <p-card
+        [formGroupName]="channel.formControlName"
+        class="notification-section p-4 shadow-sm rounded-lg"
+      >
+        <div class="flex items-center justify-between">
+          <div class="flex gap-2 items-center flex-1">
+            <app-dl-icon
+              [icon]="channel.formControlName"
+              class="!w-6 h-5"
+              color="var(--surface-200)"
+            ></app-dl-icon>
+            <h3 class="font-semibold text-lg m-0">{{ channel.name }}</h3>
           </div>
+          <p-toggleButton
+            formControlName="enabled"
+            onLabel="Enabled"
+            offLabel="Disabled"
+            [onIcon]="'pi pi-check-circle'"
+            offIcon="pi pi-minus-circle"
+            [style]="{
+              'background-color': notificationForm.get(
+                channel.formControlName + '.enabled'
+              )?.value
+                ? 'var(--green-400)'
+                : 'var(--gray-400)',
+            }"
+          ></p-toggleButton>
         </div>
-
-        <div *ngIf="notificationForm.get(channel.formControlName + '.provider')?.value === 'ntfy'" class="mt-3">
-          <p class="text-sm italic opacity-70">
-            For the managed instance, the default URL should be <strong>ntfy.sh</strong>
-          </p>
-        </div>
-        
+        @if (notificationForm.get(channel.formControlName + '.enabled')?.value) {
+          <div class="mt-3 space-y-4">
+            @if (channel.requires) {
+              <div>
+                @for (field of channel.requires; track field) {
+                  <div>
+                    <label
+                      [for]="field.name"
+                      class="block text-sm font-medium mb-1 mt-2"
+                      >{{ field.label }}</label
+                    >
+                    <input
+                      pInputText
+                      [formControlName]="field.name"
+                      [id]="field.name"
+                      [placeholder]="field.placeholder"
+                      class="w-full"
+                    />
+                    @if (
+                      notificationForm.get(channel.formControlName + '.' + field.name)
+                        ?.invalid &&
+                      notificationForm.get(channel.formControlName + '.' + field.name)
+                        ?.touched
+                    ) {
+                      <small class="p-error"> {{ field.label }} is required </small>
+                    }
+                  </div>
+                }
+              </div>
+            }
+            <!-- Webhook providers section -->
+            @if (channel.providers) {
+              <div class="space-y-4">
+                <fieldset class="border-none p-0 m-0">
+                  <legend class="block text-sm font-medium p-0">Provider</legend>
+                  <div class="flex flex-wrap gap-4">
+                    @for (provider of channel.providers; track provider) {
+                      <p-radioButton
+                        [value]="provider.value"
+                        formControlName="provider"
+                        [label]="provider.label"
+                      ></p-radioButton>
+                    }
+                  </div>
+                  <!-- Conditional fields based on selected provider -->
+                  @for (provider of channel.providers; track provider) {
+                    <div>
+                      @if (
+                        notificationForm.get(channel.formControlName + '.provider')
+                          ?.value === provider.value
+                      ) {
+                        <div class="mt-3 space-y-3">
+                          @for (field of provider.fields; track field) {
+                            <div>
+                              <label
+                                [for]="field.name"
+                                class="block text-sm font-medium mb-1"
+                                >{{ field.label }}</label
+                              >
+                              <input
+                                pInputText
+                                [formControlName]="field.name"
+                                [id]="field.name"
+                                [placeholder]="field.placeholder"
+                                class="w-full"
+                              />
+                              @if (
+                                notificationForm.get(
+                                  channel.formControlName + '.' + field.name
+                                )?.invalid &&
+                                notificationForm.get(
+                                  channel.formControlName + '.' + field.name
+                                )?.touched
+                              ) {
+                                <small class="p-error">
+                                  {{ field.label }} is required
+                                </small>
+                              }
+                            </div>
+                          }
+                        </div>
+                      }
+                    </div>
+                  }
+                  @if (
+                    notificationForm.get(channel.formControlName + '.provider')?.value ===
+                    'ntfy'
+                  ) {
+                    <div class="mt-3">
+                      <p class="text-sm italic opacity-70">
+                        For the managed instance, the default URL should be
+                        <strong>ntfy.sh</strong>
+                      </p>
+                    </div>
+                  }
+                </fieldset>
+              </div>
+            }
+          </div>
+        }
+      </p-card>
+    }
+    <!-- Save Button -->
+    <div class="flex justify-end">
+      <button
+        pButton
+        type="button"
+        label="Save"
+        aria-label="Save"
+        icon="pi pi-save"
+        severity="primary"
+        (click)="savePreferences()"
+      ></button>
+    </div>
+    <p-card class="notification-section p-4">
+      <div class="flex items-center justify-between">
+        <h3 class="font-semibold text-lg m-0">Notification Channels</h3>
+        <p-button
+          label="Edit Notification Events"
+          icon="pi pi-external-link"
+          severity="info"
+          routerLink="/notifications/edit-events"
+        />
       </div>
-    </div>
-  </p-card>
-
-  <!-- Save Button -->
-  <div class="flex justify-end">
-    <button pButton
-      type="button"
-      label="Save"
-      icon="pi pi-save"
-      severity="primary"
-      (click)="savePreferences()"></button>
-  </div>
-  
-  <p-card class="notification-section p-4">
-    <div class="flex items-center justify-between">
-      <h3 class="font-semibold text-lg m-0">Notification Channels</h3>
-      <p-button
-        label="Edit Notification Events"
-        icon="pi pi-external-link"
-        severity="info"
-        routerLink="/notifications/edit-events"
-      />
-    </div>
-    <p class="opacity-70 m-0">
-      Select which notifications you would like to receive for each domain
-    </p>
-  </p-card>
-</form>
+      <p class="opacity-70 m-0">
+        Select which notifications you would like to receive for each domain
+      </p>
+    </p-card>
+  </form>
+}

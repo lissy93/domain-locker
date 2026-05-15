@@ -1,38 +1,46 @@
-
 <h1>Advanced</h1>
 <div>
   <blockquote class="border-solid border-0 border-l-4 border-primary-300 m-0 pl-2 italic">
-      ℹ️ These are advanced options, intended for developers, self-hosted instances, and when instructed to use by support.<br>
-      ⚠️ Feel free to explore, but be aware that some operations here may be destructive and irreversible if used improperly.<br>
-      ☑️ Looking for more info about Domain Locker? Maybe you'd like to check out our
-      <a href="https://github.com/lissy93/domain-locker">Source code</a> or <a routerLink="/about">Documentation</a>.
-    </blockquote>
+    ℹ️ These are advanced options, intended for developers, self-hosted instances, and
+    when instructed to use by support.<br />
+    ⚠️ Feel free to explore, but be aware that some operations here may be destructive and
+    irreversible if used improperly.<br />
+    ☑️ Looking for more info about Domain Locker? Maybe you'd like to check out our
+    <a href="https://github.com/lissy93/domain-locker">Source code</a> or
+    <a routerLink="/about">Documentation</a>.
+  </blockquote>
 </div>
 
 <p-accordion [activeIndex]="0">
-    <p-accordionTab *ngFor="let section of sections" [header]="section.heading">
-      <ul class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-3 list-none p-0">
-        <li *ngFor="let item of section.items">
-          <a
-            *ngIf="item.external; else internalLink"
-            [href]="item.link"
-            target="_blank"
-            rel="noopener"
-            class="p-card flex p-3 no-underline transition ease-in duration-300 border-transparent border-3 hover:border-primary-300 h-full"
-          >
-            <i [class]="item.icon + ' mr-3'"></i>
-            <h4 class="m-0">{{ item.title }}</h4>
-          </a>
-          <ng-template #internalLink>
-            <a
-              [routerLink]="item.link"
-              class="p-card flex p-3 no-underline transition ease-in duration-300 border-transparent border-3 hover:border-primary-300 h-full"
-            >
-              <i [class]="item.icon + ' mr-3'"></i>
-              <h4 class="m-0">{{ item.title }}</h4>
-            </a>
-          </ng-template>
-        </li>
+  @for (section of sections; track section) {
+    <p-accordionTab [header]="section.heading">
+      <ul
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-3 list-none p-0"
+      >
+        @for (item of section.items; track item) {
+          <li>
+            @if (item.external) {
+              <a
+                [href]="item.link"
+                target="_blank"
+                rel="noopener"
+                class="p-card flex p-3 no-underline transition ease-in duration-300 border-transparent border-3 hover:border-primary-300 h-full"
+              >
+                <i [class]="item.icon + ' mr-3'"></i>
+                <h4 class="m-0">{{ item.title }}</h4>
+              </a>
+            } @else {
+              <a
+                [routerLink]="item.link"
+                class="p-card flex p-3 no-underline transition ease-in duration-300 border-transparent border-3 hover:border-primary-300 h-full"
+              >
+                <i [class]="item.icon + ' mr-3'"></i>
+                <h4 class="m-0">{{ item.title }}</h4>
+              </a>
+            }
+          </li>
+        }
       </ul>
     </p-accordionTab>
+  }
 </p-accordion>

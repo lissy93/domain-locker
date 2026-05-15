@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
@@ -7,7 +7,7 @@ import DatabaseService from '~/app/services/database.service';
 import { DbDomain, Link, SaveDomainData } from '~/app/../types/Database';
 import { notificationTypes, NotificationType } from '~/app/constants/notification-types';
 import { PrimeNgModule } from '~/app/prime-ng.module';
-import { CommonModule } from '@angular/common';
+
 import { ReactiveFormsModule } from '@angular/forms';
 import { GlobalMessageService } from '~/app/services/messaging.service';
 import { ErrorHandlerService } from '~/app/services/error-handler.service';
@@ -15,14 +15,23 @@ import { RegistrarAutocompleteService } from '~/app/services/registrar-autocompl
 import { Subject, takeUntil } from 'rxjs';
 
 @Component({
-  selector: 'app-edit-domain',
+  selector: 'app-domains-domain-name-edit-page',
   templateUrl: './edit-domain.page.html',
   styleUrls: ['./edit-domain.page.scss'],
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, PrimeNgModule],
-  providers: [MessageService]
+  imports: [ReactiveFormsModule, PrimeNgModule],
+  providers: [MessageService],
 })
 export default class EditDomainComponent implements OnInit, OnDestroy {
+  private fb = inject(FormBuilder);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private databaseService = inject(DatabaseService);
+  private errorHandler = inject(ErrorHandlerService);
+  private globalMessageService = inject(GlobalMessageService);
+  private cdr = inject(ChangeDetectorRef);
+  registrarAutocomplete = inject(RegistrarAutocompleteService);
+
   domainForm: FormGroup;
   domain: DbDomain | undefined;
   notificationTypes: NotificationType[] = notificationTypes;
@@ -33,16 +42,7 @@ export default class EditDomainComponent implements OnInit, OnDestroy {
   public registrarLoadFailed = false;
   private destroy$ = new Subject<void>();
 
-  constructor(
-    private fb: FormBuilder,
-    private route: ActivatedRoute,
-    private router: Router,
-    private databaseService: DatabaseService,
-    private errorHandler: ErrorHandlerService,
-    private globalMessageService: GlobalMessageService,
-    private cdr: ChangeDetectorRef,
-    public registrarAutocomplete: RegistrarAutocompleteService,
-  ) {
+  constructor() {
     this.domainForm = this.fb.group({
       registrar: ['', Validators.required],
       expiryDate: [null, Validators.required],
@@ -53,8 +53,11 @@ export default class EditDomainComponent implements OnInit, OnDestroy {
       links: this.fb.array([]),
     });
 
-    this.notificationTypes.forEach(type => {
-      (this.domainForm.get('notifications') as FormGroup).addControl(type.key, this.fb.control(false));
+    this.notificationTypes.forEach((type) => {
+      (this.domainForm.get('notifications') as FormGroup).addControl(
+        type.key,
+        this.fb.control(false),
+      );
     });
   }
 
@@ -63,20 +66,25 @@ export default class EditDomainComponent implements OnInit, OnDestroy {
     if (domainName) {
       this.loadDomain(domainName);
     } else {
-      this.globalMessageService.showMessage({ severity: 'error', summary: 'Error', detail: 'Domain not found' });
+      this.globalMessageService.showMessage({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Domain not found',
+      });
       this.router.navigate(['/domains']);
     }
     this.registrarAutocomplete.loadRegistrars();
 
     // Subscribe to registrar error state for reactivity
-    this.registrarAutocomplete.getHasError$().pipe(
-      takeUntil(this.destroy$)
-    ).subscribe({
-      next: (hasError) => {
-        this.registrarLoadFailed = hasError;
-        this.cdr.markForCheck();
-      }
-    });
+    this.registrarAutocomplete
+      .getHasError$()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (hasError) => {
+          this.registrarLoadFailed = hasError;
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   ngOnDestroy(): void {
@@ -92,10 +100,15 @@ export default class EditDomainComponent implements OnInit, OnDestroy {
         this.isLoading = false;
       },
       error: (error) => {
-        this.errorHandler.handleError({ error, showToast: true, message: 'Failed to load domain', location: 'domain.Edit' });
+        this.errorHandler.handleError({
+          error,
+          showToast: true,
+          message: 'Failed to load domain',
+          location: 'domain.Edit',
+        });
         this.router.navigate(['/domains', this.domain!.domain_name]);
         this.isLoading = false;
-      }
+      },
     });
   }
 
@@ -121,17 +134,23 @@ export default class EditDomainComponent implements OnInit, OnDestroy {
 
     // Set link values
     (this.domain!.domain_links || []).forEach((link) => {
-      this.links.push(this.createLinkGroup(link.link_name, link.link_url, link.link_description));
+      this.links.push(
+        this.createLinkGroup(link.link_name, link.link_url, link.link_description),
+      );
     });
-    
+
     // Set notification values
     const notificationsFormGroup = this.domainForm.get('notifications') as FormGroup;
-    (this.domain!.notification_preferences || []).forEach((notification: { notification_type: string, is_enabled: boolean }) => {
-      const notificationControl = notificationsFormGroup.get(notification.notification_type);
-      if (notificationControl) {
-        notificationControl.setValue(notification.is_enabled);
-      }
-    });
+    (this.domain!.notification_preferences || []).forEach(
+      (notification: { notification_type: string; is_enabled: boolean }) => {
+        const notificationControl = notificationsFormGroup.get(
+          notification.notification_type,
+        );
+        if (notificationControl) {
+          notificationControl.setValue(notification.is_enabled);
+        }
+      },
+    );
   }
 
   cleanSubdomain(subdomain: string): string {
@@ -152,14 +171,21 @@ export default class EditDomainComponent implements OnInit, OnDestroy {
         };
       });
     } catch (error) {
-      this.errorHandler.handleError({ error, showToast: true, message: 'Check link URL format', location: 'Edit Domain' });
+      this.errorHandler.handleError({
+        error,
+        showToast: true,
+        message: 'Check link URL format',
+        location: 'Edit Domain',
+      });
       return;
     }
     if (this.domainForm.valid) {
       this.isLoading = true;
       const formValue = this.domainForm.value;
 
-      const subdomains = formValue.subdomains.map((sd: string) => ({ name: this.cleanSubdomain(sd)}) );
+      const subdomains = formValue.subdomains.map((sd: string) => ({
+        name: this.cleanSubdomain(sd),
+      }));
 
       // Prepare updated domain data
       const updatedDomain: SaveDomainData = {
@@ -170,42 +196,59 @@ export default class EditDomainComponent implements OnInit, OnDestroy {
           notes: formValue.notes,
         },
         tags: formValue.tags,
-        notifications: Object.entries(formValue.notifications).map(([notification_type, is_enabled]) => ({
-          notification_type,
-          is_enabled: is_enabled as boolean
-        })),
+        notifications: Object.entries(formValue.notifications).map(
+          ([type, isEnabled]) => ({
+            type,
+            isEnabled: isEnabled as boolean,
+          }),
+        ),
         subdomains,
-        links,  
+        links,
       };
 
       // Call the database service to update the domain
-      this.databaseService.instance.updateDomain(this.domain!.id, updatedDomain).subscribe({
-        next: () => {
-          this.globalMessageService.showMessage({ severity: 'success', summary: 'Success', detail: 'Domain updated successfully' });
-          this.isLoading = false;
-          this.router.navigate(['/domains', this.domain!.domain_name]);
-        },
-        error: (err) => {
-          this.errorHandler.handleError({
-            error: err,
-            message: 'Failed to update domain',
-            showToast: true,
-            location: 'Edit Domain',
-          });
-          this.isLoading = false;
-        }
-      });
+      this.databaseService.instance
+        .updateDomain(this.domain!.id, updatedDomain)
+        .subscribe({
+          next: () => {
+            this.globalMessageService.showMessage({
+              severity: 'success',
+              summary: 'Success',
+              detail: 'Domain updated successfully',
+            });
+            this.isLoading = false;
+            this.router.navigate(['/domains', this.domain!.domain_name]);
+          },
+          error: (err) => {
+            this.errorHandler.handleError({
+              error: err,
+              message: 'Failed to update domain',
+              showToast: true,
+              location: 'Edit Domain',
+            });
+            this.isLoading = false;
+          },
+        });
     } else {
-      this.globalMessageService.showMessage({ severity: 'warn', summary: 'Validation Error', detail: 'Please fill all required fields correctly' });
+      this.globalMessageService.showMessage({
+        severity: 'warn',
+        summary: 'Validation Error',
+        detail: 'Please fill all required fields correctly',
+      });
     }
   }
 
-  createLinkGroup(name: string = '', url: string = '', description: string = ''): FormGroup {
+  createLinkGroup(name = '', url = '', description = ''): FormGroup {
     return this.fb.group({
       link_name: [name, [Validators.required, Validators.maxLength(255)]],
       link_url: [
-      url,
-      [Validators.required, Validators.pattern(/^(https?:\/\/)?([\w.-]+\.[\w]{2,})(:\d+)?(\/[\w\-._~:/?#[\]@!$&'()*+,;=]*)?$/)]
+        url,
+        [
+          Validators.required,
+          Validators.pattern(
+            /^(https?:\/\/)?([\w.-]+\.[\w]{2,})(:\d+)?(\/[\w\-._~:/?#[\]@!$&'()*+,;=]*)?$/,
+          ),
+        ],
       ],
       link_description: [description, [Validators.maxLength(255)]],
     });
@@ -218,5 +261,4 @@ export default class EditDomainComponent implements OnInit, OnDestroy {
   removeLink(index: number): void {
     this.links.removeAt(index);
   }
-
 }

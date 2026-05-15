@@ -1,10 +1,10 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, inject } from '@angular/core';
 import {
   FormBuilder,
   FormGroup,
   FormArray,
   Validators,
-  ReactiveFormsModule
+  ReactiveFormsModule,
 } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import DatabaseService from '~/app/services/database.service';
@@ -19,10 +19,10 @@ import {
   switchMap,
   catchError,
   map,
-  Subscription
+  Subscription,
 } from 'rxjs';
 import { PrimeNgModule } from '~/app/prime-ng.module';
-import { CommonModule } from '@angular/common';
+
 import { Router } from '@angular/router';
 import { notificationTypes } from '~/app/constants/notification-types';
 import { ErrorHandlerService } from '~/app/services/error-handler.service';
@@ -39,12 +39,21 @@ import { HitCountingService } from '~/app/services/hit-counting.service';
  */
 @Component({
   standalone: true,
-  selector: 'app-bulk-add',
-  imports: [CommonModule, PrimeNgModule, ReactiveFormsModule],
+  selector: 'app-domains-add-bulk-add-page',
+  imports: [PrimeNgModule, ReactiveFormsModule],
   templateUrl: './bulk-add.page.html',
-  styleUrls: ['./bulk-add.page.scss']
+  styleUrls: ['./bulk-add.page.scss'],
 })
-export default class BulkAddComponent implements OnInit, OnDestroy {
+export default class BulkAddComponent implements OnDestroy {
+  private fb = inject(FormBuilder);
+  private http = inject(HttpClient);
+  private messageService = inject(GlobalMessageService);
+  private errorHandler = inject(ErrorHandlerService);
+  private databaseService = inject(DatabaseService);
+  private router = inject(Router);
+  private envService = inject(EnvService);
+  private hitCountingService = inject(HitCountingService);
+
   step = 1;
 
   /** Our master form containing (domainList, domains[], notifications) */
@@ -52,8 +61,8 @@ export default class BulkAddComponent implements OnInit, OnDestroy {
 
   /** Loading states */
   processingDomains = false; // spinner for domain-info fetch
-  fetchingSubs = false;      // spinner if you want to show subdomain fetching
-  savingDomains = false;     // spinner for final save
+  fetchingSubs = false; // spinner if you want to show subdomain fetching
+  savingDomains = false; // spinner for final save
 
   /**
    * Holds the fetched DomainInfo objects, keyed by domain name.
@@ -62,7 +71,7 @@ export default class BulkAddComponent implements OnInit, OnDestroy {
   domainsInfo: Record<string, DomainInfo> = {};
 
   /**
-   * Holds subdomains in a background fetch. 
+   * Holds subdomains in a background fetch.
    * e.g. { 'example.com': ['test.example.com','...'], ... }
    */
   domainsSubMap: Record<string, Omit<Subdomain, 'id' | 'domainId'>[]> = {};
@@ -77,28 +86,17 @@ export default class BulkAddComponent implements OnInit, OnDestroy {
   /** Subscription used for subdomain fetch so we can unsubscribe if needed. */
   private subdomainsFetchSub?: Subscription;
 
-  constructor(
-    private fb: FormBuilder,
-    private http: HttpClient,
-    private messageService: GlobalMessageService,
-    private errorHandler: ErrorHandlerService,
-    private databaseService: DatabaseService,
-    private router: Router,
-    private envService: EnvService,
-    private hitCountingService: HitCountingService,
-  ) {
+  constructor() {
     this.bulkAddForm = this.fb.group({
       domainList: ['', Validators.required],
       domains: this.fb.array([]),
       notifications: this.fb.group(
         this.notificationOptions.reduce((acc, opt) => {
           return { ...acc, [opt.key]: opt.default || false };
-        }, {})
-      )
+        }, {}),
+      ),
     });
   }
-
-  ngOnInit() {}
 
   ngOnDestroy(): void {
     // clean up if subdomain fetch is still ongoing
@@ -130,7 +128,7 @@ export default class BulkAddComponent implements OnInit, OnDestroy {
     if (!domainList.length) {
       this.messageService.showWarn(
         'No valid domains found',
-        'Please enter at least one valid domain name to continue. Separate multiple domains with a comma or space.'
+        'Please enter at least one valid domain name to continue. Separate multiple domains with a comma or space.',
       );
       this.processingDomains = false;
       return;
@@ -141,7 +139,10 @@ export default class BulkAddComponent implements OnInit, OnDestroy {
     this.domainsSubMap = {};
     this.domains.clear();
 
-    const domainInfoEndpoint = this.envService.getEnvVar('DL_DOMAIN_INFO_API', '/api/domain-info');
+    const domainInfoEndpoint = this.envService.getEnvVar(
+      'DL_DOMAIN_INFO_API',
+      '/api/domain-info',
+    );
 
     // 1) fetch domain info sequentially with delay(500)
     from(domainList)
@@ -161,11 +162,11 @@ export default class BulkAddComponent implements OnInit, OnDestroy {
                     });
                     return of(null);
                   }),
-                  map((res) => ({ domain: d, data: res?.domainInfo }))
-                )
-            )
-          )
-        )
+                  map((res) => ({ domain: d, data: res?.domainInfo })),
+                ),
+            ),
+          ),
+        ),
       )
       .subscribe({
         next: ({ domain, data }) => {
@@ -178,7 +179,7 @@ export default class BulkAddComponent implements OnInit, OnDestroy {
             message: 'An unexpected error occurred fetching domain info.',
             error: err,
             showToast: true,
-          })
+          });
         },
         complete: () => {
           // 2) after all domain info fetched
@@ -190,7 +191,7 @@ export default class BulkAddComponent implements OnInit, OnDestroy {
 
           // 4) in the background, fetch subdomains (with delay)
           this.fetchSubdomainsInBackground(domainList);
-        }
+        },
       });
   }
 
@@ -243,99 +244,112 @@ export default class BulkAddComponent implements OnInit, OnDestroy {
           expiryDate: [expiry, Validators.required],
           tags: [[]],
           notes: [''],
-          subdomains: [[]]
-        })
+          subdomains: [[]],
+        }),
       );
     });
   }
 
-/**
- * fetchSubdomainsInBackground: similar sequential approach with delay(500),
- * so we don't spam the /api/domain-subs endpoint.
- */
-fetchSubdomainsInBackground(domainList: string[]): void {
-  this.fetchingSubs = true;
-  
-  const domainSubsEndpoint = this.envService.getEnvVar('DL_DOMAIN_SUBS_API', '/api/domain-subs');
-  this.subdomainsFetchSub = from(domainList)
-    .pipe(
-      concatMap((domain) =>
-        of(domain).pipe(
-          delay(500),
-          switchMap((d) =>
-            this.http
-              .get<Array<{
-                subdomain: string;
-                tags: string[];
-                type: string;
-                ip: string;
-                asn: string;
-                [key: string]: any; // In case there are other fields
-              }>>(`${domainSubsEndpoint}?domain=${d}`)
-              .pipe(
-                catchError((err) => {
-                  this.errorHandler.handleError({
-                    message: `Unable to auto-fetch subdomains for ${d}. You can add these later.`,
-                    error: err,
-                    showToast: true,
-                  });
-                  return of([] as any[]);
-                }),
-                map((subdomains) => ({ domain: d, subdomains }))
-              )
-          )
-        )
+  /**
+   * fetchSubdomainsInBackground: similar sequential approach with delay(500),
+   * so we don't spam the /api/domain-subs endpoint.
+   */
+  fetchSubdomainsInBackground(domainList: string[]): void {
+    this.fetchingSubs = true;
+
+    const domainSubsEndpoint = this.envService.getEnvVar(
+      'DL_DOMAIN_SUBS_API',
+      '/api/domain-subs',
+    );
+    this.subdomainsFetchSub = from(domainList)
+      .pipe(
+        concatMap((domain) =>
+          of(domain).pipe(
+            delay(500),
+            switchMap((d) =>
+              this.http
+                .get<
+                  {
+                    subdomain: string;
+                    tags: string[];
+                    type: string;
+                    ip: string;
+                    asn: string;
+                    [key: string]: unknown; // In case there are other fields
+                  }[]
+                >(`${domainSubsEndpoint}?domain=${d}`)
+                .pipe(
+                  catchError((err) => {
+                    this.errorHandler.handleError({
+                      message: `Unable to auto-fetch subdomains for ${d}. You can add these later.`,
+                      error: err,
+                      showToast: true,
+                    });
+                    return of(
+                      [] as {
+                        subdomain: string;
+                        tags: string[];
+                        type: string;
+                        ip: string;
+                        asn: string;
+                        [key: string]: unknown;
+                      }[],
+                    );
+                  }),
+                  map((subdomains) => ({ domain: d, subdomains })),
+                ),
+            ),
+          ),
+        ),
       )
-    )
-    .subscribe({
-      next: ({ domain, subdomains }) => {
-        // Transform subdomains into [{ name, sd_info }, ...]
-        const subdomainsForForm = subdomains.map((sub) => ({
-          name: this.extractSubdomainName(sub.subdomain, domain),
-          sd_info: JSON.stringify(sub), // store entire object as JSON
-        }));
+      .subscribe({
+        next: ({ domain, subdomains }) => {
+          // Transform subdomains into [{ name, sd_info }, ...]
+          const subdomainsForForm = subdomains.map((sub) => ({
+            name: this.extractSubdomainName(sub.subdomain, domain),
+            sd_info: JSON.stringify(sub), // store entire object as JSON
+          }));
 
-        // Save in local map if you want to keep track
-        this.domainsSubMap[domain] = subdomainsForForm;
+          // Save in local map if you want to keep track
+          this.domainsSubMap[domain] = subdomainsForForm;
 
-        // If you want to store them in the form so user can see/edit them:
-        const idx = this.domains.value.findIndex(
-          (grp: any) => grp.domainName === domain
-        );
-        if (idx !== -1) {
-          this.domains.at(idx).patchValue({ subdomains: subdomainsForForm });
-        }
-      },
-      error: (err) => {
-        this.errorHandler.handleError({
-          message: `Unable to auto-fetch subdomains for some domain(s). You can add these later.`,
-          error: err,
-          showToast: true,
-        });
-      },
-      complete: () => {
-        this.fetchingSubs = false;
-        this.messageService.showInfo(
-          'Subdomains fetched',
-          'Subdomains have been fetched for each domain'
-        );
-      },
-    });
-}
-
-/**
- * Extract just the left-most subdomain name by removing '.<domain>' at the end.
- * e.g. "3d.ebay.com" with domain "ebay.com" -> returns "3d"
- */
-private extractSubdomainName(fullSubdomain: string, parentDomain: string): string {
-  const suffix = '.' + parentDomain; // ".ebay.com"
-  if (fullSubdomain.endsWith(suffix)) {
-    return fullSubdomain.slice(0, -suffix.length); 
+          // If you want to store them in the form so user can see/edit them:
+          const idx = this.domains.value.findIndex(
+            (grp: { domainName: string }) => grp.domainName === domain,
+          );
+          if (idx !== -1) {
+            this.domains.at(idx).patchValue({ subdomains: subdomainsForForm });
+          }
+        },
+        error: (err) => {
+          this.errorHandler.handleError({
+            message: `Unable to auto-fetch subdomains for some domain(s). You can add these later.`,
+            error: err,
+            showToast: true,
+          });
+        },
+        complete: () => {
+          this.fetchingSubs = false;
+          this.messageService.showInfo(
+            'Subdomains fetched',
+            'Subdomains have been fetched for each domain',
+          );
+        },
+      });
   }
-  // If for some reason it doesn't match, just return the entire string
-  return fullSubdomain;
-}
 
+  /**
+   * Extract just the left-most subdomain name by removing '.<domain>' at the end.
+   * e.g. "3d.ebay.com" with domain "ebay.com" -> returns "3d"
+   */
+  private extractSubdomainName(fullSubdomain: string, parentDomain: string): string {
+    const suffix = '.' + parentDomain; // ".ebay.com"
+    if (fullSubdomain.endsWith(suffix)) {
+      return fullSubdomain.slice(0, -suffix.length);
+    }
+    // If for some reason it doesn't match, just return the entire string
+    return fullSubdomain;
+  }
 
   /**
    * Step 2 -> Step 3: ensure each domain row has
@@ -343,16 +357,13 @@ private extractSubdomainName(fullSubdomain: string, parentDomain: string): strin
    */
   goToNotifications(): void {
     const invalidIndex = this.domains.controls.findIndex((ctrl) => {
-      return (
-        !ctrl.get('registrar')?.value ||
-        !ctrl.get('expiryDate')?.value
-      );
+      return !ctrl.get('registrar')?.value || !ctrl.get('expiryDate')?.value;
     });
 
     if (invalidIndex !== -1) {
       this.messageService.showWarn(
         'Missing Info',
-        `Domain #${invalidIndex + 1} is missing registrar or expiry date. Please fill these before proceeding.`
+        `Domain #${invalidIndex + 1} is missing registrar or expiry date. Please fill these before proceeding.`,
       );
       return;
     }
@@ -372,113 +383,130 @@ private extractSubdomainName(fullSubdomain: string, parentDomain: string): strin
     const notificationSettings = this.bulkAddForm.get('notifications')?.value || {};
 
     // 1) get existing domain names so we know which to update
-    this.databaseService.instance.listDomainNames().pipe(
-      concatMap((existingDomains: string[]) => {
-        // 2) sequentially process each domain in the form
-        return from(this.domains.controls).pipe(
-          concatMap((domainForm) => {
-            const domainName: string = domainForm.get('domainName')?.value;
-            const registrar: string = domainForm.get('registrar')?.value;
-            const expiry: Date = domainForm.get('expiryDate')?.value;
-            const notes: string = domainForm.get('notes')?.value;
-            const tags: string[] = domainForm.get('tags')?.value || [];
-            const subdomains: string[] = domainForm.get('subdomains')?.value || [];
+    this.databaseService.instance
+      .listDomainNames()
+      .pipe(
+        concatMap((existingDomains: string[]) => {
+          // 2) sequentially process each domain in the form
+          return from(this.domains.controls).pipe(
+            concatMap((domainForm) => {
+              const domainName: string = domainForm.get('domainName')?.value;
+              const registrar: string = domainForm.get('registrar')?.value;
+              const expiry: Date = domainForm.get('expiryDate')?.value;
+              const notes: string = domainForm.get('notes')?.value;
+              const tags: string[] = domainForm.get('tags')?.value || [];
+              const _subdomains: string[] = domainForm.get('subdomains')?.value || [];
 
-            const domainInfo = this.domainsInfo[domainName];
-            // Build the SaveDomainData object
-            const domainData: SaveDomainData = {
-              domain: {
-                domain_name: domainName.toLowerCase(),
-                registrar: domainInfo?.registrar || { name: registrar, id: '', url: '', registryDomainId: '' },
-                expiry_date: expiry,
-                notes: notes,
-                registration_date: domainInfo?.dates?.creation_date ? new Date(domainInfo.dates.creation_date) : undefined,
-                updated_date: domainInfo?.dates?.updated_date ? new Date(domainInfo.dates.updated_date) : undefined,
-              },
-              tags,
-              // Build notifications array from "true" entries
-              notifications: Object.entries(notificationSettings)
-                .filter(([_, isEnabled]) => isEnabled)
-                .map(([type]) => ({ type, isEnabled: true })),
+              const domainInfo = this.domainsInfo[domainName];
+              // Build the SaveDomainData object
+              const domainData: SaveDomainData = {
+                domain: {
+                  domain_name: domainName.toLowerCase(),
+                  registrar: domainInfo?.registrar || {
+                    name: registrar,
+                    id: '',
+                    url: '',
+                    registryDomainId: '',
+                  },
+                  expiry_date: expiry,
+                  notes: notes,
+                  registration_date: domainInfo?.dates?.creation_date
+                    ? new Date(domainInfo.dates.creation_date)
+                    : undefined,
+                  updated_date: domainInfo?.dates?.updated_date
+                    ? new Date(domainInfo.dates.updated_date)
+                    : undefined,
+                },
+                tags,
+                // Build notifications array from "true" entries
+                notifications: Object.entries(notificationSettings)
+                  .filter(([_, isEnabled]) => isEnabled)
+                  .map(([type]) => ({ type, isEnabled: true })),
 
-              statuses: domainInfo?.status || [],
-              ipAddresses: domainInfo?.ip_addresses
-                ? [
-                    ...(domainInfo.ip_addresses.ipv4 || []).map((ip) => ({
-                      ipAddress: ip,
-                      isIpv6: false
-                    })),
-                    ...(domainInfo.ip_addresses.ipv6 || []).map((ip) => ({
-                      ipAddress: ip,
-                      isIpv6: true
-                    }))
-                  ]
-                : [],
-              ssl: domainInfo?.ssl || undefined,
-              whois: domainInfo?.whois || undefined,
-              dns: domainInfo?.dns || undefined,
-              registrar: domainInfo?.registrar || undefined,
-              host: domainInfo?.host
-                ? {
-                    ...domainInfo.host,
-                    // transform host.asNumber if needed, e.g. remove "AS" prefix
-                    asNumber: domainInfo.host.asNumber?.replace(/[^\d]/g, '') || domainInfo.host.asNumber
-                  }
-                : undefined,
-              subdomains: this.domainsSubMap[domainName] || [],
-              links: domainInfo?.links || [],
-            };
+                statuses: domainInfo?.status || [],
+                ipAddresses: domainInfo?.ip_addresses
+                  ? [
+                      ...(domainInfo.ip_addresses.ipv4 || []).map((ip) => ({
+                        ipAddress: ip,
+                        isIpv6: false,
+                      })),
+                      ...(domainInfo.ip_addresses.ipv6 || []).map((ip) => ({
+                        ipAddress: ip,
+                        isIpv6: true,
+                      })),
+                    ]
+                  : [],
+                ssl: domainInfo?.ssl || undefined,
+                whois: domainInfo?.whois || undefined,
+                dns: domainInfo?.dns || undefined,
+                registrar: domainInfo?.registrar || undefined,
+                host: domainInfo?.host
+                  ? {
+                      ...domainInfo.host,
+                      // transform host.asNumber if needed, e.g. remove "AS" prefix
+                      asNumber:
+                        domainInfo.host.asNumber?.replace(/[^\d]/g, '') ||
+                        domainInfo.host.asNumber,
+                    }
+                  : undefined,
+                subdomains: this.domainsSubMap[domainName] || [],
+                links: domainInfo?.links || [],
+              };
 
-            const operation = existingDomains.includes(domainName)
-              ? this.databaseService.instance.updateDomain(domainName, domainData)
-              : this.databaseService.instance.saveDomain(domainData);
+              const operation = existingDomains.includes(domainName)
+                ? this.databaseService.instance.updateDomain(domainName, domainData)
+                : this.databaseService.instance.saveDomain(domainData);
 
-            return operation.pipe(
-              map(() => ({ domain: domainName, success: true })),
-              catchError((error) => {
-                this.errorHandler.handleError({
-                  message: `Error saving ${domainName}`,
-                  error,
-                  showToast: true,
-                });
-                return of({ domain: domainName, success: false, error });
-              })
+              return operation.pipe(
+                map(() => ({ domain: domainName, success: true })),
+                catchError((error) => {
+                  this.errorHandler.handleError({
+                    message: `Error saving ${domainName}`,
+                    error,
+                    showToast: true,
+                  });
+                  return of({ domain: domainName, success: false, error });
+                }),
+              );
+            }),
+          );
+        }),
+      )
+      .subscribe({
+        next: ({ domain, success }) => {
+          if (success) {
+            this.hitCountingService.trackEvent('add_domain', { location: 'bulk' });
+            this.savedDomains.push(domain);
+            this.messageService.showSuccess(
+              'Success',
+              `${domain} has been added to your account`,
             );
-          })
-        );
-      })
-    ).subscribe({
-      next: ({ domain, success }) => {
-        if (success) {
-          this.hitCountingService.trackEvent('add_domain', { location: 'bulk' });
-          this.savedDomains.push(domain);
-          this.messageService.showSuccess('Success', `${domain} has been added to your account`);
-        } else {
-          this.failedDomains.push(domain);
-          
+          } else {
+            this.failedDomains.push(domain);
+
+            this.errorHandler.handleError({
+              message: `Failed to save domain: ${domain}`,
+              showToast: true,
+            });
+          }
+        },
+        error: (err) => {
           this.errorHandler.handleError({
-            message: `Failed to save domain: ${domain}`,
+            message: 'An unexpected error occurred while saving domains.',
+            error: err,
             showToast: true,
           });
-        }
-      },
-      error: (err) => {
-        this.errorHandler.handleError({
-          message: 'An unexpected error occurred while saving domains.',
-          error: err,
-          showToast: true,
-        });
-        this.savingDomains = false;
-      },
-      complete: () => {
-        this.savingDomains = false;
-        this.step = 4; // summary screen
-        this.messageService.showInfo(
-          'Bulk Add Complete',
-          `${this.savedDomains.length} domains saved, ${this.failedDomains.length} failed.`,
-        );
-      }
-    });
+          this.savingDomains = false;
+        },
+        complete: () => {
+          this.savingDomains = false;
+          this.step = 4; // summary screen
+          this.messageService.showInfo(
+            'Bulk Add Complete',
+            `${this.savedDomains.length} domains saved, ${this.failedDomains.length} failed.`,
+          );
+        },
+      });
   }
 
   /**

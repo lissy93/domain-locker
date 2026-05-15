@@ -1,4 +1,3 @@
-
 export interface LinkItem {
   purpose: string;
   provider: string;
@@ -209,5 +208,3 @@ export const documentationLinks: LinkItem[] = [
     description: 'Fuzzy searching for filtering',
   },
 ];
-
-

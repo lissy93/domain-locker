@@ -10,6 +10,7 @@ pre {
   padding: 0.5rem 0.75rem;
 }
 
-pre span, pre code {
+pre span,
+pre code {
   text-shadow: none !important;
 }

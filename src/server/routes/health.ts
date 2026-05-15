@@ -5,5 +5,5 @@ import { defineEventHandler } from 'h3';
  * Returns a 200 status because if you get a response the server is alive
  */
 export default defineEventHandler(() => {
-  return { status: 'ok', message: 'Houston, We\'re still alive 💗.' };
+  return { status: 'ok', message: "Houston, We're still alive 💗." };
 });

@@ -3,17 +3,18 @@ import {
   Input,
   OnDestroy,
   AfterViewInit,
-  Inject,
-  PLATFORM_ID
+  PLATFORM_ID,
+  inject,
 } from '@angular/core';
-import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { isPlatformBrowser } from '@angular/common';
 import { PrimeNgModule } from '~/app/prime-ng.module';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { Subscription } from 'rxjs';
 
 @Component({
   standalone: true,
-  selector: 'loading',
-  imports: [CommonModule, PrimeNgModule, TranslateModule],
+  selector: 'app-loading',
+  imports: [PrimeNgModule, TranslateModule],
   styles: `
     ::ng-deep .is-absolute {
       background: var(--surface-0);
@@ -25,7 +26,9 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
   `,
   template: `
     <div
-      class="flex justify-center flex-col items-center h-full min-h-80 gap-4 mx-auto scale-1 md:mt-[-3rem] lg:mt-[-5rem] md:scale-125 xl:scale-150 animate-fade-in overflow-hidden {{ isAbsolute ? 'is-absolute' : ''}}"
+      class="flex justify-center flex-col items-center h-full min-h-80 gap-4 mx-auto scale-1 md:mt-[-3rem] lg:mt-[-5rem] md:scale-125 xl:scale-150 animate-fade-in overflow-hidden {{
+        isAbsolute ? 'is-absolute' : ''
+      }}"
     >
       <!-- Title -->
       <p class="m-0 text-4xl font-extrabold text-default tracking-widest">
@@ -35,15 +38,27 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
       <!-- Animated bar loader -->
       <div class="w-28 flex gap-2">
         <div class="w-2 h-4 rounded-full bg-primary animate-fade-bounce"></div>
-        <div class="w-2 h-4 rounded-full bg-primary animate-fade-bounce [animation-delay:-0.3s]"></div>
-        <div class="w-2 h-4 rounded-full bg-primary animate-fade-bounce [animation-delay:-0.5s]"></div>
-        <div class="w-2 h-4 rounded-full bg-primary animate-fade-bounce [animation-delay:-0.8s]"></div>
+        <div
+          class="w-2 h-4 rounded-full bg-primary animate-fade-bounce [animation-delay:-0.3s]"
+        ></div>
+        <div
+          class="w-2 h-4 rounded-full bg-primary animate-fade-bounce [animation-delay:-0.5s]"
+        ></div>
+        <div
+          class="w-2 h-4 rounded-full bg-primary animate-fade-bounce [animation-delay:-0.8s]"
+        ></div>
       </div>
 
       <!-- Description -->
-      <p *ngIf="loadingDescription; else defaultDesc" class="m-0 mt-4 text-lg text-surface-400 text-center">
-        {{ loadingDescription }}
-      </p>
+      @if (loadingDescription) {
+        <p class="m-0 mt-4 text-lg text-surface-400 text-center">
+          {{ loadingDescription }}
+        </p>
+      } @else {
+        <p class="m-0 mt-4 text-lg text-surface-400 text-center">
+          {{ text.defaultDesc }}
+        </p>
+      }
       <ng-template #defaultDesc>
         <p class="m-0 mt-4 text-lg text-surface-400 text-center">
           {{ text.defaultDesc }}
@@ -51,54 +66,62 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
       </ng-template>
 
       <!-- Error display (appears after a timeout) -->
-      <div *ngIf="showError" class="text-center">
-        <p class="m-0 text-xs text-surface-400">
-          {{ text.errorShort }}
-        </p>
-        <p class="m-0 text-lg text-red-400">
-          {{ text.errorLong }}
-        </p>
-      </div>
+      @if (showError) {
+        <div class="text-center">
+          <p class="m-0 text-xs text-surface-400">
+            {{ text.errorShort }}
+          </p>
+          <p class="m-0 text-lg text-red-400">
+            {{ text.errorLong }}
+          </p>
+        </div>
+      }
 
-      <div *ngIf="showError" class="flex gap-2 flex-wrap justify-center">
-        <a routerLink="/">
+      @if (showError) {
+        <div class="flex gap-2 flex-wrap justify-center">
+          <a routerLink="/">
+            <p-button
+              size="small"
+              [label]="text.buttonHome"
+              severity="primary"
+              icon="pi pi-home"
+            ></p-button>
+          </a>
           <p-button
             size="small"
-            [label]="text.buttonHome"
-            severity="primary"
-            icon="pi pi-home"
+            [label]="text.buttonDebug"
+            severity="info"
+            icon="pi pi-info-circle"
+            (click)="reloadPage()"
           ></p-button>
-        </a>
-        <p-button
-          size="small"
-          [label]="text.buttonDebug"
-          severity="info"
-          icon="pi pi-info-circle"
-          (click)="reloadPage()"
-        ></p-button>
-        <p-button
-          size="small"
-          [label]="text.buttonReload"
-          severity="secondary"
-          icon="pi pi-sync"
-          (click)="reloadPage()"
-        ></p-button>
-      </div>
+          <p-button
+            size="small"
+            [label]="text.buttonReload"
+            severity="secondary"
+            icon="pi pi-sync"
+            (click)="reloadPage()"
+          ></p-button>
+        </div>
+      }
     </div>
   `,
 })
 export class LoadingComponent implements AfterViewInit, OnDestroy {
+  private platformId = inject<object>(PLATFORM_ID);
+  private translate = inject(TranslateService);
+
   @Input() loadingTitle?: string;
   @Input() loadingDescription?: string;
   @Input() isAbsolute?: boolean = false;
-  public showError: boolean = false;
+  public showError = false;
 
   // Fallback strings
   public text = {
     // Title
     initTitle: 'Initializing',
     // Description fallback
-    defaultDesc: "We're just getting everything ready for you.\nThis shouldn't take a moment...",
+    defaultDesc:
+      "We're just getting everything ready for you.\nThis shouldn't take a moment...",
     // Error messages
     errorShort: "It shouldn't be taking this long...",
     errorLong: 'Something might have gone wrong',
@@ -108,13 +131,10 @@ export class LoadingComponent implements AfterViewInit, OnDestroy {
     buttonReload: 'Reload',
   };
 
-  private errorTimeout: any;
-  private langSub: any; // unsub ref
+  private errorTimeout: number | undefined;
+  private langSub: Subscription | undefined; // unsub ref
 
-  constructor(
-    @Inject(PLATFORM_ID) private platformId: Object,
-    private translate: TranslateService
-  ) {
+  constructor() {
     // 1) Set initial text from fallback, or if translations are loaded
     this.updateTranslatedStrings();
 
@@ -160,15 +180,33 @@ export class LoadingComponent implements AfterViewInit, OnDestroy {
       return fallback;
       // TODO: Fix the following, so we can show fallback only when translations not yet loaded.
       const t = this.translate.instant(key);
-      return (t && t !== key) ? t : fallback;
+      return t && t !== key ? t : fallback;
     };
 
-    this.text.initTitle     = tryTranslate('GLOBAL.LOADING.INITIALIZING', this.text.initTitle);
-    this.text.defaultDesc   = tryTranslate('GLOBAL.LOADING.DEFAULT_DESCRIPTION', this.text.defaultDesc);
-    this.text.errorShort    = tryTranslate('GLOBAL.LOADING.ERROR_SHORT', this.text.errorShort);
-    this.text.errorLong     = tryTranslate('GLOBAL.LOADING.ERROR_LONG', this.text.errorLong);
-    this.text.buttonHome    = tryTranslate('GLOBAL.LOADING.BUTTON.HOME', this.text.buttonHome);
-    this.text.buttonDebug   = tryTranslate('GLOBAL.LOADING.BUTTON.DEBUG', this.text.buttonDebug);
-    this.text.buttonReload  = tryTranslate('GLOBAL.LOADING.BUTTON.RELOAD', this.text.buttonReload);
+    this.text.initTitle = tryTranslate(
+      'GLOBAL.LOADING.INITIALIZING',
+      this.text.initTitle,
+    );
+    this.text.defaultDesc = tryTranslate(
+      'GLOBAL.LOADING.DEFAULT_DESCRIPTION',
+      this.text.defaultDesc,
+    );
+    this.text.errorShort = tryTranslate(
+      'GLOBAL.LOADING.ERROR_SHORT',
+      this.text.errorShort,
+    );
+    this.text.errorLong = tryTranslate('GLOBAL.LOADING.ERROR_LONG', this.text.errorLong);
+    this.text.buttonHome = tryTranslate(
+      'GLOBAL.LOADING.BUTTON.HOME',
+      this.text.buttonHome,
+    );
+    this.text.buttonDebug = tryTranslate(
+      'GLOBAL.LOADING.BUTTON.DEBUG',
+      this.text.buttonDebug,
+    );
+    this.text.buttonReload = tryTranslate(
+      'GLOBAL.LOADING.BUTTON.RELOAD',
+      this.text.buttonReload,
+    );
   }
 }

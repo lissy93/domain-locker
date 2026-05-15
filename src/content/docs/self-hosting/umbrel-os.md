@@ -14,4 +14,4 @@ For installation instructions, see [this guide](https://framer.umbrel.com/wip/su
 
 Thank you [@dennysubke](https://github.com/dennysubke) for submitting it ([#2633](https://github.com/getumbrel/umbrel-apps/pull/2633))!
 
-![screenshot](https://storage.googleapis.com/as93-screenshots/domain-locker/domain-locker-umbrel.png)
+[![screenshot](https://cdn.as93.net/screenshots/umbrel-app-store-domain-locker/w1024)](https://apps.umbrel.com/app/domain-locker)

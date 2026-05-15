@@ -1,15 +1,30 @@
-import { SupabaseClient, User } from '@supabase/supabase-js';
+import { SupabaseClient } from '@supabase/supabase-js';
 import { catchError, from, map, Observable, switchMap } from 'rxjs';
 import { Link } from '~/app/../types/Database';
 import { LinkResponse, ModifiedLink } from '~/app/pages/assets/links/index.page';
 
+interface LinkRow {
+  id: string;
+  link_name: string;
+  link_url: string;
+  link_description?: string;
+  domains?: { domain_name?: string } | null;
+}
+
+interface LinkDomainAggregate {
+  link_name: string;
+  link_url: string;
+  link_description?: string;
+  link_ids: Set<string>;
+  domains: Set<string>;
+}
+
 export class LinkQueries {
   constructor(
     private supabase: SupabaseClient,
-    private handleError: (error: any) => Observable<never>,
+    private handleError: (error: unknown) => Observable<never>,
     private listDomainNames: () => Observable<string[]>,
   ) {}
-
 
   async updateLinks(domainId: string, links: Link[]): Promise<void> {
     // Get existing links from the database
@@ -17,37 +32,47 @@ export class LinkQueries {
       .from('domain_links')
       .select('id, link_name, link_url, link_description')
       .eq('domain_id', domainId);
-  
+
     if (error) throw error;
-  
+
     const existingLinks = existingData || [];
-  
+
     // Determine which links to add, update, and delete
-    const linksToAdd = links.filter(newLink =>
-      !existingLinks.some(existingLink => 
-        existingLink.link_name === newLink.link_name && existingLink.link_url === newLink.link_url)
+    const linksToAdd = links.filter(
+      (newLink) =>
+        !existingLinks.some(
+          (existingLink) =>
+            existingLink.link_name === newLink.link_name &&
+            existingLink.link_url === newLink.link_url,
+        ),
     );
-    
-    const linksToRemove = existingLinks.filter(existingLink =>
-      !links.some(newLink => 
-        newLink.link_name === existingLink.link_name && newLink.link_url === existingLink.link_url)
+
+    const linksToRemove = existingLinks.filter(
+      (existingLink) =>
+        !links.some(
+          (newLink) =>
+            newLink.link_name === existingLink.link_name &&
+            newLink.link_url === existingLink.link_url,
+        ),
     );
-    
-    const linksToUpdate = links.filter(newLink =>
-      existingLinks.some(existingLink =>
-        existingLink.link_name === newLink.link_name &&
-        (existingLink.link_url !== newLink.link_url || existingLink.link_description !== newLink.link_description)
-      )
+
+    const linksToUpdate = links.filter((newLink) =>
+      existingLinks.some(
+        (existingLink) =>
+          existingLink.link_name === newLink.link_name &&
+          (existingLink.link_url !== newLink.link_url ||
+            existingLink.link_description !== newLink.link_description),
+      ),
     );
-  
+
     // Add new links
     if (linksToAdd.length > 0) {
       const { error: insertError } = await this.supabase
         .from('domain_links')
-        .insert(linksToAdd.map(link => ({ ...link, domain_id: domainId })));
+        .insert(linksToAdd.map((link) => ({ ...link, domain_id: domainId })));
       if (insertError) throw insertError;
     }
-  
+
     // Update modified links
     for (const link of linksToUpdate) {
       const { error: updateError } = await this.supabase
@@ -60,60 +85,56 @@ export class LinkQueries {
         .eq('link_name', link.link_name);
       if (updateError) throw updateError;
     }
-  
+
     // Remove old links
     if (linksToRemove.length > 0) {
       const { error: deleteError } = await this.supabase
         .from('domain_links')
         .delete()
         .eq('domain_id', domainId)
-        .in('link_name', linksToRemove.map(link => link.link_name));
+        .in(
+          'link_name',
+          linksToRemove.map((link) => link.link_name),
+        );
       if (deleteError) throw deleteError;
     }
   }
-  
+
   getAllLinks(): Observable<LinkResponse> {
     return from(
       this.supabase
         .from('domain_links')
-        .select(`
+        .select(
+          `
           id,
           link_name,
           link_url,
           link_description,
           domains(domain_name)
-        `)
+        `,
+        )
         .then(({ data, error }) => {
           if (error) throw error;
-  
+
           // Group links by domain
-          const groupedByDomain = data.reduce((acc: Record<string, Link[]>, link: any) => {
-            const domainName = link.domains?.domain_name || 'Unknown Domain';
-            if (!acc[domainName]) acc[domainName] = [];
-            acc[domainName].push({
-              id: link.id,
-              link_name: link.link_name,
-              link_url: link.link_url,
-              link_description: link.link_description,
-            });
-            return acc;
-          }, {});
-  
+          const groupedByDomain = (data as unknown as LinkRow[]).reduce(
+            (acc: Record<string, Link[]>, link) => {
+              const domainName = link.domains?.domain_name || 'Unknown Domain';
+              if (!acc[domainName]) acc[domainName] = [];
+              acc[domainName].push({
+                id: link.id,
+                link_name: link.link_name,
+                link_url: link.link_url,
+                link_description: link.link_description,
+              });
+              return acc;
+            },
+            {},
+          );
+
           // Aggregate domains and link IDs for each unique link grouped by link_url
-          const linkDomains = data.reduce(
-            (
-              acc: Record<
-                string,
-                {
-                  link_name: string;
-                  link_url: string;
-                  link_description?: string;
-                  link_ids: Set<string>;
-                  domains: Set<string>;
-                }
-              >,
-              link: any
-            ) => {
+          const linkDomains = (data as unknown as LinkRow[]).reduce(
+            (acc: Record<string, LinkDomainAggregate>, link) => {
               const key = link.link_url; // Group by link_url
               if (!acc[key]) {
                 acc[key] = {
@@ -125,12 +146,13 @@ export class LinkQueries {
                 };
               }
               acc[key].link_ids.add(link.id); // Add the link ID
-              if (link.domains?.domain_name) acc[key].domains.add(link.domains.domain_name); // Add the domain
+              if (link.domains?.domain_name)
+                acc[key].domains.add(link.domains.domain_name); // Add the domain
               return acc;
             },
-            {}
+            {},
           );
-  
+
           // Map aggregated data into the required format
           const linksWithDomains = Object.values(linkDomains).map(
             ({ link_name, link_url, link_description, link_ids, domains }) => ({
@@ -140,14 +162,13 @@ export class LinkQueries {
               link_description,
               link_ids: Array.from(link_ids), // Convert link_ids set to array
               domains: Array.from(domains), // Convert domains set to array
-            })
+            }),
           );
-  
+
           return { groupedByDomain, linksWithDomains };
-        })
+        }),
     ).pipe(catchError((error) => this.handleError(error)));
   }
-  
 
   addLinkToDomains(linkData: {
     link_name?: string;
@@ -160,11 +181,16 @@ export class LinkQueries {
     return this.listDomainNames().pipe(
       switchMap((availableDomains) => {
         // Filter valid domains that exist in the database
-        const validDomains = (domains || []).filter((domain) => availableDomains.includes(domain));
+        const validDomains = (domains || []).filter((domain) =>
+          availableDomains.includes(domain),
+        );
 
         // Fetch the domain IDs for the valid domains
         return from(
-          this.supabase.from('domains').select('id, domain_name').in('domain_name', validDomains),
+          this.supabase
+            .from('domains')
+            .select('id, domain_name')
+            .in('domain_name', validDomains),
         ).pipe(
           map(({ data, error }) => {
             if (error) throw error;
@@ -196,16 +222,16 @@ export class LinkQueries {
     );
   }
 
-  updateLinkInDomains(
-    linkData: ModifiedLink,
-  ): Observable<void> {
+  updateLinkInDomains(linkData: ModifiedLink): Observable<void> {
     const { link_ids, link_name, link_url, link_description, domains } = linkData;
-  
+
     return this.listDomainNames().pipe(
       switchMap((availableDomains) => {
         // Ensure only valid domains are considered
-        const validDomains = (domains || []).filter((domain) => availableDomains.includes(domain));
-  
+        const validDomains = (domains || []).filter((domain) =>
+          availableDomains.includes(domain),
+        );
+
         // Fetch the domain IDs for the valid domains
         return from(
           this.supabase
@@ -215,7 +241,12 @@ export class LinkQueries {
         ).pipe(
           map(({ data, error }) => {
             if (error) throw error;
-            return data?.map((domain) => ({ domainId: domain.id, domainName: domain.domain_name })) || [];
+            return (
+              data?.map((domain) => ({
+                domainId: domain.id,
+                domainName: domain.domain_name,
+              })) || []
+            );
           }),
         );
       }),
@@ -225,17 +256,23 @@ export class LinkQueries {
           .from('domain_links')
           .select('id, domain_id')
           .in('id', link_ids);
-  
+
         if (error) throw error;
-  
+
         const existingDomainIds = existingLinks?.map((link) => link.domain_id) || [];
-  
-        const domainsToAdd = domainData.filter((d) => !existingDomainIds.includes(d.domainId));
-        const domainsToUpdate = domainData.filter((d) => existingDomainIds.includes(d.domainId));
-        const domainsToRemove = existingDomainIds.filter((id) => !domainData.some((d) => d.domainId === id));
-  
-        const tasks: PromiseLike<any>[] = [];
-  
+
+        const domainsToAdd = domainData.filter(
+          (d) => !existingDomainIds.includes(d.domainId),
+        );
+        const domainsToUpdate = domainData.filter((d) =>
+          existingDomainIds.includes(d.domainId),
+        );
+        const domainsToRemove = existingDomainIds.filter(
+          (id) => !domainData.some((d) => d.domainId === id),
+        );
+
+        const tasks: PromiseLike<unknown>[] = [];
+
         // Add new links
         if (domainsToAdd.length > 0) {
           tasks.push(
@@ -254,7 +291,7 @@ export class LinkQueries {
               }),
           );
         }
-  
+
         // Update existing links
         for (const domain of domainsToUpdate) {
           tasks.push(
@@ -266,10 +303,13 @@ export class LinkQueries {
                 link_description,
               })
               .eq('domain_id', domain.domainId)
-              .eq('id', link_ids.find((id) => existingLinks.some((link) => link.id === id))),
+              .eq(
+                'id',
+                link_ids.find((id) => existingLinks.some((link) => link.id === id)),
+              ),
           );
         }
-  
+
         // Remove links for unchecked domains
         if (domainsToRemove.length > 0) {
           tasks.push(
@@ -288,21 +328,16 @@ export class LinkQueries {
       catchError((error) => this.handleError(error)),
     );
   }
-  
 
   deleteLinks(linkIds: string | string[]): Observable<void> {
     const ids = Array.isArray(linkIds) ? linkIds : [linkIds];
     return from(
-      this.supabase
-        .from('domain_links')
-        .delete()
-        .in('id', ids) // Use 'in' to delete multiple IDs
+      this.supabase.from('domain_links').delete().in('id', ids), // Use 'in' to delete multiple IDs
     ).pipe(
       map(({ error }) => {
         if (error) throw error;
       }),
-      catchError((error) => this.handleError(error))
+      catchError((error) => this.handleError(error)),
     );
   }
-   
 }

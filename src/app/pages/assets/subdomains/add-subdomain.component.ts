@@ -1,5 +1,5 @@
-import { Component, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, Input, inject } from '@angular/core';
+
 import { FormsModule } from '@angular/forms';
 import { PrimeNgModule } from '~/app/prime-ng.module';
 
@@ -7,11 +7,12 @@ import DatabaseService from '~/app/services/database.service';
 import { ErrorHandlerService } from '~/app/services/error-handler.service';
 import { GlobalMessageService } from '~/app/services/messaging.service';
 import { FeatureService } from '~/app/services/features.service';
+import { Observable } from 'rxjs';
 
 @Component({
   standalone: true,
   selector: 'app-add-subdomain-dialog',
-  imports: [CommonModule, FormsModule, PrimeNgModule],
+  imports: [FormsModule, PrimeNgModule],
   template: `
     <p-dialog
       header="Add Subdomain"
@@ -35,6 +36,7 @@ import { FeatureService } from '~/app/services/features.service';
         <button
           pButton
           label="Cancel"
+          aria-label="Cancel"
           icon="pi pi-times"
           class="p-button-text mr-2"
           (click)="display = false"
@@ -42,6 +44,7 @@ import { FeatureService } from '~/app/services/features.service';
         <button
           pButton
           label="Save"
+          aria-label="Save"
           icon="pi pi-check"
           (click)="saveSubdomain()"
           [disabled]="!subdomainInput"
@@ -51,6 +54,11 @@ import { FeatureService } from '~/app/services/features.service';
   `,
 })
 export class AddSubdomainDialogComponent {
+  private databaseService = inject(DatabaseService);
+  private errorHandler = inject(ErrorHandlerService);
+  private globalMessagingService = inject(GlobalMessageService);
+  private featureService = inject(FeatureService);
+
   /** The "parent" domain name, e.g. "example.com" */
   @Input() domain!: string;
 
@@ -59,13 +67,6 @@ export class AddSubdomainDialogComponent {
 
   /** User input for new subdomain */
   subdomainInput = '';
-
-  constructor(
-    private databaseService: DatabaseService,
-    private errorHandler: ErrorHandlerService,
-    private globalMessagingService: GlobalMessageService,
-    private featureService: FeatureService,
-  ) {}
 
   /** Programmatically show the dialog */
   showDialog() {
@@ -80,7 +81,7 @@ export class AddSubdomainDialogComponent {
   }
 
   /**
-   * Remove protocol, slash parts, invalid chars, 
+   * Remove protocol, slash parts, invalid chars,
    * and anything after the first dot.
    */
   private sanitizeSubdomain(input: string): string {
@@ -115,7 +116,7 @@ export class AddSubdomainDialogComponent {
     if (!cleanedSubdomain) {
       this.globalMessagingService.showError(
         'Invalid subdomain',
-        'Please enter a valid subdomain name.'
+        'Please enter a valid subdomain name.',
       );
       return;
     }
@@ -123,28 +124,32 @@ export class AddSubdomainDialogComponent {
     if (!(await this.featureService.isFeatureEnabledPromise('writePermissions'))) {
       this.globalMessagingService.showWarn(
         'Write Permissions Disabled',
-        'It\'s not possible to add subdomains on the demo instance.',
+        "It's not possible to add subdomains on the demo instance.",
       );
       this.display = false;
       return;
     }
 
     // Call a new service method that inserts subdomain for domain
-    this.databaseService.instance.subdomainsQueries.saveSubdomainForDomain(this.domain, cleanedSubdomain)
-      .subscribe({
-        next: () => {
-          this.globalMessagingService.showSuccess(
-            'Subdomain Added',
-            `${cleanedSubdomain}.${this.domain} has been successfully added to your account`
-          );
-          this.display = false;
+    const result$ =
+      this.databaseService.instance.subdomainsQueries.saveSubdomainForDomain(
+        this.domain,
+        cleanedSubdomain,
+      ) as Observable<unknown>;
+    result$.subscribe({
+      next: () => {
+        this.globalMessagingService.showSuccess(
+          'Subdomain Added',
+          `${cleanedSubdomain}.${this.domain} has been successfully added to your account`,
+        );
+        this.display = false;
 
-          // Option A: Trigger a reload from the parent
-          // Option B: Add the new subdomain to the parent's list manually
-        },
-        error: (error) => {
-          this.errorHandler.handleError({ error });
-        }
-      });
+        // Option A: Trigger a reload from the parent
+        // Option B: Add the new subdomain to the parent's list manually
+      },
+      error: (error: unknown) => {
+        this.errorHandler.handleError({ error });
+      },
+    });
   }
 }

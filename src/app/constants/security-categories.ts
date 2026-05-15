@@ -1,10 +1,8 @@
-
 // This file lists the categories that are used to classify the security status of domains
 
 // EPP (Extensible Provisioning Protocol) status codes show sec and opp statuses of domains
 // Client codes are set by registrars, server codes are set by registries and take precedence
 // The standardized EPP codes are defined in STD-69 and the additional RGP codes in RFC-3915
-
 
 type Severity = 'good' | 'bad' | 'info';
 type SetBy = 'client' | 'server';
@@ -19,37 +17,37 @@ export interface SecurityCategory {
 }
 
 export const getAllBySeverity = (severity: Severity): SecurityCategory[] => {
-  return securityCategories.filter(cat => cat.severity === severity);
-}
+  return securityCategories.filter((cat) => cat.severity === severity);
+};
 
 export const getEppCodesBySeverity = (severity: Severity): string[] => {
-  return getAllBySeverity(severity).map(cat => cat.eppCode);
-}
+  return getAllBySeverity(severity).map((cat) => cat.eppCode);
+};
 
 export const getAllByClientServer = (setBy: SetBy): SecurityCategory[] => {
-  return securityCategories.filter(cat => cat.setBy === setBy);
-}
+  return securityCategories.filter((cat) => cat.setBy === setBy);
+};
 
 export const getEppCodesByClientServer = (setBy: SetBy): string[] => {
-  return getAllByClientServer(setBy).map(cat => cat.eppCode);
-}
+  return getAllByClientServer(setBy).map((cat) => cat.eppCode);
+};
 
 export const getAllWithActions = (): SecurityCategory[] => {
-  return securityCategories.filter(cat => cat.actionToTake !== undefined);
-}
+  return securityCategories.filter((cat) => cat.actionToTake !== undefined);
+};
 
 export const getEppCodesWithActions = (): string[] => {
-  return getAllWithActions().map(cat => cat.eppCode);
-}
+  return getAllWithActions().map((cat) => cat.eppCode);
+};
 
 export const getByEppCode = (eppCode: string): SecurityCategory | undefined => {
-  return securityCategories.find(cat => cat.eppCode === eppCode);
-}
+  return securityCategories.find((cat) => cat.eppCode === eppCode);
+};
 
 export const makeEppArrayFromLabels = (labels: string[]): SecurityCategory[] => {
   if (!labels) return [];
   return labels
-    .map(label => securityCategories.find(cat => cat.eppCode === label))
+    .map((label) => securityCategories.find((cat) => cat.eppCode === label))
     .filter((cat): cat is SecurityCategory => cat !== undefined)
     .sort((a, b) => {
       const severityOrder = { good: 1, info: 2, bad: 3 };
@@ -57,14 +55,14 @@ export const makeEppArrayFromLabels = (labels: string[]): SecurityCategory[] => 
     });
 };
 
-
 export const securityCategories: SecurityCategory[] = [
   {
     eppCode: 'addPeriod',
     label: 'Add Period',
     severity: 'info',
     setBy: 'server',
-    description: 'Domain has been recently registered, and still within the grace period.',
+    description:
+      'Domain has been recently registered, and still within the grace period.',
   },
   {
     eppCode: 'autoRenewPeriod',
@@ -86,7 +84,8 @@ export const securityCategories: SecurityCategory[] = [
     label: 'OK',
     severity: 'good',
     setBy: 'server',
-    description: 'Domain is active and does not have any pending operations or prohibitions.',
+    description:
+      'Domain is active and does not have any pending operations or prohibitions.',
   },
   {
     eppCode: 'pendingCreate',
@@ -130,7 +129,8 @@ export const securityCategories: SecurityCategory[] = [
     label: 'Renew Period',
     severity: 'info',
     setBy: 'server',
-    description: 'Domain has been recently renewed and is within the renewal grace period.',
+    description:
+      'Domain has been recently renewed and is within the renewal grace period.',
   },
   {
     eppCode: 'serverHold',
@@ -228,7 +228,7 @@ export const securityCategories: SecurityCategory[] = [
     label: 'Transfer Period',
     severity: 'info',
     setBy: 'server',
-    description: 'Domain is within the grace period after being transferred to a new registrar.',
-  }
+    description:
+      'Domain is within the grace period after being transferred to a new registrar.',
+  },
 ];
-

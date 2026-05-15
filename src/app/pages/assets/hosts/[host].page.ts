@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject } from '@angular/core';
+
 import { ActivatedRoute } from '@angular/router';
 import { PrimeNgModule } from '~/app/prime-ng.module';
 import { DbDomain } from '~/app/../types/Database';
@@ -10,34 +10,35 @@ import { ErrorHandlerService } from '~/app/services/error-handler.service';
 
 @Component({
   standalone: true,
-  selector: 'app-host-domains',
-  imports: [CommonModule, PrimeNgModule, DomainCollectionComponent],
+  selector: 'app-assets-hosts-host-page',
+  imports: [PrimeNgModule, DomainCollectionComponent],
   template: `
     <h1>Domains hosted by "{{ hostIsp }}"</h1>
-    <app-domain-view
-      [domains]="domains"
-      [preFilteredText]="'hosted with '+hostIsp+''"
-      [showAddButton]="false"
-      [loading]="loading"
-      *ngIf="!loading"
-    />
-    <p-progressSpinner *ngIf="loading"></p-progressSpinner>
+    @if (!loading) {
+      <app-domain-view
+        [domains]="domains"
+        [preFilteredText]="'hosted with ' + hostIsp + ''"
+        [showAddButton]="false"
+        [loading]="loading"
+      />
+    }
+    @if (loading) {
+      <p-progressSpinner></p-progressSpinner>
+    }
   `,
 })
 export default class HostDomainsPageComponent implements OnInit {
-  hostIsp: string = '';
-  domains: DbDomain[] = [];
-  loading: boolean = true;
+  private route = inject(ActivatedRoute);
+  private databaseService = inject(DatabaseService);
+  private messageService = inject(MessageService);
+  private errorHandler = inject(ErrorHandlerService);
 
-  constructor(
-    private route: ActivatedRoute,
-    private databaseService: DatabaseService,
-    private messageService: MessageService,
-    private errorHandler: ErrorHandlerService,
-  ) {}
+  hostIsp = '';
+  domains: DbDomain[] = [];
+  loading = true;
 
   ngOnInit() {
-    this.route.params.subscribe(params => {
+    this.route.params.subscribe((params) => {
       this.hostIsp = params['host'];
       this.loadDomains();
     });
@@ -58,7 +59,7 @@ export default class HostDomainsPageComponent implements OnInit {
           location: 'HostDomainsPageComponent.loadDomains',
         });
         this.loading = false;
-      }
+      },
     });
   }
 }

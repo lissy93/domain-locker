@@ -1,25 +1,25 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject } from '@angular/core';
+
 import { PrimeNgModule } from '~/app/prime-ng.module';
 import { MetaTagsService } from '~/app/services/meta-tags.service';
 import { sections } from '../data/useful-links';
 
 @Component({
-  selector: 'app-external-tools',
+  selector: 'app-about-external-tools-page',
   standalone: true,
-  imports: [CommonModule, PrimeNgModule],
+  imports: [PrimeNgModule],
   templateUrl: './index.page.html',
 })
 export default class ExternalToolsPage implements OnInit {
-  public sections = sections;
+  private metaTagsService = inject(MetaTagsService);
 
-  constructor(private metaTagsService: MetaTagsService) {}
+  public sections = sections;
 
   makeId(title: string) {
     return title.toLowerCase().replace(/\s/g, '-');
   }
 
-    ngOnInit() {
+  ngOnInit() {
     this.metaTagsService.setCustomMeta(
       'Domain Tools and Resources',
       'A directory of free, useful tools and resources for domain owners, including WHOIS lookups, DNS checks, SSL validation, and more.',

@@ -1,4 +1,15 @@
-import { IpAddresses, Dates, Registrar, Contact, Abuse, Dns, Ssl, Host, Subdomain, Link } from './common';
+import {
+  IpAddresses,
+  Dates,
+  Registrar,
+  Contact,
+  Abuse,
+  Dns,
+  Ssl,
+  Host,
+  Subdomain,
+  Link,
+} from './common';
 
 export interface DomainInfo {
   domainName: string;

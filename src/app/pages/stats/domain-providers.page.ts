@@ -3,7 +3,7 @@ import { DomainPieChartsComponent } from '~/app/components/charts/domain-pie/dom
 
 @Component({
   standalone: true,
-  selector: 'app-index-page',
+  selector: 'app-stats-domain-providers-page',
   template: '<h1>Domain Providers</h1><app-domain-pie-charts [listMode]="true" />',
   imports: [DomainPieChartsComponent],
 })

@@ -4,10 +4,10 @@ import { PgApiUtilService } from '~/app/utils/pg-api.util';
 export class StatusQueries {
   constructor(
     private pgApiUtil: PgApiUtilService,
-    private handleError: (error: any) => Observable<never>,
+    private handleError: (error: unknown) => Observable<never>,
   ) {}
 
-  async saveStatuses(domainId: string, statuses: string[]): Promise<void> {
+  async saveStatuses(domainId: string, statuses?: string[]): Promise<void> {
     if (!statuses || statuses.length === 0) return;
 
     const query = `

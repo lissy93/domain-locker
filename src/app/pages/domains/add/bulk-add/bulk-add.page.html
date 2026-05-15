@@ -1,124 +1,202 @@
 <div class="card bulk-add-wrap">
   <h2>Bulk Add Domains</h2>
-  <p-steps [model]="[{label: 'Domain List'}, {label: 'Domain Details'}, {label: 'Notifications'}, {label: 'Summary'}]" [activeIndex]="step - 1"></p-steps>
+  <p-steps
+    [model]="[
+      { label: 'Domain List' },
+      { label: 'Domain Details' },
+      { label: 'Notifications' },
+      { label: 'Summary' },
+    ]"
+    [activeIndex]="step - 1"
+  ></p-steps>
   <form [formGroup]="bulkAddForm">
     <p-card>
-      <ng-container [ngSwitch]="step">
+      @switch (step) {
         <!-- Step 1: Domain List -->
-        <div *ngSwitchCase="1">
-          <div class="field">
-            <label for="domainList">
-              Domain List
-              <small>Enter or paste a list of domains, separated by commas or new lines</small>
-            </label>
-            <textarea 
-              id="domainList" 
-              pInputTextarea 
-              formControlName="domainList" 
-              [rows]="10" 
-              [autoResize]="true"></textarea>
-          </div>
-          <div class="button-wrap single">
-            <p-button
-              label="Process Domains"
-              (onClick)="processDomains()"
-              [disabled]="bulkAddForm.get('domainList')?.invalid || processingDomains" [loading]="processingDomains" />
-          </div>
-        </div>
-
-        <!-- Step 2: Domain Details -->
-        <div *ngSwitchCase="2">
-          <div class="space-y-6" *ngFor="let domain of domains.controls; let i = index" [formGroup]="getDomainFormGroup(i)">
-            <div class="flex flex-wrap gap-4 flex-row field-group-row my-4 pb-4">
-              <!-- Domain Name -->
-              <div class="flex flex-none w-36">
-                <div>{{ domain.get('domainName')?.value }}</div>
-              </div>
-
-              <div class="flex flex-1 gap-4 flex-col">
-                <!-- Registrar -->
-                <div class="flex-1">
-                  <label class="block font-semibold mb-2">Registrar</label>
-                  <input pInputText formControlName="registrar" class="w-full p-inputtext">
-                </div>
-          
-                <!-- Expiry Date -->
-                <div class="flex-1">
-                  <label class="block font-semibold mb-2">Expiry Date</label>
-                  <p-calendar formControlName="expiryDate" class="w-full"></p-calendar>
-                </div>
-              </div>
-
-              <div class="flex flex-1 flex-wrap gap-4 flex-col">
-                <!-- Tags -->
-                <div class="">
-                  <label class="block font-semibold mb-2">Tags</label>
-                  <p-chips formControlName="tags" separator="," [addOnBlur]="true" class="w-full"></p-chips>
-                </div>
-          
-                <!-- Notes -->
-                <div class="">
-                  <label class="block font-semibold mb-2">Notes</label>
-                  <textarea pInputTextarea formControlName="notes" class="w-full"></textarea>
-                </div>
-              </div>
-
-            </div>
-          </div>
-
-          <div class="button-wrap mt-4">
-            <p-button label="Previous" (onClick)="step = 1" styleClass="p-button-secondary"></p-button>
-            <p-button label="Next" (onClick)="goToNotifications()"></p-button>
-          </div>
-        </div>
-
-        <!-- Step 3: Notifications -->
-        <div *ngSwitchCase="3">
-          <h3>Setup Notifications</h3>
-          <p>Choose the notifications you want to receive for all domains. You can always change these settings later for individual domains.</p>
-          <div formGroupName="notifications">
-            <div *ngFor="let option of notificationOptions" class="field">
-              <label [for]="option.key">
-                {{ option.label }}
-                <small>{{ option.description }}</small>
-                <small *ngIf="option.note" class="text-yellow-500">{{ option.note }}</small>
+        @case (1) {
+          <div>
+            <div class="field">
+              <label for="domainList">
+                Domain List
+                <small
+                  >Enter or paste a list of domains, separated by commas or new
+                  lines</small
+                >
               </label>
-              <p-inputSwitch [formControlName]="option.key"></p-inputSwitch>
+              <textarea
+                id="domainList"
+                pInputTextarea
+                formControlName="domainList"
+                [rows]="10"
+                [autoResize]="true"
+              ></textarea>
+            </div>
+            <div class="button-wrap single">
+              <p-button
+                label="Process Domains"
+                (onClick)="processDomains()"
+                [disabled]="bulkAddForm.get('domainList')?.invalid || processingDomains"
+                [loading]="processingDomains"
+              />
             </div>
           </div>
-          <div class="button-wrap">
-            <p-button label="Previous" (onClick)="step = 2" styleClass="p-button-secondary"></p-button>
-            <p-button label="Save All Domains" (onClick)="saveDomains()" [disabled]="bulkAddForm.invalid || savingDomains" [loading]="savingDomains"></p-button>
+        }
+        <!-- Step 2: Domain Details -->
+        @case (2) {
+          <div>
+            @for (domain of domains.controls; track domain; let i = $index) {
+              <div class="space-y-6" [formGroup]="getDomainFormGroup(i)">
+                <div class="flex flex-wrap gap-4 flex-row field-group-row my-4 pb-4">
+                  <!-- Domain Name -->
+                  <div class="flex flex-none w-36">
+                    <div>{{ domain.get('domainName')?.value }}</div>
+                  </div>
+                  <div class="flex flex-1 gap-4 flex-col">
+                    <!-- Registrar -->
+                    <div class="flex-1">
+                      <label class="block font-semibold mb-2">
+                        Registrar
+                        <input
+                          pInputText
+                          formControlName="registrar"
+                          class="w-full p-inputtext"
+                        />
+                      </label>
+                    </div>
+                    <!-- Expiry Date -->
+                    <div class="flex-1">
+                      <label [for]="'expiryDate-' + i" class="block font-semibold mb-2"
+                        >Expiry Date</label
+                      >
+                      <p-calendar
+                        [inputId]="'expiryDate-' + i"
+                        formControlName="expiryDate"
+                        class="w-full"
+                      ></p-calendar>
+                    </div>
+                  </div>
+                  <div class="flex flex-1 flex-wrap gap-4 flex-col">
+                    <!-- Tags -->
+                    <div class="">
+                      <label [for]="'tags-' + i" class="block font-semibold mb-2"
+                        >Tags</label
+                      >
+                      <p-chips
+                        [inputId]="'tags-' + i"
+                        formControlName="tags"
+                        separator=","
+                        [addOnBlur]="true"
+                        class="w-full"
+                      ></p-chips>
+                    </div>
+                    <!-- Notes -->
+                    <div class="">
+                      <label class="block font-semibold mb-2">
+                        Notes
+                        <textarea
+                          pInputTextarea
+                          formControlName="notes"
+                          class="w-full"
+                        ></textarea>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+            <div class="button-wrap mt-4">
+              <p-button
+                label="Previous"
+                (onClick)="step = 1"
+                styleClass="p-button-secondary"
+              ></p-button>
+              <p-button label="Next" (onClick)="goToNotifications()"></p-button>
+            </div>
           </div>
-        </div>
-
-        <div *ngSwitchCase="4">
-
-          <div *ngIf="savedDomains.length > 0">
-            <h4>Successfully Saved Domains</h4>
-            <ul class="list-none p-0">
-              <li *ngFor="let domain of savedDomains">
-                <i class="pi pi-check-circle text-green-400 mr-2"></i>
-                <a [routerLink]="'/domains/'+domain" class="text-default hover:text-primary">{{ domain }}</a>
-              </li>
-            </ul>
+        }
+        <!-- Step 3: Notifications -->
+        @case (3) {
+          <div>
+            <h3>Setup Notifications</h3>
+            <p>
+              Choose the notifications you want to receive for all domains. You can always
+              change these settings later for individual domains.
+            </p>
+            <div formGroupName="notifications">
+              @for (option of notificationOptions; track option) {
+                <div class="field">
+                  <label [for]="option.key">
+                    {{ option.label }}
+                    <small>{{ option.description }}</small>
+                    @if (option.note) {
+                      <small class="text-yellow-500">{{ option.note }}</small>
+                    }
+                  </label>
+                  <p-inputSwitch [formControlName]="option.key"></p-inputSwitch>
+                </div>
+              }
+            </div>
+            <div class="button-wrap">
+              <p-button
+                label="Previous"
+                (onClick)="step = 2"
+                styleClass="p-button-secondary"
+              ></p-button>
+              <p-button
+                label="Save All Domains"
+                (onClick)="saveDomains()"
+                [disabled]="bulkAddForm.invalid || savingDomains"
+                [loading]="savingDomains"
+              ></p-button>
+            </div>
           </div>
-
-          <div *ngIf="failedDomains.length > 0">
-            <h4>Partial Failures</h4>
-            <ul class="list-none p-0">
-              <li *ngFor="let domain of failedDomains">
-                <i class="pi pi-times-circle text-red-400 mr-2"></i>
-                <a [routerLink]="'/domains/'+domain" class="text-default no-underline hover:text-primary">{{ domain }}</a>
-              </li>
-            </ul>
+        }
+        @case (4) {
+          <div>
+            @if (savedDomains.length > 0) {
+              <div>
+                <h4>Successfully Saved Domains</h4>
+                <ul class="list-none p-0">
+                  @for (domain of savedDomains; track domain) {
+                    <li>
+                      <i class="pi pi-check-circle text-green-400 mr-2"></i>
+                      <a
+                        [routerLink]="'/domains/' + domain"
+                        class="text-default hover:text-primary"
+                        >{{ domain }}</a
+                      >
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+            @if (failedDomains.length > 0) {
+              <div>
+                <h4>Partial Failures</h4>
+                <ul class="list-none p-0">
+                  @for (domain of failedDomains; track domain) {
+                    <li>
+                      <i class="pi pi-times-circle text-red-400 mr-2"></i>
+                      <a
+                        [routerLink]="'/domains/' + domain"
+                        class="text-default no-underline hover:text-primary"
+                        >{{ domain }}</a
+                      >
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+            <div class="button-wrap mt-4">
+              <p-button
+                label="Go to Homepage"
+                (onClick)="goToHomePage()"
+                styleClass="p-button-primary"
+              ></p-button>
+            </div>
           </div>
-
-          <div class="button-wrap mt-4">
-            <p-button label="Go to Homepage" (onClick)="goToHomePage()" styleClass="p-button-primary"></p-button>
-          </div>
-        </div>
-      </ng-container>
+        }
+      }
     </p-card>
   </form>
 </div>

@@ -1,10 +1,9 @@
-
 export interface NotificationType {
   key: string;
   label: string;
   description: string;
   note?: string;
-  default?: boolean
+  default?: boolean;
 }
 
 // The following keys are set in the `change` field in the `domain_updates` table
@@ -20,7 +19,7 @@ export interface NotificationType {
 // dates_expiry
 // dates_updated
 
-export const notificationTypes:NotificationType[] = [
+export const notificationTypes: NotificationType[] = [
   {
     key: 'expiry_domain',
     label: 'Expiring Soon',
@@ -41,7 +40,7 @@ export const notificationTypes:NotificationType[] = [
   {
     key: 'whois_',
     label: 'WHOIS Change',
-    description: 'Get notified when any WHOIS records change'
+    description: 'Get notified when any WHOIS records change',
   },
   {
     key: 'dns_',
@@ -68,6 +67,7 @@ export const notificationTypes:NotificationType[] = [
   {
     key: 'status',
     label: 'Security Features Change',
-    description: 'Get notified when any security features on your domain are added, removed or amended',
+    description:
+      'Get notified when any security features on your domain are added, removed or amended',
   },
 ];

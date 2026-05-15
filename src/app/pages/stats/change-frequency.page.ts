@@ -4,6 +4,7 @@ import { ChangeHistoryChartComponent } from '~/app/components/charts/change-hist
 
 @Component({
   standalone: true,
+  selector: 'app-stats-change-frequency-page',
   template: `
     <h1>Change Frequency</h1>
     <div class="flex flex-col gap-2">
@@ -13,11 +14,18 @@ import { ChangeHistoryChartComponent } from '~/app/components/charts/change-hist
     </div>
   `,
   imports: [DomainUpdatesComponent, ChangeHistoryChartComponent],
-  styles: [`
-  ::ng-deep .filter-button { display: none; }
-  ::ng-deep .change-summary { display: inline !important; span { margin: 0 0.2rem 0 0.2rem;}  }
-  `]
+  styles: [
+    `
+      ::ng-deep .filter-button {
+        display: none;
+      }
+      ::ng-deep .change-summary {
+        display: inline !important;
+        span {
+          margin: 0 0.2rem 0 0.2rem;
+        }
+      }
+    `,
+  ],
 })
 export default class ChangeFrequencyPage {}
-
-

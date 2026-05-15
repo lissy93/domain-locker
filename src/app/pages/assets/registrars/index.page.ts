@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject } from '@angular/core';
+
 import { RouterModule } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { PrimeNgModule } from '~/app/prime-ng.module';
 import { Registrar } from '~/app/../types/common';
 import DatabaseService from '~/app/services/database.service';
@@ -9,18 +10,16 @@ import { ErrorHandlerService } from '~/app/services/error-handler.service';
 
 @Component({
   standalone: true,
-  selector: 'app-registrars-index',
-  imports: [CommonModule, RouterModule, PrimeNgModule, DomainFaviconComponent],
+  selector: 'app-assets-registrars-page',
+  imports: [RouterModule, PrimeNgModule, DomainFaviconComponent],
   templateUrl: './index.page.html',
 })
 export default class RegistrarsIndexPageComponent implements OnInit {
-  registrars: (Registrar & { domainCount: number })[] = [];
-  loading: boolean = true;
+  private databaseService = inject(DatabaseService);
+  private errorHandler = inject(ErrorHandlerService);
 
-  constructor(
-    private databaseService: DatabaseService,
-    private errorHandler: ErrorHandlerService,
-  ) {}
+  registrars: (Registrar & { domainCount: number })[] = [];
+  loading = true;
 
   ngOnInit() {
     this.loadRegistrars();
@@ -28,42 +27,29 @@ export default class RegistrarsIndexPageComponent implements OnInit {
 
   loadRegistrars() {
     this.loading = true;
-    this.databaseService.instance.registrarQueries.getRegistrars().subscribe({
-      next: (registrars) => {
-        this.registrars = registrars.map(registrar => ({ ...registrar, domainCount: 0 }));
-        this.loadDomainCounts();
+    const queries = this.databaseService.instance.registrarQueries;
+    forkJoin({
+      registrars: queries.getRegistrars(),
+      counts: queries.getDomainCountsByRegistrar(),
+    }).subscribe({
+      next: ({ registrars, counts }) => {
+        this.registrars = registrars
+          .map((registrar) => ({
+            ...registrar,
+            domainCount: counts[registrar.name] || 0,
+          }))
+          .sort((a, b) => b.domainCount - a.domainCount);
+        this.loading = false;
       },
       error: (error) => {
         this.errorHandler.handleError({
           message: 'Failed to load registrars',
           error,
           showToast: true,
-          location: 'RegistrarsIndexPageComponent.loadRegistrars'
+          location: 'RegistrarsIndexPageComponent.loadRegistrars',
         });
         this.loading = false;
-      }
-    });
-  }
-
-  loadDomainCounts() {
-    this.databaseService.instance.registrarQueries.getDomainCountsByRegistrar().subscribe({
-      next: (counts) => {
-        this.registrars = this.registrars.map(registrar => ({
-          ...registrar,
-          domainCount: counts[registrar.name] || 0
-        }));
-        this.loading = false;
-        this.registrars = this.registrars.sort((a, b) => b.domainCount - a.domainCount);
       },
-      error: (error) => {
-        this.errorHandler.handleError({
-          message: 'Unable to fetch domain counts',
-          error,
-          showToast: true,
-          location: 'RegistrarsIndexPageComponent.loadDomainCounts'
-        });
-        this.loading = false;
-      }
     });
   }
 
@@ -72,7 +58,7 @@ export default class RegistrarsIndexPageComponent implements OnInit {
       let sanitizedDomain = domain.replace(/^(https?:\/\/)?(www\.)?/, '');
       sanitizedDomain = sanitizedDomain.split('/')[0];
       return sanitizedDomain;
-    } catch (e) {
+    } catch {
       return domain;
     }
   }

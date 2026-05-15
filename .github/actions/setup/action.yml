@@ -1,0 +1,26 @@
+# Sets up Node, restores node_modules cache, installs deps on cache miss
+# Caller must run actions/checkout before using this action
+
+name: Setup Node and Install
+description: Set up Node from .nvmrc, restore the node_modules cache, and install deps on miss
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Node
+      uses: actions/setup-node@v6
+      with:
+        node-version-file: '.nvmrc'
+        cache: 'npm'
+
+    - name: Restore node_modules cache
+      id: nm-cache
+      uses: actions/cache@v4
+      with:
+        path: node_modules
+        key: nm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+    - name: Install dependencies
+      if: steps.nm-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: npm ci --legacy-peer-deps

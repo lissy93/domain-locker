@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject } from '@angular/core';
+
 import { PrimeNgModule } from '~/app/prime-ng.module';
 import DatabaseService from '~/app/services/database.service';
 import { MessageService } from 'primeng/api';
@@ -19,24 +19,22 @@ interface DomainWithIpAddresses {
 
 @Component({
   standalone: true,
-  selector: 'app-ip-addresses',
-  imports: [CommonModule, PrimeNgModule, TabViewModule, TableModule],
+  selector: 'app-assets-ips-page',
+  imports: [PrimeNgModule, TabViewModule, TableModule],
   templateUrl: './index.page.html',
   styleUrls: ['./index.page.scss'],
 })
 export default class IpAddressesPageComponent implements OnInit {
+  private databaseService = inject(DatabaseService);
+  private messageService = inject(MessageService);
+  private router = inject(Router);
+
   ipv4Addresses: IpAddress[] = [];
   ipv6Addresses: IpAddress[] = [];
   ipv4Domains: DomainWithIpAddresses[] = [];
   ipv6Domains: DomainWithIpAddresses[] = [];
-  loadingIpv4: boolean = true;
-  loadingIpv6: boolean = true;
-
-  constructor(
-    private databaseService: DatabaseService,
-    private messageService: MessageService,
-    private router: Router
-  ) {}
+  loadingIpv4 = true;
+  loadingIpv6 = true;
 
   ngOnInit() {
     this.loadIpAddresses();

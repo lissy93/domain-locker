@@ -13,10 +13,10 @@ const log = new Logger('domain-info');
  * Execute a function safely
  * So that if one step fails, the world will not implode
  * Errors are caught and logged, and the endpoint will continue
- * @param fn 
- * @param errorMsg 
- * @param errors 
- * @returns 
+ * @param fn
+ * @param errorMsg
+ * @param errors
+ * @returns
  */
 const safeExecute = async <T>(
   fn: () => Promise<T>,
@@ -48,7 +48,7 @@ const getIpv6Address = (domain: string) =>
 const getMxRecords = (domain: string) =>
   new Promise<string[]>((resolve) => {
     dns.resolveMx(domain, (err, records) =>
-      resolve(err ? [] : records.map(r => `${r.exchange} (priority: ${r.priority})`)),
+      resolve(err ? [] : records.map((r) => `${r.exchange} (priority: ${r.priority})`)),
     );
   });
 
@@ -56,7 +56,7 @@ const getMxRecords = (domain: string) =>
 const getTxtRecords = (domain: string) =>
   new Promise<string[]>((resolve) => {
     dns.resolveTxt(domain, (err, records) =>
-      resolve(err ? [] : records.flatMap(r => r)),
+      resolve(err ? [] : records.flatMap((r) => r)),
     );
   });
 
@@ -72,7 +72,8 @@ const getSslCertificateDetails = (domain: string): Promise<Partial<PeerCertifica
     const socket = tls.connect(443, domain, { servername: domain }, () => {
       const cert = socket.getPeerCertificate();
       socket.end();
-      cert ? resolve(cert) : reject(new Error('No certificate found'));
+      if (cert) resolve(cert);
+      else reject(new Error('No certificate found'));
     });
     socket.on('error', reject);
   });
@@ -106,7 +107,8 @@ export default defineEventHandler(async (event) => {
   }
 
   // Validate domain format (alphanumeric labels separated by dots, no special chars)
-  const domainRegex = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i;
+  const domainRegex =
+    /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i;
   if (!domainRegex.test(domain)) {
     log.warn(`Invalid domain format: ${domain}`);
     return { error: 'Invalid domain format' };
@@ -128,7 +130,9 @@ export default defineEventHandler(async (event) => {
     if (whoisData.dates?.expiry_date) {
       const todayStr = new Date().toISOString().split('T')[0];
       if (whoisData.dates.expiry_date === todayStr) {
-        log.warn(`Expiry date is exactly today for ${domain} - likely parsing bug, removing it`);
+        log.warn(
+          `Expiry date is exactly today for ${domain} - likely parsing bug, removing it`,
+        );
         whoisData.dates.expiry_date = undefined;
       }
     }
@@ -140,7 +144,11 @@ export default defineEventHandler(async (event) => {
       safeExecute(() => getMxRecords(domain), 'MX records failed', errors),
       safeExecute(() => getTxtRecords(domain), 'TXT records failed', errors),
       safeExecute(() => getNameServers(domain), 'NS records failed', errors),
-      safeExecute(() => getSslCertificateDetails(domain), 'SSL cert fetch failed', errors),
+      safeExecute(
+        () => getSslCertificateDetails(domain),
+        'SSL cert fetch failed',
+        errors,
+      ),
     ]);
     const host = ipv4?.[0]
       ? await safeExecute(() => getHostData(ipv4[0]), 'Host info fetch failed', errors)

@@ -12,11 +12,11 @@
 
 <div class="p-card py-4 px-4">
   <p class="m-0">
-    At Domain Locker, you are in control of your data.
-    You can export it or delete it at any time.
-    <br>
-    For more information on what data is collected, how it's stored and what it's used for,
-    view our <a routerLink="/about/legal">Legal docs</a>.
+    At Domain Locker, you are in control of your data. You can export it or delete it at
+    any time.
+    <br />
+    For more information on what data is collected, how it's stored and what it's used
+    for, view our <a routerLink="/about/legal">Legal docs</a>.
   </p>
   <p-button
     routerLink="/about/legal/privacy-policy"
@@ -31,55 +31,54 @@
 <p-divider />
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4 relative">
-  <div *ngFor="let card of dangerCards" class="p-card p-4 flex flex-col justify-between">
-    <div>
-      <h3>{{ card.title }}</h3>
-      <p>{{ card.body }}</p>
+  @for (card of dangerCards; track card) {
+    <div class="p-card p-4 flex flex-col justify-between">
+      <div>
+        <h3>{{ card.title }}</h3>
+        <p>{{ card.body }}</p>
+      </div>
+      @if (card.buttonLink) {
+        <p-button
+          [routerLink]="card.buttonLink"
+          [icon]="card.buttonIcon"
+          [label]="card.buttonLabel"
+          [severity]="card.buttonSeverity"
+          [styleClass]="card.buttonClass"
+          class="w-full flex justify-end"
+        ></p-button>
+      }
+      @if (card.buttonFunction && !card.buttonLink) {
+        <p-button
+          (click)="card.buttonFunction()"
+          [icon]="card.buttonIcon"
+          [label]="card.buttonLabel"
+          [severity]="card.buttonSeverity"
+          [styleClass]="card.buttonClass"
+          class="w-full flex justify-end"
+        ></p-button>
+      }
     </div>
-    <p-button
-      *ngIf="card.buttonLink"
-      [routerLink]="card.buttonLink"
-      [icon]="card.buttonIcon"
-      [label]="card.buttonLabel"
-      [severity]="card.buttonSeverity"
-      [styleClass]="card.buttonClass"
-      class="w-full flex justify-end"
-    ></p-button>
-    <p-button
-      *ngIf="card.buttonFunction && !card.buttonLink"
-      (click)="card.buttonFunction()"
-      [icon]="card.buttonIcon"
-      [label]="card.buttonLabel"
-      [severity]="card.buttonSeverity"
-      [styleClass]="card.buttonClass"
-      class="w-full flex justify-end"
-    ></p-button>
-  </div>
+  }
 </div>
 
 <p-divider />
 
 <h3 class="mt-4 mb-2">Delete by Domain</h3>
-<div class="p-card py-4 px-4">
-  
-</div>
+<div class="p-card py-4 px-4"></div>
 
 <p-divider />
 
 <h3 class="mt-4 mb-2">Delete by Category</h3>
-<div class="p-card py-4 px-4">
-  
-</div>
+<div class="p-card py-4 px-4"></div>
 
 <p-divider />
 
 <h3 class="mt-4 mb-2">Delete Everything</h3>
 <div class="p-card py-4 px-4">
   <p>
-    This will remove local data, remove all your data from our servers,
-    cancel any active subscriptions, request removal of analytics data,
-    and finally delete your account.
-    <br>
+    This will remove local data, remove all your data from our servers, cancel any active
+    subscriptions, request removal of analytics data, and finally delete your account.
+    <br />
     <span class="text-red-400"><b>Warning:</b> This operation cannot be undone.</span>
   </p>
 </div>
@@ -89,12 +88,13 @@
 <h3 class="mt-4 mb-2">Good Bye 😢</h3>
 <div class="p-card py-4 px-4">
   <p class="m-0">
-    If you decide to close your account, it's recommended to first export your data.
-    We will automatically cancel any active subscriptions you may have, and remove all data associated with your account from our servers.
-    <br><br>
-    We'll be sorry to see you go, and if you could take a moment to leave us
-    feedback letting us know why you're leaving, it would really help us to improve.
-    <br><br>
+    If you decide to close your account, it's recommended to first export your data. We
+    will automatically cancel any active subscriptions you may have, and remove all data
+    associated with your account from our servers.
+    <br /><br />
+    We'll be sorry to see you go, and if you could take a moment to leave us feedback
+    letting us know why you're leaving, it would really help us to improve.
+    <br /><br />
     Anyway, thank you for being here, and of course- you're welcome back anytime! 😊
   </p>
 </div>

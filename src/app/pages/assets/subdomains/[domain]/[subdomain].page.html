@@ -1,71 +1,85 @@
-<p-progressSpinner *ngIf="loading"></p-progressSpinner>
+@if (loading) {
+  <p-progressSpinner></p-progressSpinner>
+}
 
-<div *ngIf="!loading && subdomain">
-
-  <div class="flex justify-between items-center flex-wrap">
-    <!-- Subdomain Title -->
-    <h1 class="flex">
-      <span>
-        {{ subdomain?.name }}
-      </span>
-      <span>.</span>
-      <span>
-        {{ domain }}
-      </span>
-    </h1>
-    <!-- Subdomain Actions -->
-    <div class="flex flex-row gap-2">
-      <p-button
-        severity="danger"
-        icon="pi pi-trash"
-        (click)="confirmDelete()"
-        pTooltip="Delete Subdomain"
-        class="p-button-primary no-underline m-0 flex gap-2 w-fit ml-2 font-medium"
-      />
-      <p-button
-        severity="info"
-        icon="pi pi-pencil"
-        pTooltip="Edit Subdomain"
-        class="p-button-primary no-underline m-0 flex gap-2 w-fit ml-2 font-medium"
-      />
-      <a pButton
-        severity="success"
-        [href]="'https://'+subdomain?.name+'.'+domain"
-        target="_blank"
-        rel="noopener noreferrer"
-        pTooltip="Visit Subdomain"
-        class="p-button-secondary no-underline m-0 flex gap-2 w-fit ml-2 font-medium" >
-        <i class="pi pi-external-link"></i>
-      </a>
-      <a pButton
-        severity="primary"
-        [routerLink]="'/domains/' + domain"
-        pTooltip="View Parent Domain"
-        class="p-button-primary no-underline m-0 flex gap-2 w-fit ml-2 font-medium">
-        <i class="pi pi-directions"></i>
-      </a>
+@if (!loading && subdomain) {
+  <div>
+    <div class="flex justify-between items-center flex-wrap">
+      <!-- Subdomain Title -->
+      <h1 class="flex">
+        <span>
+          {{ subdomain?.name }}
+        </span>
+        <span>.</span>
+        <span>
+          {{ domain }}
+        </span>
+      </h1>
+      <!-- Subdomain Actions -->
+      <div class="flex flex-row gap-2">
+        <p-button
+          severity="danger"
+          icon="pi pi-trash"
+          (click)="confirmDelete()"
+          pTooltip="Delete Subdomain"
+          class="p-button-primary no-underline m-0 flex gap-2 w-fit ml-2 font-medium"
+        />
+        <p-button
+          severity="info"
+          icon="pi pi-pencil"
+          pTooltip="Edit Subdomain"
+          class="p-button-primary no-underline m-0 flex gap-2 w-fit ml-2 font-medium"
+        />
+        <a
+          pButton
+          severity="success"
+          [href]="'https://' + subdomain?.name + '.' + domain"
+          target="_blank"
+          rel="noopener noreferrer"
+          pTooltip="Visit Subdomain"
+          class="p-button-secondary no-underline m-0 flex gap-2 w-fit ml-2 font-medium"
+        >
+          <i class="pi pi-external-link"></i>
+        </a>
+        <a
+          pButton
+          severity="primary"
+          [routerLink]="'/domains/' + domain"
+          pTooltip="View Parent Domain"
+          class="p-button-primary no-underline m-0 flex gap-2 w-fit ml-2 font-medium"
+        >
+          <i class="pi pi-directions"></i>
+        </a>
+      </div>
+    </div>
+    <!-- Subdomain Info -->
+    @if (subdomainInfo.length) {
+      <div
+        class="mt-3 masonry sm:masonry-sm md:masonry-md lg:masonry-lg xl:masonry-lg 2xl:masonry-xl"
+      >
+        @for (item of subdomainInfo; track item) {
+          <div class="p-card break-inside-avoid px-4 py-3 mb-4">
+            <h3>{{ item.key }}</h3>
+            <p class="m-0 truncate" [title]="item.value">
+              {{ item.value }}
+            </p>
+          </div>
+        }
+      </div>
+    }
+    <!-- Auto-fetched domain info -->
+    <div class="mt-4 relative flex flex-col gap-1">
+      @if (subdomainWebsiteInfo) {
+        <app-domain-info [domain]="subdomainWebsiteInfo" />
+      }
     </div>
   </div>
+}
 
-  <!-- Subdomain Info -->
-  <div *ngIf="subdomainInfo.length"
-    class="mt-3 masonry sm:masonry-sm md:masonry-md lg:masonry-lg xl:masonry-lg 2xl:masonry-xl">
-    <div *ngFor="let item of subdomainInfo"
-      class="p-card break-inside-avoid px-4 py-3 mb-4">
-      <h3>{{ item.key }}</h3>
-      <p class="m-0 truncate" [title]="item.value">
-        {{ item.value }}
-      </p>
-    </div>
-  </div>
+@if (!loading && !subdomain) {
+  <p>Subdomain not found.</p>
+}
 
-  <!-- Auto-fetched domain info -->
-  <div class="mt-4 relative flex flex-col gap-1">
-    <app-domain-info *ngIf="subdomainWebsiteInfo" [domain]="subdomainWebsiteInfo" />
-  </div>
-</div>
-
-<p *ngIf="!loading && !subdomain">Subdomain not found.</p>
-
-<app-not-found *ngIf="!subdomain && !loading" [name]="'Subdomain'" />
-
+@if (!subdomain && !loading) {
+  <app-not-found [name]="'Subdomain'" />
+}

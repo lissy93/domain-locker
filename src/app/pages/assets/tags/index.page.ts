@@ -1,5 +1,5 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
+
 import { RouterModule } from '@angular/router';
 import { PrimeNgModule } from '~/app/prime-ng.module';
 import { Tag } from '~/app/../types/Database';
@@ -11,23 +11,21 @@ import { TableModule } from 'primeng/table';
 
 @Component({
   standalone: true,
-  selector: 'app-tags-index',
-  imports: [CommonModule, RouterModule, PrimeNgModule, TagEditorComponent, TableModule],
+  selector: 'app-assets-tags-page',
+  imports: [RouterModule, PrimeNgModule, TagEditorComponent, TableModule],
   templateUrl: './index.page.html',
-  styleUrl: './tags.scss'
+  styleUrl: './tags.scss',
 })
 export default class TagsIndexPageComponent implements OnInit {
-  tags: (Tag & { domainCount: number })[] = [];
-  loading: boolean = true;
-  addTagDialogOpen: boolean = false;
+  private databaseService = inject(DatabaseService);
+  private messageService = inject(MessageService);
+  private confirmationService = inject(ConfirmationService);
+  private errorHandler = inject(ErrorHandlerService);
+  private cdr = inject(ChangeDetectorRef);
 
-  constructor(
-    private databaseService: DatabaseService,
-    private messageService: MessageService,
-    private confirmationService: ConfirmationService,
-    private errorHandler: ErrorHandlerService,
-    private cdr: ChangeDetectorRef,
-  ) {}
+  tags: (Tag & { domainCount: number })[] = [];
+  loading = true;
+  addTagDialogOpen = false;
 
   ngOnInit() {
     this.loadTags();
@@ -37,7 +35,7 @@ export default class TagsIndexPageComponent implements OnInit {
     this.loading = true;
     this.databaseService.instance.tagQueries.getTags().subscribe({
       next: (tags) => {
-        this.tags = tags.map(tag => ({ ...tag, domainCount: 0 }));
+        this.tags = tags.map((tag) => ({ ...tag, domainCount: 0 }));
         this.loadDomainCounts();
       },
       error: (error) => {
@@ -45,20 +43,20 @@ export default class TagsIndexPageComponent implements OnInit {
           message: 'Failed to load tags',
           error,
           showToast: true,
-          location: 'TagsIndexPageComponent.loadTags'
+          location: 'TagsIndexPageComponent.loadTags',
         });
         this.loading = false;
         this.cdr.markForCheck();
-      }
+      },
     });
   }
 
   loadDomainCounts() {
     this.databaseService.instance.tagQueries.getDomainCountsByTag().subscribe({
       next: (counts) => {
-        this.tags = this.tags.map(tag => ({
+        this.tags = this.tags.map((tag) => ({
           ...tag,
-          domainCount: counts[tag.name] || 0
+          domainCount: counts[tag.name] || 0,
         }));
         this.loading = false;
         this.cdr.markForCheck();
@@ -68,11 +66,11 @@ export default class TagsIndexPageComponent implements OnInit {
           message: 'Failed to load domain counts',
           error,
           showToast: true,
-          location: 'TagsIndexPageComponent.loadDomainCounts'
+          location: 'TagsIndexPageComponent.loadDomainCounts',
         });
         this.loading = false;
         this.cdr.markForCheck();
-      }
+      },
     });
   }
 
@@ -102,7 +100,7 @@ export default class TagsIndexPageComponent implements OnInit {
             this.messageService.add({
               severity: 'success',
               summary: 'Success',
-              detail: `Tag "${tag.name}" deleted successfully.`
+              detail: `Tag "${tag.name}" deleted successfully.`,
             });
             this.loadTags();
           },
@@ -111,11 +109,11 @@ export default class TagsIndexPageComponent implements OnInit {
               message: 'Failed to delete tag',
               error,
               showToast: true,
-              location: 'TagsIndexPageComponent.deleteTag'
+              location: 'TagsIndexPageComponent.deleteTag',
             });
-          }
+          },
         });
-      }
+      },
     });
   }
 }

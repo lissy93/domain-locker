@@ -1,9 +1,6 @@
-
-
 ::ng-deep legend a.p-element {
   padding: 0.75rem 1rem;
 }
-
 
 .p-field {
   @apply mb-4 flex items-center space-x-4 flex-wrap md:flex-nowrap;
@@ -14,22 +11,24 @@
 
   input,
   .p-inputtext,
-  p-password, .p-password,
+  p-password,
+  .p-password,
   p-inputNumber,
   p-inputOtp {
     @apply w-full; // Make the input elements fill the available width
   }
-
 }
 
 ::ng-deep {
-  .p-password, .p-password input {
+  .p-password,
+  .p-password input {
     @apply w-full;
   }
 }
 
 ::ng-deep .user-settings-container {
-  .p-card-body, .p-card-body .p-card-content {
+  .p-card-body,
+  .p-card-body .p-card-content {
     @apply h-full;
-  } 
+  }
 }

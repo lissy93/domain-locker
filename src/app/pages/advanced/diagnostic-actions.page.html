@@ -1,14 +1,16 @@
-
-
 <blockquote class="border-solid border-0 border-l-4 border-red-300 m-0 my-2 pl-2">
   <span class="font-bold">Important: </span>
-  These diagnostic actions are intended for troubleshooting self-hosted instances and testing during development.
-  <br>
-  If you are using Domain Locker managed instance, it is not recommended to proceed unless instructed to by our support staff.
-  <br>
-  <span class="text-red-400">Actions performed here may result in unintended changes or irreversible deletion of your saved data.</span>
+  These diagnostic actions are intended for troubleshooting self-hosted instances and
+  testing during development.
+  <br />
+  If you are using Domain Locker managed instance, it is not recommended to proceed unless
+  instructed to by our support staff.
+  <br />
+  <span class="text-red-400"
+    >Actions performed here may result in unintended changes or irreversible deletion of
+    your saved data.</span
+  >
 </blockquote>
-
 
 <div class="flex flex-col gap-3 mt-3">
   <h2>App Checks</h2>
@@ -17,7 +19,9 @@
     <div class="flex justify-content-between align-items-center">
       <div>
         <h3 class="m-0">Check for Updates</h3>
-        <p class="my-1 opacity-70 italic text-sm">Validates that you are running the latest version of Domain Locker</p>
+        <p class="my-1 opacity-70 italic text-sm">
+          Validates that you are running the latest version of Domain Locker
+        </p>
       </div>
       <p-button
         severity="info"
@@ -27,37 +31,55 @@
       ></p-button>
     </div>
 
-    <div *ngIf="updateStatus != 'pending'" class="mt-2 p-2 rounded border"
-      [ngClass]="{
-        'border-green-400 bg-green-100': updateStatus === 'up_to_date',
-        'border-blue-400 bg-blue-100': updateStatus === 'update_available',
-        'border-red-400 bg-red-100': updateStatus === 'error'
-      }">
-      <p class="m-0 font-semibold"
-      [ngClass]="{
-        'text-green-800': updateStatus === 'up_to_date',
-        'text-blue-800': updateStatus === 'update_available',
-        'text-red-800': updateStatus === 'error'
-      }">
-        {{ updateStatus === 'update_available' ? 'INFO' : updateStatus === 'up_to_date' ? 'PASS' : updateStatus === 'error' ? 'FAIL' : '' }}
-      </p>
-      <p class="m-0"
-      [ngClass]="{
-        'text-green-700': updateStatus === 'up_to_date',
-        'text-blue-700': updateStatus === 'update_available',
-        'text-red-700': updateStatus === 'error'
-      }">
-        {{ updateMessage }}
-      </p>
-    </div>
+    @if (updateStatus !== 'pending') {
+      <div
+        class="mt-2 p-2 rounded border"
+        [ngClass]="{
+          'border-green-400 bg-green-100': updateStatus === 'up_to_date',
+          'border-blue-400 bg-blue-100': updateStatus === 'update_available',
+          'border-red-400 bg-red-100': updateStatus === 'error',
+        }"
+      >
+        <p
+          class="m-0 font-semibold"
+          [ngClass]="{
+            'text-green-800': updateStatus === 'up_to_date',
+            'text-blue-800': updateStatus === 'update_available',
+            'text-red-800': updateStatus === 'error',
+          }"
+        >
+          {{
+            updateStatus === 'update_available'
+              ? 'INFO'
+              : updateStatus === 'up_to_date'
+                ? 'PASS'
+                : updateStatus === 'error'
+                  ? 'FAIL'
+                  : ''
+          }}
+        </p>
+        <p
+          class="m-0"
+          [ngClass]="{
+            'text-green-700': updateStatus === 'up_to_date',
+            'text-blue-700': updateStatus === 'update_available',
+            'text-red-700': updateStatus === 'error',
+          }"
+        >
+          {{ updateMessage }}
+        </p>
+      </div>
+    }
   </div>
-  
 
   <div class="p-card px-4 py-3">
     <div class="flex justify-content-between align-items-center">
       <div>
         <h3 class="m-0">Verify Database Connection</h3>
-        <p class="my-1 opacity-70 italic text-sm">Validates the database connection, and runs read tests for your data across tables</p>
+        <p class="my-1 opacity-70 italic text-sm">
+          Validates the database connection, and runs read tests for your data across
+          tables
+        </p>
       </div>
       <p-button
         severity="info"
@@ -67,113 +89,151 @@
       ></p-button>
     </div>
 
-    <div *ngIf="databaseSuccess" class="mt-2 p-2 rounded border"
-      [ngClass]="{
-        'border-green-400 bg-green-100': databaseSuccess === 'passed',
-        'border-blue-400 bg-blue-100': databaseSuccess === 'some_errors',
-        'border-red-400 bg-red-100': databaseSuccess === 'errored'
-      }">
-      <p class="m-0 font-semibold"
-      [ngClass]="{
-        'text-green-800': databaseSuccess === 'passed',
-        'text-blue-800': databaseSuccess === 'some_errors',
-        'text-red-800': databaseSuccess === 'errored'
-      }">
-        {{ databaseSuccess === 'passed' ? 'PASS' : 'FAIL' }}
-      </p>
-      <p class="m-0"
-      [ngClass]="{
-        'text-green-700': databaseSuccess === 'passed',
-        'text-blue-700': databaseSuccess === 'some_errors',
-        'text-red-700': databaseSuccess === 'errored'
-      }">
-        {{ databaseSuccess === 'passed' ? 'Database connection is healthy and all read tests passed.' : 'Database check errored' }}
-      </p>
-    </div>
+    @if (databaseSuccess) {
+      <div
+        class="mt-2 p-2 rounded border"
+        [ngClass]="{
+          'border-green-400 bg-green-100': databaseSuccess === 'passed',
+          'border-blue-400 bg-blue-100': databaseSuccess === 'some_errors',
+          'border-red-400 bg-red-100': databaseSuccess === 'errored',
+        }"
+      >
+        <p
+          class="m-0 font-semibold"
+          [ngClass]="{
+            'text-green-800': databaseSuccess === 'passed',
+            'text-blue-800': databaseSuccess === 'some_errors',
+            'text-red-800': databaseSuccess === 'errored',
+          }"
+        >
+          {{ databaseSuccess === 'passed' ? 'PASS' : 'FAIL' }}
+        </p>
+        <p
+          class="m-0"
+          [ngClass]="{
+            'text-green-700': databaseSuccess === 'passed',
+            'text-blue-700': databaseSuccess === 'some_errors',
+            'text-red-700': databaseSuccess === 'errored',
+          }"
+        >
+          {{
+            databaseSuccess === 'passed'
+              ? 'Database connection is healthy and all read tests passed.'
+              : 'Database check errored'
+          }}
+        </p>
+      </div>
+    }
 
-    <pre *ngIf="databaseResults"
-      class="p-2 bg-bluegray-900 text-bluegray-100 rounded-sm text-xs overflow-x-hidden overflow-y-auto max-h-72">{{ databaseResults }}</pre>
+    @if (databaseResults) {
+      <pre
+        class="p-2 bg-bluegray-900 text-bluegray-100 rounded-sm text-xs overflow-x-hidden overflow-y-auto max-h-72"
+        >{{ databaseResults }}</pre
+      >
+    }
   </div>
-
-
 </div>
 
 <p-divider class="my-2 flex" />
 
-<div *ngFor="let group of endpointGroup">
-  <div class="flex justify-content-between align-items-center my-3">
-    <h2>{{ group.title }}</h2>
-    <div *ngIf="group.showRunAll || group.showReset">
-      <p-button
-      *ngIf="group.showReset; else showRunAll"
-        severity="warning"
-        label="Reset"
-        icon="pi pi-refresh"
-        (click)="resetAllEndpointTests(group)"
-        size="small"
-      />
-      <ng-template #showRunAll>
-        <p-button
-          severity="success"
-          label="Run All"
-          (click)="runAllEndpointTests(group)"
-          icon="pi pi-play-circle"
-          size="small"
-        />
-      </ng-template>
-    </div>
-  </div>
-
-  <div class="space-y-4">
-    <!-- Loop over each endpoint -->
-    <div *ngFor="let ep of group.endpoints" class="p-card px-4 py-3">
-      <div class="flex justify-content-between align-items-center">
+@for (group of endpointGroup; track group) {
+  <div>
+    <div class="flex justify-content-between align-items-center my-3">
+      <h2>{{ group.title }}</h2>
+      @if (group.showRunAll || group.showReset) {
         <div>
-          <h3 class="m-0">{{ ep.label }}</h3>
-
-          <code *ngIf="ep.url" class="mb-2 opacity-70 text-sm">
-            <i class="pi pi-chevron-right text-xs"></i>
-            {{ ep.method || 'GET'}}
-            <a [href]="ep.url">{{ ep.url }}</a>
-          </code>
-
-          <div *ngIf="!ep.url" class="text-yellow-400 my-2 text-sm">
-            <i class="pi pi-exclamation-triangle text-xs"></i>
-            No URL configured for this endpoint.
-          </div>
-
+          @if (group.showReset) {
+            <p-button
+              severity="warning"
+              label="Reset"
+              icon="pi pi-refresh"
+              (click)="resetAllEndpointTests(group)"
+              size="small"
+            />
+          } @else {
+            <p-button
+              severity="success"
+              label="Run All"
+              (click)="runAllEndpointTests(group)"
+              icon="pi pi-play-circle"
+              size="small"
+            />
+          }
+          <ng-template #showRunAll>
+            <p-button
+              severity="success"
+              label="Run All"
+              (click)="runAllEndpointTests(group)"
+              icon="pi pi-play-circle"
+              size="small"
+            />
+          </ng-template>
         </div>
-        <p-button
-          severity="info"
-          label="Run"
-          icon="pi pi-play-circle"
-          [loading]="ep.loading"
-          (click)="testEndpoint(ep, group)"
-          [disabled]="!ep.url"
-        ></p-button>
-      </div>
-
-      <p class="my-1 opacity-70 italic text-sm">{{ ep.description }}</p>
-
-      <!-- Display result only after run -->
-      <div *ngIf="ep.success === true" class="mt-2 p-2 bg-green-100 border border-green-400 rounded">
-        <p class="m-0 text-green-800 font-semibold">PASS</p>
-        <p class="text-green-700 m-0">Request finished with a response of {{ ep.statusCode }}, returning {{ep.bytesReceived || 'zero'}} bytes in {{ep.timeTaken}}ms</p>
-      </div>
-      <div *ngIf="ep.success === false" class="mt-2 p-2 bg-red-100 border border-red-400 rounded">
-        <p class="m-0 text-red-800 font-semibold">FAIL</p>
-        <p class="text-red-700 m-0">{{ ep.errorMsg }}</p>
-        <p class="text-red-700 m-0 opacity-70">Request finished with a response of {{ ep.statusCode }}, returning {{ep.bytesReceived || 'zero'}} bytes in {{ep.timeTaken}}ms</p>
-      </div>
-
-      <details *ngIf="ep.response" class="mt-2">
-        <summary class="cursor-pointer"><h4 class="inline">Response</h4></summary>
-        <pre class="p-2 bg-bluegray-900 text-bluegray-100 rounded-sm text-xs overflow-x-hidden overflow-y-auto max-h-72">{{ ep.response | json }}</pre>
-      </details>
+      }
     </div>
+    <div class="space-y-4">
+      <!-- Loop over each endpoint -->
+      @for (ep of group.endpoints; track ep) {
+        <div class="p-card px-4 py-3">
+          <div class="flex justify-content-between align-items-center">
+            <div>
+              <h3 class="m-0">{{ ep.label }}</h3>
+              @if (ep.url) {
+                <code class="mb-2 opacity-70 text-sm">
+                  <i class="pi pi-chevron-right text-xs"></i>
+                  {{ ep.method || 'GET' }}
+                  <a [href]="ep.url">{{ ep.url }}</a>
+                </code>
+              }
+              @if (!ep.url) {
+                <div class="text-yellow-400 my-2 text-sm">
+                  <i class="pi pi-exclamation-triangle text-xs"></i>
+                  No URL configured for this endpoint.
+                </div>
+              }
+            </div>
+            <p-button
+              severity="info"
+              label="Run"
+              icon="pi pi-play-circle"
+              [loading]="ep.loading"
+              (click)="testEndpoint(ep, group)"
+              [disabled]="!ep.url"
+            ></p-button>
+          </div>
+          <p class="my-1 opacity-70 italic text-sm">{{ ep.description }}</p>
+          <!-- Display result only after run -->
+          @if (ep.success === true) {
+            <div class="mt-2 p-2 bg-green-100 border border-green-400 rounded">
+              <p class="m-0 text-green-800 font-semibold">PASS</p>
+              <p class="text-green-700 m-0">
+                Request finished with a response of {{ ep.statusCode }}, returning
+                {{ ep.bytesReceived || 'zero' }} bytes in {{ ep.timeTaken }}ms
+              </p>
+            </div>
+          }
+          @if (ep.success === false) {
+            <div class="mt-2 p-2 bg-red-100 border border-red-400 rounded">
+              <p class="m-0 text-red-800 font-semibold">FAIL</p>
+              <p class="text-red-700 m-0">{{ ep.errorMsg }}</p>
+              <p class="text-red-700 m-0 opacity-70">
+                Request finished with a response of {{ ep.statusCode }}, returning
+                {{ ep.bytesReceived || 'zero' }} bytes in {{ ep.timeTaken }}ms
+              </p>
+            </div>
+          }
+          @if (ep.response) {
+            <details class="mt-2">
+              <summary class="cursor-pointer"><h4 class="inline">Response</h4></summary>
+              <pre
+                class="p-2 bg-bluegray-900 text-bluegray-100 rounded-sm text-xs overflow-x-hidden overflow-y-auto max-h-72"
+                >{{ ep.response | json }}</pre
+              >
+            </details>
+          }
+        </div>
+      }
+    </div>
+    <p-divider class="my-2 flex" />
   </div>
-
-  <p-divider class="my-2 flex" />
-</div>
-
-
+}

@@ -1,4 +1,3 @@
-
 export interface UptimeData {
   checked_at: string;
   is_up: boolean;
@@ -8,7 +7,7 @@ export interface UptimeData {
   ssl_handshake_time_ms: number;
 }
 
-export function getUptimeColor(percentage: number, prefix: string = 'text-'): string {
+export function getUptimeColor(percentage: number, prefix = 'text-'): string {
   if (isNaN(percentage)) return `${prefix}bluegray-400`;
   if (percentage > 99) return `${prefix}green-400`;
   if (percentage > 95) return `${prefix}yellow-400`;
@@ -29,17 +28,19 @@ export function getResponseCodeColor(code: number): string {
 export function getPerformanceColor(
   value: number,
   type: 'ssl' | 'dns' | 'response',
-  prefix: string = 'text-',
-  postfix: string = '-400'): string {
+  prefix = 'text-',
+  postfix = '-400',
+): string {
   if (typeof value !== 'number' || value < 0 || !type) {
     return 'grey';
   }
 
   // Define ranges for each type
-  const thresholds = { // in ms
+  const thresholds = {
+    // in ms
     ssl: { green: 100, yellow: 200, orange: 400 },
     dns: { green: 40, yellow: 80, orange: 150 },
-    response: { green: 250, yellow: 500, orange: 1000 }
+    response: { green: 250, yellow: 500, orange: 1000 },
   };
 
   // Ensure the type exists in thresholds

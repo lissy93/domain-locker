@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject } from '@angular/core';
+
 import { PrimeNgModule } from '~/app/prime-ng.module';
 import DatabaseService from '~/app/services/database.service';
 import { MessageService } from 'primeng/api';
@@ -19,27 +19,25 @@ interface DomainWithRecords {
 
 @Component({
   standalone: true,
-  selector: 'app-dns-records',
-  imports: [CommonModule, PrimeNgModule, TabViewModule, TableModule],
+  selector: 'app-assets-dns-page',
+  imports: [PrimeNgModule, TabViewModule, TableModule],
   templateUrl: './index.page.html',
   styleUrls: ['./index.page.scss'],
 })
 export default class DnsRecordsPageComponent implements OnInit {
+  private databaseService = inject(DatabaseService);
+  private messageService = inject(MessageService);
+  private router = inject(Router);
+
   txtRecords: DnsRecord[] = [];
   nsRecords: DnsRecord[] = [];
   mxRecords: DnsRecord[] = [];
   txtDomains: DomainWithRecords[] = [];
   nsDomains: DomainWithRecords[] = [];
   mxDomains: DomainWithRecords[] = [];
-  loadingTxt: boolean = true;
-  loadingNs: boolean = true;
-  loadingMx: boolean = true;
-
-  constructor(
-    private databaseService: DatabaseService,
-    private messageService: MessageService,
-    private router: Router
-  ) {}
+  loadingTxt = true;
+  loadingNs = true;
+  loadingMx = true;
 
   ngOnInit() {
     this.loadDnsRecords();

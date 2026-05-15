@@ -1,12 +1,11 @@
-
 import {
   Component,
   ChangeDetectorRef,
   ViewChild,
   OnInit,
   OnDestroy,
-  Inject,
-  Input
+  Input,
+  inject,
 } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { PLATFORM_ID } from '@angular/core';
@@ -15,22 +14,21 @@ import { ButtonModule } from 'primeng/button';
 
 export interface Screenshot {
   screenshot: string; // The URL to the screenshot
-  title: string;      // Short title
+  title: string; // Short title
   description: string; // Longer description
 }
 
 @Component({
   selector: 'app-screenshots',
   standalone: true,
-  imports: [
-    CommonModule,
-    GalleriaModule,
-    ButtonModule
-  ],
+  imports: [CommonModule, GalleriaModule, ButtonModule],
   templateUrl: './screenshots.component.html',
-  styleUrls: ['./screenshots.component.scss']
+  styleUrls: ['./screenshots.component.scss'],
 })
 export class ScreenshotsComponent implements OnInit, OnDestroy {
+  private platformId = inject(PLATFORM_ID);
+  private cd = inject(ChangeDetectorRef);
+
   /**
    * The array of screenshots to display.
    */
@@ -46,28 +44,23 @@ export class ScreenshotsComponent implements OnInit, OnDestroy {
   fullscreen = false;
 
   // used to store the event listener reference
-  onFullScreenListener: any;
+  onFullScreenListener: (() => void) | null = null;
 
   // Some example responsive breakpoints if you wish:
   responsiveOptions = [
     {
       breakpoint: '1024px',
-      numVisible: 5
+      numVisible: 5,
     },
     {
       breakpoint: '768px',
-      numVisible: 3
+      numVisible: 3,
     },
     {
       breakpoint: '560px',
-      numVisible: 1
-    }
+      numVisible: 1,
+    },
   ];
-
-  constructor(
-    @Inject(PLATFORM_ID) private platformId: any,
-    private cd: ChangeDetectorRef
-  ) {}
 
   ngOnInit() {
     // Bind for listening to when the user toggles browser fullscreen
@@ -135,14 +128,19 @@ export class ScreenshotsComponent implements OnInit, OnDestroy {
   }
 
   closePreviewFullScreen() {
-    if (document.exitFullscreen) {
-      document.exitFullscreen();
-    } else if ((document as any).mozCancelFullScreen) {
-      (document as any).mozCancelFullScreen();
-    } else if ((document as any).webkitExitFullscreen) {
-      (document as any).webkitExitFullscreen();
-    } else if ((document as any).msExitFullscreen) {
-      (document as any).msExitFullscreen();
+    const doc = document as Document & {
+      mozCancelFullScreen?: () => void;
+      webkitExitFullscreen?: () => void;
+      msExitFullscreen?: () => void;
+    };
+    if (doc.exitFullscreen) {
+      doc.exitFullscreen();
+    } else if (doc.mozCancelFullScreen) {
+      doc.mozCancelFullScreen();
+    } else if (doc.webkitExitFullscreen) {
+      doc.webkitExitFullscreen();
+    } else if (doc.msExitFullscreen) {
+      doc.msExitFullscreen();
     }
   }
 
@@ -166,7 +164,7 @@ export class ScreenshotsComponent implements OnInit, OnDestroy {
   }
 
   unbindDocumentListeners() {
-    if (!isPlatformBrowser(this.platformId)) {
+    if (!isPlatformBrowser(this.platformId) || !this.onFullScreenListener) {
       return;
     }
     document.removeEventListener('fullscreenchange', this.onFullScreenListener);

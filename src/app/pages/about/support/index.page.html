@@ -1,14 +1,36 @@
-<div *ngIf="!hideTitle" class="max-w-3xl mx-auto my-3">
-<h1>Support</h1>
-</div>
-<section *ngFor="let section of content" class="p-card max-w-3xl p-4 mx-auto my-3">
-  <h2>{{ section.title }}</h2>
-  <p *ngFor="let paragraph of section.intro">{{ paragraph }}</p>
-  <ul class="pl-3">
-    <li *ngFor="let link of section.links">
-      <a *ngIf="link.routerLink" [routerLink]="link.routerLink" class="font-semibold no-underline hover:underline text-primary">{{ link.title }}</a>
-      <a *ngIf="link.href" [href]="link.href" class="font-semibold no-underline hover:underline text-primary">{{ link.title }}</a>
-      <span *ngIf="link.description" class="hidden opacity-70 italic ml-2">- {{ link.description }}</span>
-    </li>
-  </ul>
-</section>  
+@if (!hideTitle) {
+  <div class="max-w-3xl mx-auto my-3">
+    <h1>Support</h1>
+  </div>
+}
+@for (section of content; track section) {
+  <section class="p-card max-w-3xl p-4 mx-auto my-3">
+    <h2>{{ section.title }}</h2>
+    @for (paragraph of section.intro; track paragraph) {
+      <p>{{ paragraph }}</p>
+    }
+    <ul class="pl-3">
+      @for (link of section.links; track link) {
+        <li>
+          @if (link.routerLink) {
+            <a
+              [routerLink]="link.routerLink"
+              class="font-semibold no-underline hover:underline text-primary"
+              >{{ link.title }}</a
+            >
+          }
+          @if (link.href) {
+            <a
+              [href]="link.href"
+              class="font-semibold no-underline hover:underline text-primary"
+              >{{ link.title }}</a
+            >
+          }
+          @if (link.description) {
+            <span class="hidden opacity-70 italic ml-2">- {{ link.description }}</span>
+          }
+        </li>
+      }
+    </ul>
+  </section>
+}

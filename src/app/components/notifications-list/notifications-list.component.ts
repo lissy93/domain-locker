@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, Input, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, Input, OnInit, inject } from '@angular/core';
 import DatabaseService from '~/app/services/database.service';
 import { Notification } from '~/app/../types/Database';
 import { PrimeNgModule } from '~/app/prime-ng.module';
@@ -15,17 +15,15 @@ import { ErrorHandlerService } from '~/app/services/error-handler.service';
   styleUrls: ['./notifications-list.component.scss'],
 })
 export class NotificationsListComponent implements OnInit {
+  private databaseService = inject(DatabaseService);
+  private cdr = inject(ChangeDetectorRef);
+  private errorHandler = inject(ErrorHandlerService);
+
   notifications: (Notification & { domain_name: string })[] = [];
   totalNotifications = 0;
   @Input() isInModal = false;
   rowsPerPage = 25;
   unreadNotificationsCount = 0;
-
-  constructor(
-    private databaseService: DatabaseService,
-    private cdr: ChangeDetectorRef,
-    private errorHandler: ErrorHandlerService,
-  ) {}
 
   ngOnInit() {
     this.loadNotifications();
@@ -35,22 +33,25 @@ export class NotificationsListComponent implements OnInit {
     const limit = this.isInModal ? this.rowsPerPage : undefined;
     const offset = page * this.rowsPerPage;
 
-    this.databaseService.instance.notificationQueries.getUserNotifications(limit, offset).subscribe(
-      ({ notifications, total }) => {
-        this.notifications = notifications;
-        if (this.isInModal) this.notifications = this.sortByUnreadFirst(this.notifications);
-        this.totalNotifications = total;
-        this.updateUnreadCount();
-      },
-      (error) => {
-        this.errorHandler.handleError({
-          message: 'Failed to load notifications',
-          error,
-          showToast: true,
-          location: 'NotificationsListComponent.loadNotifications',
-        });
-      }
-    );
+    this.databaseService.instance.notificationQueries
+      .getUserNotifications(limit, offset)
+      .subscribe(
+        ({ notifications, total }) => {
+          this.notifications = notifications;
+          if (this.isInModal)
+            this.notifications = this.sortByUnreadFirst(this.notifications);
+          this.totalNotifications = total;
+          this.updateUnreadCount();
+        },
+        (error) => {
+          this.errorHandler.handleError({
+            message: 'Failed to load notifications',
+            error,
+            showToast: true,
+            location: 'NotificationsListComponent.loadNotifications',
+          });
+        },
+      );
   }
 
   sortByUnreadFirst(notifications: Notification[]) {
@@ -67,23 +68,31 @@ export class NotificationsListComponent implements OnInit {
   }
 
   markAsRead(notificationId: string) {
-    this.databaseService.instance.notificationQueries.markNotificationReadStatus(notificationId, true).subscribe(() => {
-      const notification = this.notifications.find((n) => n.id === notificationId);
-      if (notification) notification.read = true;
-      this.updateUnreadCount();
-    });
+    this.databaseService.instance.notificationQueries
+      .markNotificationReadStatus(notificationId, true)
+      .subscribe(() => {
+        const notification = this.notifications.find((n) => n.id === notificationId);
+        if (notification) notification.read = true;
+        this.updateUnreadCount();
+      });
   }
 
   markAsUnread(notificationId: string) {
-    this.databaseService.instance.notificationQueries.markNotificationReadStatus(notificationId, false).subscribe(() => {
-      const notification = this.notifications.find((n) => n.id === notificationId);
-      if (notification) notification.read = false;
-      this.updateUnreadCount();
-    });
+    this.databaseService.instance.notificationQueries
+      .markNotificationReadStatus(notificationId, false)
+      .subscribe(() => {
+        const notification = this.notifications.find((n) => n.id === notificationId);
+        if (notification) notification.read = false;
+        this.updateUnreadCount();
+      });
   }
 
   async markAllAsRead(read = true) {
-    (await this.databaseService.instance.notificationQueries.markAllNotificationsRead(read)).subscribe(() => {
+    (
+      await this.databaseService.instance.notificationQueries.markAllNotificationsRead(
+        read,
+      )
+    ).subscribe(() => {
       this.notifications.forEach((notification) => (notification.read = read));
       this.updateUnreadCount();
       this.cdr.detectChanges();

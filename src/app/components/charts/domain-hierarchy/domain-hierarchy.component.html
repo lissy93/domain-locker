@@ -1,9 +1,9 @@
-
 <p-selectButton
-  [options]="groupByOptions" 
-  [(ngModel)]="groupBy" 
+  [options]="groupByOptions"
+  [(ngModel)]="groupBy"
   (onChange)="setNodeStyles()"
-  optionLabel="label">
+  optionLabel="label"
+>
 </p-selectButton>
 
 <p-organizationChart [value]="chartData" [collapsible]="true" styleClass="tld-chart">
@@ -11,7 +11,17 @@
     <div class="p-chart-node p-tld {{ node.styleClass }}">{{ node.label }}</div>
   </ng-template>
   <ng-template let-node pTemplate="domain">
-    <div class="p-chart-node p-domain {{ node.styleClass }}" pTooltip="{{ node.data.tooltip }}" (click)="router.navigate([node.data.routerLink])">{{ node.label }}</div>
+    <div
+      class="p-chart-node p-domain {{ node.styleClass }}"
+      pTooltip="{{ node.data.tooltip }}"
+      role="button"
+      tabindex="0"
+      (click)="router.navigate([node.data.routerLink])"
+      (keydown.enter)="router.navigate([node.data.routerLink])"
+      (keydown.space)="$event.preventDefault(); router.navigate([node.data.routerLink])"
+    >
+      {{ node.label }}
+    </div>
   </ng-template>
   <ng-template let-node pTemplate="subdomain">
     <div class="p-chart-node p-subdomain {{ node.styleClass }}">{{ node.label }}</div>

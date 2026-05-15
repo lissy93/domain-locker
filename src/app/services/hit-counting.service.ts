@@ -4,7 +4,7 @@
  * So that we can measure engagement so we can understand which features are most used,
  * and improve accordingly.
  * No personal data is collected, and no cookies are used.
- * 
+ *
  * All tracking will be skipped if:
  * - The user has disabled analytics in the settings.
  * - The user is not using the public managed instance.
@@ -12,14 +12,14 @@
  * - The browser has DNT enabled, or an ad-blocker.
  * - The environmental variable to enable Plausible is not set.
  */
-import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
+import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { EnvService } from '~/app/services/environment.service';
 import { SupabaseService } from '~/app/services/supabase.service';
 import { ErrorHandlerService } from '~/app/services/error-handler.service';
 
 type EventType =
-  'pageview_authenticated'
+  | 'pageview_authenticated'
   | 'pageview_unauthenticated'
   | 'auth_view'
   | 'auth_login_start'
@@ -31,18 +31,26 @@ type EventType =
   | 'add_domain';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class HitCountingService {
+  private platformId = inject<object>(PLATFORM_ID);
+  private envService = inject(EnvService);
+  private supabaseService = inject(SupabaseService);
+  private errorHandler = inject(ErrorHandlerService);
+
   private plausibleEnabled = false;
   private analyticsKey = 'PRIVACY_disable-analytics';
 
-  constructor(
-    @Inject(PLATFORM_ID) private platformId: Object,
-    private envService: EnvService,
-    private supabaseService: SupabaseService,
-    private errorHandler: ErrorHandlerService,
-  ) {
+  private get plausibleWindow(): {
+    plausible?: (event: string, opts?: { props?: Record<string, unknown> }) => void;
+  } {
+    return window as unknown as {
+      plausible?: (event: string, opts?: { props?: Record<string, unknown> }) => void;
+    };
+  }
+
+  constructor() {
     this.plausibleEnabled = this.shouldEnablePlausible();
     if (this.plausibleEnabled) {
       this.initializePlausible();
@@ -51,7 +59,11 @@ export class HitCountingService {
 
   /* Read Plausible config from environmental variables */
   private getCredentials() {
-    const { site: plausibleSite, url: plausibleUrl, isConfigured } = this.envService.getPlausibleConfig();
+    const {
+      site: plausibleSite,
+      url: plausibleUrl,
+      isConfigured,
+    } = this.envService.getPlausibleConfig();
     return { plausibleUrl, plausibleSite, isConfigured };
   }
 
@@ -87,12 +99,8 @@ export class HitCountingService {
 
   /* Checks auth state */
   public async isAuthenticated(): Promise<boolean> {
-    try {
-      if (!this.envService.isSupabaseEnabled()) return false;
-      return await this.supabaseService.isAuthenticated()
-    } catch (error) {
-      throw error;
-    }
+    if (!this.envService.isSupabaseEnabled()) return false;
+    return await this.supabaseService.isAuthenticated();
   }
 
   /**
@@ -108,14 +116,14 @@ export class HitCountingService {
     if (!this.plausibleEnabled) {
       return false;
     }
-    
+
     // Cancel if not client
     if (!isPlatformBrowser(this.platformId) || typeof window === 'undefined') {
       return false;
     }
 
     // Cancel if Plausible script is not loaded
-    if (typeof (window as any).plausible !== 'function') {
+    if (typeof this.plausibleWindow.plausible !== 'function') {
       return false;
     }
     return true; // All checks passed, continue
@@ -126,9 +134,11 @@ export class HitCountingService {
     try {
       if (!this.checkIfShouldContinue() || !url) return;
       const isAuthenticated = await this.supabaseService.isAuthenticated();
-      const eventName = isAuthenticated ? 'pageview_authenticated' : 'pageview_unauthenticated';
-      const topLevel = (url.replace(/^\/+/, '').split('/')[0] || 'home');
-      (window as any).plausible(eventName, { props: { topLevel, url } });
+      const eventName = isAuthenticated
+        ? 'pageview_authenticated'
+        : 'pageview_unauthenticated';
+      const topLevel = url.replace(/^\/+/, '').split('/')[0] || 'home';
+      this.plausibleWindow.plausible?.(eventName, { props: { topLevel, url } });
     } catch (error) {
       this.errorHandler.handleError({
         message: 'Unable to count page view',
@@ -139,10 +149,10 @@ export class HitCountingService {
   }
 
   /* Track a key event in Plausible */
-  public trackEvent<E extends EventType>(eventName: E, props?: Record<string, any>) {
+  public trackEvent<E extends EventType>(eventName: E, props?: Record<string, unknown>) {
     try {
       if (!this.checkIfShouldContinue()) return;
-      (window as any).plausible(eventName, { props });
+      this.plausibleWindow.plausible?.(eventName, { props });
     } catch (error) {
       this.errorHandler.handleError({
         message: 'Unable to log event',

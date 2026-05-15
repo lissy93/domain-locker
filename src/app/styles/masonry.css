@@ -1,31 +1,31 @@
-.grid { margin: 0; }
-
-
+.grid {
+  margin: 0;
+}
 
 @layer utilities {
   @layer responsive {
-      .masonry {
-          column-gap: 1.5rem;
-          column-count: 1;
-      }
-      .masonry-sm {
-          column-gap: 1.5rem;
-          column-count: 1;
-      }
-      .masonry-md {
-          column-gap: 1.5rem;
-          column-count: 2;
-      }
-      .masonry-lg {
-          column-gap: 1.5rem;
-          column-count: 3;
-      }
-      .masonry-xl {
-          column-gap: 1.5rem;
-          column-count: 4;
-      }
-      .break-inside {
-          break-inside: avoid;
-      }
+    .masonry {
+      column-gap: 1.5rem;
+      column-count: 1;
+    }
+    .masonry-sm {
+      column-gap: 1.5rem;
+      column-count: 1;
+    }
+    .masonry-md {
+      column-gap: 1.5rem;
+      column-count: 2;
+    }
+    .masonry-lg {
+      column-gap: 1.5rem;
+      column-count: 3;
+    }
+    .masonry-xl {
+      column-gap: 1.5rem;
+      column-count: 4;
+    }
+    .break-inside {
+      break-inside: avoid;
+    }
   }
 }

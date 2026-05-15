@@ -1,8 +1,7 @@
-
 /**
  * List of supported currencies for each locale
  */
-export const localeToCurrency: { [key: string]: string } = {
+export const localeToCurrency: Record<string, string> = {
   'en-US': 'USD', // United States
   'en-GB': 'GBP', // United Kingdom
   'en-CA': 'CAD', // Canada

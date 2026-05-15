@@ -1,98 +1,171 @@
-
 <p-blockUI [target]="editDomainForm" [blocked]="isLoading">
   <p-progressSpinner />
 </p-blockUI>
 
 <h2>Edit Domain: {{ domain?.domain_name }}</h2>
-<p-panel #editDomainForm class="p-4 mx-auto my-4" [header]="'Edit Domain: '+domain?.domain_name">
+<p-panel
+  #editDomainForm
+  class="p-4 mx-auto my-4"
+  [header]="'Edit Domain: ' + domain?.domain_name"
+>
   <form [formGroup]="domainForm" (ngSubmit)="onSubmit()">
     <div class="field">
       <label for="registrar">Registrar</label>
       <div class="input-wrap">
-        <p-autoComplete
-          *ngIf="!registrarLoadFailed"
-          id="registrar"
-          formControlName="registrar"
-          [suggestions]="filteredRegistrars"
-          (completeMethod)="filterRegistrars($event)"
-          [dropdown]="true"
-          [forceSelection]="false"
-          placeholder="Select or type registrar name..."
-          styleClass="w-full"
-          [inputStyle]="{'width':'100%'}"
-        ></p-autoComplete>
-        <input
-          *ngIf="registrarLoadFailed"
-          id="registrar"
-          type="text"
-          pInputText
-          formControlName="registrar"
-          class="w-full"
-          placeholder="Enter registrar name"
-        >
+        @if (!registrarLoadFailed) {
+          <p-autoComplete
+            id="registrar"
+            formControlName="registrar"
+            [suggestions]="filteredRegistrars"
+            (completeMethod)="filterRegistrars($event)"
+            [dropdown]="true"
+            [forceSelection]="false"
+            placeholder="Select or type registrar name..."
+            styleClass="w-full"
+            [inputStyle]="{ width: '100%' }"
+          ></p-autoComplete>
+        }
+        @if (registrarLoadFailed) {
+          <input
+            id="registrar"
+            type="text"
+            pInputText
+            formControlName="registrar"
+            class="w-full"
+            placeholder="Enter registrar name"
+          />
+        }
       </div>
     </div>
 
     <div class="field">
       <label for="expiryDate">Expiry Date</label>
       <div class="input-wrap">
-        <p-calendar id="expiryDate" formControlName="expiryDate" [showIcon]="true" class="w-full"></p-calendar>
+        <p-calendar
+          id="expiryDate"
+          formControlName="expiryDate"
+          [showIcon]="true"
+          class="w-full"
+        ></p-calendar>
       </div>
     </div>
 
     <div class="field">
       <label for="tags">Tags</label>
       <div class="input-wrap">
-        <p-chips id="tags" formControlName="tags" separator="," [addOnBlur]="true" class="w-full"></p-chips>
+        <p-chips
+          id="tags"
+          formControlName="tags"
+          separator=","
+          [addOnBlur]="true"
+          class="w-full"
+        ></p-chips>
       </div>
     </div>
 
     <div class="field">
       <label for="notes">Notes</label>
       <div class="input-wrap">
-        <textarea id="notes" pInputTextarea formControlName="notes" [rows]="5" [cols]="30" class="w-full"></textarea>
+        <textarea
+          id="notes"
+          pInputTextarea
+          formControlName="notes"
+          [rows]="5"
+          [cols]="30"
+          class="w-full"
+        ></textarea>
       </div>
     </div>
 
     <div class="field">
       <label for="subdomains">Subdomains</label>
       <div class="input-wrap">
-        <p-chips id="subdomains" formControlName="subdomains" separator="," [addOnBlur]="true" class="w-full"></p-chips>
+        <p-chips
+          id="subdomains"
+          formControlName="subdomains"
+          separator=","
+          [addOnBlur]="true"
+          class="w-full"
+        ></p-chips>
       </div>
-    </div>
-    
-    <!-- Links Section -->
-    <div class="field">
-      <label>Links</label>
-      <div class="flex flex-col mr-2">
-        <div formArrayName="links" *ngFor="let link of links.controls; let i = index">
-          <div [formGroupName]="i" class="flex flex-col gap-2 mb-2 items-center">
-            <div class="flex gap-2 items-center">
-              <input type="text" pInputText formControlName="link_name" placeholder="Link Name" class="w-1/3" />
-              <input type="text" pInputText formControlName="link_url" placeholder="Link URL" class="w-2/3" />
-              <button pButton icon="pi pi-trash" class="p-button-danger" (click)="removeLink(i)" type="button"></button>
-            </div>
-            <textarea pInputTextarea formControlName="link_description" [rows]="2" [cols]="30" class="w-full" placeholder="Description (optional)"></textarea>
-          </div>
-        </div>
-      </div>
-      <button pButton label="Add Link" class="mt-2" (click)="addLink()" type="button"></button>
     </div>
 
-    <div formGroupName="notifications" class="">
-      <label>Notifications</label>
-      <div *ngFor="let type of notificationTypes" class="flex align-items-center gap-1 pb-0 mb-0 field">
-        <label [for]="type.key" class="ml-2">
-          {{ type.label }}
-          <small class="block text-gray-500">{{ type.description }}</small>
-          <small *ngIf="type.note" class="block text-yellow-500">{{ type.note }}</small>
-        </label>
-        <p-inputSwitch [formControlName]="type.key" class="mr-2"></p-inputSwitch>
+    <!-- Links Section -->
+    <fieldset class="field border-none p-0 m-0">
+      <legend class="p-0">Links</legend>
+      <div class="flex flex-col mr-2">
+        @for (link of links.controls; track link; let i = $index) {
+          <div formArrayName="links">
+            <div [formGroupName]="i" class="flex flex-col gap-2 mb-2 items-center">
+              <div class="flex gap-2 items-center">
+                <input
+                  type="text"
+                  pInputText
+                  formControlName="link_name"
+                  placeholder="Link Name"
+                  class="w-1/3"
+                />
+                <input
+                  type="text"
+                  pInputText
+                  formControlName="link_url"
+                  placeholder="Link URL"
+                  class="w-2/3"
+                />
+                <button
+                  pButton
+                  icon="pi pi-trash"
+                  aria-label="Remove link"
+                  class="p-button-danger"
+                  (click)="removeLink(i)"
+                  type="button"
+                ></button>
+              </div>
+              <textarea
+                pInputTextarea
+                formControlName="link_description"
+                [rows]="2"
+                [cols]="30"
+                class="w-full"
+                placeholder="Description (optional)"
+              ></textarea>
+            </div>
+          </div>
+        }
       </div>
-    </div>
+      <button
+        pButton
+        label="Add Link"
+        aria-label="Add link"
+        class="mt-2"
+        (click)="addLink()"
+        type="button"
+      ></button>
+    </fieldset>
+
+    <fieldset formGroupName="notifications" class="border-none p-0 m-0">
+      <legend class="p-0">Notifications</legend>
+      @for (type of notificationTypes; track type) {
+        <div class="flex align-items-center gap-1 pb-0 mb-0 field">
+          <label [for]="type.key" class="ml-2">
+            {{ type.label }}
+            <small class="block text-gray-500">{{ type.description }}</small>
+            @if (type.note) {
+              <small class="block text-yellow-500">{{ type.note }}</small>
+            }
+          </label>
+          <p-inputSwitch [formControlName]="type.key" class="mr-2"></p-inputSwitch>
+        </div>
+      }
+    </fieldset>
 
     <div class="flex justify-content-between mt-4">
-      <p-button type="button" label="Cancel" styleClass="p-button-secondary mr-2" [routerLink]="'/domains/'+(domain?.domain_name || '')"></p-button>
+      <p-button
+        type="button"
+        label="Cancel"
+        styleClass="p-button-secondary mr-2"
+        [routerLink]="'/domains/' + (domain?.domain_name || '')"
+      ></p-button>
       <p-button type="submit" label="Save Changes" [loading]="isLoading"></p-button>
     </div>
   </form>

@@ -1,9 +1,10 @@
-
 ::ng-deep apx-chart {
   &:not(.advanced-mode) .apexcharts-canvas {
     .apexcharts-toolbar {
       opacity: 0.2;
-      transition: opacity 0.25s ease-in-out, opacity 1s 0.25s ease-in-out;
+      transition:
+        opacity 0.25s ease-in-out,
+        opacity 1s 0.25s ease-in-out;
     }
     .apexcharts-yaxis {
       opacity: 0;

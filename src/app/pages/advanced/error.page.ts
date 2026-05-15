@@ -1,25 +1,25 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject } from '@angular/core';
+
 import { PrimeNgModule } from '~/app/prime-ng.module';
 import { ActivatedRoute } from '@angular/router';
 import { GlobalMessageService } from '~/app/services/messaging.service';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, PrimeNgModule],
+  selector: 'app-advanced-error-page',
+  imports: [PrimeNgModule],
   templateUrl: './error.page.html',
   styles: [``],
 })
 export default class ErrorPage implements OnInit {
+  private route = inject(ActivatedRoute);
+  private messagingService = inject(GlobalMessageService);
+
   errorMessage?: string;
 
-  constructor(
-    private route: ActivatedRoute,
-    private messagingService: GlobalMessageService,
-  ) {}
-
   ngOnInit(): void {
-    this.errorMessage = this.route.snapshot.queryParamMap.get('errorMessage') || undefined;
+    this.errorMessage =
+      this.route.snapshot.queryParamMap.get('errorMessage') || undefined;
   }
 
   reload() {
@@ -35,6 +35,9 @@ export default class ErrorPage implements OnInit {
   }
 
   enableDebugging() {
-    this.messagingService.showInfo('Enabling Debug Mode', 'Error logs and diagnostics will be send to us');
+    this.messagingService.showInfo(
+      'Enabling Debug Mode',
+      'Error logs and diagnostics will be send to us',
+    );
   }
 }

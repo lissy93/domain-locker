@@ -8,6 +8,26 @@
   <img width="48" src="https://github.com/Lissy93/domain-locker/blob/main/src/assets/logo.png?raw=true" />
 </p>
 
+<!-- 
+<p align="center">
+  <a href="https://artifacthub.io/packages/helm/domain-locker/domain-locker">
+    <img alt="ArtifactHub" src="https://img.shields.io/badge/-ArtifactHub-40b0c2?style=flat&logo=artifacthub&logoColor=ffffff" />
+  </a>
+  <a href="https://hub.docker.com/r/lissy93/domain-locker">
+    <img alt="DockerHub" src="https://img.shields.io/docker/pulls/lissy93/domain-locker.svg?logo=docker&label=DockerHub&color=256bd7&labelColor=124ec9&logoColor=ffffff" />
+  </a>
+  <a href="https://apps.umbrel.com/app/domain-locker">
+    <img alt="Umbrel" src="https://img.shields.io/badge/-Umbrel-7472fc?style=flat&logo=umbrel&logoColor=ffffff" />
+  </a>
+  <a href="https://community-scripts.github.io/ProxmoxVE/scripts?id=domain-locker">
+    <img alt="Proxmox" src="https://img.shields.io/badge/-Proxmox-e57000?style=flat&logo=proxmox&logoColor=ffffff" />
+  </a>
+  <img alt="EasyPanel" src="https://img.shields.io/badge/-EasyPanel-15b7b1?style=flat&logo=qlty&logoColor=ffffff" />
+  <img alt="Unraid" src="https://img.shields.io/badge/-Unraid-F15A2C?style=flat&logo=unraid&logoColor=ffffff" />
+  <img alt="Portainer" src="https://img.shields.io/badge/-Portainer-13BEF9?style=flat&logo=portainer&logoColor=ffffff" />
+</p>
+-->
+
 <details>
   <summary><b>Contents</b></summary>
   
@@ -36,16 +56,16 @@ With Domain Locker, you'll never again loose track of your domains, miss an expi
 
 ### Screenshot
 
-<sup>(Sorry about the 5fps, I wanted to keep file size down!)</sup>
-
 <p align="center">
-<img width="800" src="/.github/screenshots/quick-demo.gif" /><br>
-<img width="800" src="/.github/screenshots/screenshot-grid.png" />
+<img width="800" src="https://cdn.as93.net/project-screens/domain-locker-homepage/w1024" />
 </p>
 
 <details>
 <summary>More screenshots...</summary>
+<p align="center"><sup>(Sorry about the 5fps, I wanted to keep file size down!)</sup></p>
 <p align="center">
+<img width="800" src="/.github/screenshots/quick-demo.gif" /><br>
+<img width="800" src="/.github/screenshots/screenshot-grid.png" />
 <img width="800" src="/.github/screenshots/domain-locker-viz-screenshots.png" />
 <img width="800" src="/.github/screenshots/domain-locker-settings-screenshots.png" />
 </p>
@@ -184,6 +204,18 @@ flowchart TB
 
  
 </details>
+
+
+### Option 3: Unofficial Apps
+
+- [![ArtifactHub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/domain-locker&color=40b0c2&labelColor=398c9a)](https://artifacthub.io/packages/helm/domain-locker/domain-locker)
+- [![DockerHub](https://img.shields.io/docker/pulls/lissy93/domain-locker.svg?logo=docker&label=DockerHub&color=256bd7&labelColor=124ec9&logoColor=ffffff)](https://hub.docker.com/r/lissy93/domain-locker)
+- [![Umbrel](https://img.shields.io/badge/Umbrel-domain_locker-7472fc?style=flat&logo=umbrel&labelColor=5351fb)](https://apps.umbrel.com/app/domain-locker)
+- [![Supabase](https://img.shields.io/badge/Supabase-domain_locker-3FCF8E?style=flat&logo=supabase&labelColor=39ad79&logoColor=ffffff)](https://github.com/Lissy93/dl-sb-iac)
+- [![Proxmox](https://img.shields.io/badge/Proxmox-domain_locker-e57000?style=flat&logo=proxmox&labelColor=cf6806&logoColor=ffffff)](https://community-scripts.github.io/ProxmoxVE/scripts?id=domain-locker)
+- [![TrueNAS](https://img.shields.io/badge/TrueNAS-domain_locker-71BF44?style=flat&logo=truenas&labelColor=0095d5&logoColor=ffffff)](https://apps.truenas.com/catalog/domain-locker/)
+- [![EasyPanel](https://img.shields.io/badge/EasyPanel-domain_locker-15b7b1?style=flat&logo=qlty&labelColor=06976c&logoColor=ffffff)](https://domain-locker.com/about/self-hosting/deploying-on-easypanel-io) _(Pending)_
+- [![Unraid](https://img.shields.io/badge/Unraid-domain_locker-FF754B?style=flat&logo=unraid&labelColor=F15A2C&logoColor=ffffff)](https://domain-locker.com/about/self-hosting/deploying-on-unraid) _(Planned)_
 
 
 ---
@@ -632,14 +664,14 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 <!-- Dinosaurs are Awesome -->
 <!-- 
-                        . - ~ ~ ~ - .
-      ..     _      .-~               ~-.
-     //|     \ `..~                      `.
-    || |      }  }              /       \  \
-(\   \\ \~^..'                 |         }  \
- \`.-~  o      /       }       |        /    \
- (__          |       /        |       /      `.
-  `- - ~ ~ -._|      /_ - ~ ~ ^|      /- _      `.
-              |     /          |     /     ~-.     ~- _
-              |_____|          |_____|         ~ - . _ _~_-_
+                        . - ~ ~ ~ ~ - .
+      ..     _      .-~                 ~-.
+     //|     \ `..~                        `.
+    || |      }  }                /       \  \
+(\   \\ \~^..'                   |         }  \
+ \`.-~  o      /       }         |        /    \
+ (__          |       /          |       /      `.
+  `- - ~ ~ -._|      /_ - ~ ~ ~ ^|      /- _      `.
+              |     /            |     /     ~-.     ~- _
+              |_____|            |_____|         ~ - . _ _~_-_
 -->

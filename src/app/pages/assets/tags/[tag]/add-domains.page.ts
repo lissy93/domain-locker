@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject } from '@angular/core';
+
 import { ActivatedRoute, Router } from '@angular/router';
 import { PrimeNgModule } from '~/app/prime-ng.module';
 import { DbDomain, Tag } from '~/app/../types/Database';
@@ -9,31 +9,30 @@ import { ErrorHandlerService } from '~/app/services/error-handler.service';
 
 @Component({
   standalone: true,
-  selector: 'app-tag-edit',
-  imports: [CommonModule, PrimeNgModule, TagPickListComponent],
-  template: `
-  <h2 class="mb-4 ml-4">Add Domains: {{ tagName }}</h2>
-  <div *ngIf="tag && tag.id" class="p-card p-4 m-4">
-    <app-domain-tag-picklist [tagId]="tag.id" ($afterSave)="afterSave()" />
-  </div>`,
+  selector: 'app-assets-tags-tag-add-domains-page',
+  imports: [PrimeNgModule, TagPickListComponent],
+  template: ` <h2 class="mb-4 ml-4">Add Domains: {{ tagName }}</h2>
+    @if (tag && tag.id) {
+      <div class="p-card p-4 m-4">
+        <app-domain-tag-picklist [tagId]="tag.id" ($afterSave)="afterSave()" />
+      </div>
+    }`,
 })
 export default class TagDomainsPageComponent implements OnInit {
-  tagName: string = '';
+  private route = inject(ActivatedRoute);
+  private databaseService = inject(DatabaseService);
+  private errorHandler = inject(ErrorHandlerService);
+  private router = inject(Router);
+
+  tagName = '';
   domains: DbDomain[] = [];
-  loading: boolean = true;
-  dialogOpen: boolean = false;
+  loading = true;
+  dialogOpen = false;
 
-  tag: Tag | any = {};
-
-  constructor(
-    private route: ActivatedRoute,
-    private databaseService: DatabaseService,
-    private errorHandler: ErrorHandlerService,
-    private router: Router,
-  ) {}
+  tag: Partial<Tag> = {};
 
   ngOnInit() {
-    this.route.params.subscribe(params => {
+    this.route.params.subscribe((params) => {
       this.tagName = params['tag'];
       this.loadTag();
     });
@@ -56,7 +55,7 @@ export default class TagDomainsPageComponent implements OnInit {
           location: 'TagDomainsPageComponent.loadTag',
         });
         this.loading = false;
-      }
+      },
     });
   }
 
@@ -65,7 +64,6 @@ export default class TagDomainsPageComponent implements OnInit {
       this.router.navigate([`/assets/tags/${this.tagName}`]);
     } else {
       this.router.navigate([`/assets/tags`]);
-    } 
+    }
   }
-
 }

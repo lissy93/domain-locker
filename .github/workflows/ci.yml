@@ -1,0 +1,355 @@
+# Runs on every PR opened against main, verifying core quality checks pass
+
+name: 🚦 CI Checks
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  changes:
+    name: 🔎 Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      app: ${{ steps.filter.outputs.app }}
+      workflows: ${{ steps.filter.outputs.workflows }}
+      packages: ${{ steps.filter.outputs.packages }}
+    steps:
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            app:
+              - 'src/**'
+              - 'db/**'
+              - 'Dockerfile'
+              - 'start.sh'
+              - 'index.html'
+              - 'package*.json'
+              - '.npmrc'
+              - '.nvmrc'
+              - 'angular.json'
+              - 'vite.config.ts'
+              - 'tailwind.config.js'
+              - 'postcss.config.js'
+              - 'tsconfig*.json'
+            workflows:
+              - '.github/workflows/**'
+            packages:
+              - 'package*.json'
+
+  pr-title:
+    name: 🖊️ PR Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Validate PR title (conventional commits)
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            chore
+            docs
+            style
+            refactor
+            perf
+            test
+            build
+            ci
+            revert
+          requireScope: false
+          subjectPattern: ^[A-Za-z].+$
+          subjectPatternError: |
+            Subject must start with a letter and not be empty.
+            Example: `feat: add support for X` or `fix(api): handle Y`.
+
+      - name: Validate PR body is filled in
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          # Fail if PR body is empty or unchanged from the template
+          template=$(cat .github/PULL_REQUEST_TEMPLATE.md)
+          body="${PR_BODY//$'\r'/}"
+          if [ -z "$(echo "$body" | tr -d '[:space:]')" ]; then
+            echo "::error::PR body is empty. Please fill in the template."
+            exit 1
+          fi
+          if [ "$body" = "$template" ]; then
+            echo "::error::PR body is unchanged from the template. Please describe your changes."
+            exit 1
+          fi
+          echo "✅ PR body looks filled in"
+
+  lint:
+    name: 🛡️ Lint
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup
+      - run: npm run lint
+
+  typecheck:
+    name: 🦴 Typecheck
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup
+      - run: npm run typecheck
+
+  format:
+    name: 🧼 Format
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup
+      - run: npm run format:check
+
+  test:
+    name: 🧪 Test
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup
+      - run: npm test
+
+  deps-review:
+    name: ⛓️‍💥 Dependency Review
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.packages == 'true'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: moderate
+          comment-summary-in-pr: on-failure
+
+  build:
+    name: 🏗️ Build
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup
+      - name: Build production bundle
+        env:
+          NODE_OPTIONS: --max-old-space-size=8192
+          DL_ENV_TYPE: selfHosted
+        run: npm run build
+      - name: Verify build output
+        run: |
+          if [ ! -f dist/analog/server/index.mjs ]; then
+            echo "::error::Build failed: dist/analog/server/index.mjs not found"
+            exit 1
+          fi
+          echo "✅ SSR entry present"
+
+      - name: SSR boot probe
+        env:
+          PORT: 3000
+        run: |
+          # Boot the built server, confirm /api/health responds, then exit
+          node dist/analog/server/index.mjs &
+          SSR_PID=$!
+          trap 'kill $SSR_PID 2>/dev/null || true' EXIT
+          for i in $(seq 1 20); do
+            CODE=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/api/health || echo 000)
+            if [ "$CODE" = "200" ]; then
+              echo "✅ SSR boots, /api/health responded after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::SSR server did not respond on /api/health within 20s"
+          exit 1
+
+      - name: Archive bundle
+        run: tar -czf dl-bundle.tar.gz dist/
+
+      - name: Upload bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dl-bundle-${{ github.sha }}
+          path: dl-bundle.tar.gz
+          retention-days: 14
+          if-no-files-found: error
+
+  docker-smoke:
+    name: 🐳 Docker Smoke Test
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: 🔌 Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔨 Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: domain-locker:ci
+          cache-from: type=gha,scope=ci-docker
+          cache-to: type=gha,scope=ci-docker,mode=max
+
+      - name: 🐘 Start Postgres
+        run: |
+          docker network create dl-ci
+          docker run -d --name dl-ci-pg --network dl-ci \
+            -e POSTGRES_DB=domain_locker \
+            -e POSTGRES_USER=postgres \
+            -e POSTGRES_PASSWORD=ci-test \
+            postgres:16-alpine
+          for i in $(seq 1 30); do
+            if docker exec dl-ci-pg pg_isready -U postgres >/dev/null 2>&1; then
+              echo "postgres ready after ${i}s"; exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::Postgres did not become ready"
+          exit 1
+
+      - name: 🚀 Start app
+        run: |
+          docker run -d --name dl-ci-app --network dl-ci -p 3000:3000 \
+            -e DL_ENV_TYPE=selfHosted \
+            -e DL_PG_HOST=dl-ci-pg \
+            -e DL_PG_PORT=5432 \
+            -e DL_PG_USER=postgres \
+            -e DL_PG_PASSWORD=ci-test \
+            -e DL_PG_NAME=domain_locker \
+            domain-locker:ci
+          echo "✅ App container started"
+
+      - name: 🩺 Health check
+        run: |
+          for i in $(seq 1 60); do
+            CODE=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/api/health || echo 000)
+            if [ "$CODE" = "200" ]; then
+              echo "✅ App healthy after ${i}s"
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo "::error::App did not become healthy within 120s"
+          echo "--- app logs ---"
+          docker logs dl-ci-app
+          echo "--- postgres logs ---"
+          docker logs dl-ci-pg
+          exit 1
+
+      - name: 👀 Probe homepage SSR
+        run: |
+          # Confirm SSR actually renders the app shell, not just a healthcheck
+          CODE=$(curl -s -L -o /tmp/dl-home.html -w '%{http_code}' http://localhost:3000/)
+          if [ "$CODE" != "200" ] || ! grep -q '<app-root' /tmp/dl-home.html; then
+            echo "::error::Homepage did not render app-root (status: $CODE)"
+            head -c 2000 /tmp/dl-home.html
+            echo
+            docker logs --tail 100 dl-ci-app
+            exit 1
+          fi
+          echo "✅ SSR renders homepage"
+
+      - name: 🧹 Tear down
+        if: always()
+        run: |
+          docker rm -f dl-ci-app dl-ci-pg 2>/dev/null || true
+          docker network rm dl-ci 2>/dev/null || true
+
+  actionlint:
+    name: ⚙️ Lint Workflows
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.workflows == 'true'
+    steps:
+      - uses: actions/checkout@v6
+      - name: Run actionlint
+        uses: raven-actions/actionlint@v2
+        with:
+          fail-on-error: true
+
+  summary:
+    name: 📣 Summary
+    runs-on: ubuntu-latest
+    needs: [pr-title, lint, typecheck, format, test, deps-review, build, docker-smoke, actionlint]
+    if: always()
+    steps:
+      - name: Write run summary
+        env:
+          PR_TITLE: ${{ needs.pr-title.result }}
+          LINT: ${{ needs.lint.result }}
+          TYPECHECK: ${{ needs.typecheck.result }}
+          FORMAT: ${{ needs.format.result }}
+          TEST: ${{ needs.test.result }}
+          DEPS: ${{ needs.deps-review.result }}
+          BUILD: ${{ needs.build.result }}
+          DOCKER: ${{ needs.docker-smoke.result }}
+          ACTIONLINT: ${{ needs.actionlint.result }}
+        run: |
+          # Render a per-job status table to the Actions run summary UI
+          icon() {
+            case "$1" in
+              success)   echo "✅" ;;
+              failure)   echo "❌" ;;
+              cancelled) echo "⏹️" ;;
+              skipped)   echo "⏭️" ;;
+              *)         echo "❓" ;;
+            esac
+          }
+          overall="✅ All checks passed"
+          for r in "$PR_TITLE" "$LINT" "$TYPECHECK" "$FORMAT" "$TEST" "$DEPS" \
+                   "$BUILD" "$DOCKER" "$ACTIONLINT"; do
+            [ "$r" = "failure" ] && overall="❌ One or more checks failed"
+          done
+          {
+            echo "## CI Summary"
+            echo ""
+            echo "> **Overall:** $overall"
+            echo ""
+            echo "| Check | Status |"
+            echo "|---|---|"
+            echo "| 🖊️ PR Check | $(icon "$PR_TITLE") $PR_TITLE |"
+            echo "| 🛡️ Lint | $(icon "$LINT") $LINT |"
+            echo "| 🦴 Typecheck | $(icon "$TYPECHECK") $TYPECHECK |"
+            echo "| 🧼 Format | $(icon "$FORMAT") $FORMAT |"
+            echo "| 🧪 Test | $(icon "$TEST") $TEST |"
+            echo "| ⛓️‍💥 Dependency Review | $(icon "$DEPS") $DEPS |"
+            echo "| 🏗️ Build | $(icon "$BUILD") $BUILD |"
+            echo "| 🐳 Docker Smoke | $(icon "$DOCKER") $DOCKER |"
+            echo "| ⚙️ Actionlint | $(icon "$ACTIONLINT") $ACTIONLINT |"
+            echo ""
+            echo "**Commit:** \`${GITHUB_SHA:0:7}\` on branch \`${GITHUB_HEAD_REF}\`"
+            if [ "$BUILD" = "success" ]; then
+              echo "**Build artifact:** \`dl-bundle-${GITHUB_SHA}\` (see the Artifacts panel above)"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

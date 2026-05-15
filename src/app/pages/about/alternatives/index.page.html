@@ -1,51 +1,54 @@
-
 <div class="p-card p-3 my-4 mx-auto">
   <h2>Alternative & Comparison</h2>
   <p>
-    If you own a domain for your business, project or personal use, 
-    then you'll understand how important it is to be able to keep track of
-    it's status, renewal, and other important information.
+    If you own a domain for your business, project or personal use, then you'll understand
+    how important it is to be able to keep track of it's status, renewal, and other
+    important information.
   </p>
   <p>
-    While Domain Locker covers nearly all the bases, there are a few alternatives,
-    which it's worth considering to make an informed decision.
+    While Domain Locker covers nearly all the bases, there are a few alternatives, which
+    it's worth considering to make an informed decision.
   </p>
   <p>
-    There are also some additional tools, which can be used either in
-    conjunction with a domain management system or sometimes instead of.
-    These are listed in the <a routerLink="/about/external-tools">External Tools</a> page.  
+    There are also some additional tools, which can be used either in conjunction with a
+    domain management system or sometimes instead of. These are listed in the
+    <a routerLink="/about/external-tools">External Tools</a> page.
   </p>
-  
 </div>
 
 <p-table [value]="tableData">
   <ng-template pTemplate="header">
     <tr>
-      <th *ngFor="let col of columns">
-        <div class="flex gap-2 items-center">
-          <a [href]="col.url + '?ref=domainlocker'">
-            <img *ngIf="col.icon" src="{{ col.icon }}" alt="{{ col.header }}" class="h-7" />
-          </a>
-          {{ col.header }}
-        </div>
-      </th>
+      @for (col of columns; track col) {
+        <th>
+          <div class="flex gap-2 items-center">
+            <a [href]="col.url + '?ref=domainlocker'">
+              @if (col.icon) {
+                <img src="{{ col.icon }}" alt="{{ col.header }}" class="h-7" />
+              }
+            </a>
+            {{ col.header }}
+          </div>
+        </th>
+      }
     </tr>
   </ng-template>
   <ng-template pTemplate="body" let-rowData>
     <tr>
-      <td *ngFor="let col of columns" [pTooltip]="rowData[col.field].description || ''">
-        @if (rowData[col.field].value === 'Yes') {
-          <i class="pi pi-check text-green-500"></i> Yes
-        } @else if (rowData[col.field].value === 'No') {
-          <i class="pi pi-times text-red-500"></i> No
-          
-        } @else if (rowData[col.field].value === 'Some') {
-          <i class="pi pi-minus text-blue-500"></i> Some
-        } @else {
-          {{ rowData[col.field].value || rowData[col.field] }}
-        }
-        <!-- {{ rowData[col.field] }} -->
-      </td>
+      @for (col of columns; track col) {
+        <td [pTooltip]="rowData[col.field].description || ''">
+          @if (rowData[col.field].value === 'Yes') {
+            <i class="pi pi-check text-green-500"></i> Yes
+          } @else if (rowData[col.field].value === 'No') {
+            <i class="pi pi-times text-red-500"></i> No
+          } @else if (rowData[col.field].value === 'Some') {
+            <i class="pi pi-minus text-blue-500"></i> Some
+          } @else {
+            {{ rowData[col.field].value || rowData[col.field] }}
+          }
+          <!-- {{ rowData[col.field] }} -->
+        </td>
+      }
     </tr>
   </ng-template>
 </p-table>

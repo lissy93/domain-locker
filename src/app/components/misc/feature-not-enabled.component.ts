@@ -1,7 +1,10 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PrimeNgModule } from '~/app/prime-ng.module';
-import { type FeatureDefinitions, featureDescriptions } from '~/app/constants/feature-options';
+import {
+  type FeatureDefinitions,
+  featureDescriptions,
+} from '~/app/constants/feature-options';
 import { EnvironmentType, EnvService } from '~/app/services/environment.service';
 import { Observable } from 'rxjs';
 import { BillingService } from '~/app/services/billing.service';
@@ -16,35 +19,39 @@ import { BillingService } from '~/app/services/billing.service';
         <div class="flex justify-between items-center w-full">
           @if (overrideText) {
             <span>
-            <i class="pi pi-lock"></i>
-            {{ overrideText }}
+              <i class="pi pi-lock"></i>
+              {{ overrideText }}
             </span>
           } @else {
             <span>
               <i class="pi pi-lock"></i>
-              {{ featureName || 'This feature'}} is not available 
+              {{ featureName || 'This feature' }} is not available
               @if (environment === 'managed') {
                 on the {{ (userPlan$ | async) || 'current' }} plan
               } @else {
                 in {{ mapEnvironmentToString(environment) }} environments
               }
             </span>
-            }
-          <p-button
-            *ngIf="environment === 'managed'"
-            severity="warning"
-            label="Upgrade"
-            icon="pi pi-arrow-circle-right"
-            size="small"
-            routerLink="/settings/upgrade"
-          />
+          }
+          @if (environment === 'managed') {
+            <p-button
+              severity="warning"
+              label="Upgrade"
+              icon="pi pi-arrow-circle-right"
+              size="small"
+              routerLink="/settings/upgrade"
+            />
+          }
         </div>
       </ng-template>
     </p-messages>
   `,
-  styles: []
+  styles: [],
 })
-export class FeatureNotEnabledComponent {
+export class FeatureNotEnabledComponent implements OnInit {
+  private billingService = inject(BillingService);
+  private environmentService = inject(EnvService);
+
   @Input() feature!: keyof FeatureDefinitions;
   @Input() featureName?: string;
   featureDescription?: string;
@@ -53,11 +60,8 @@ export class FeatureNotEnabledComponent {
 
   environment: EnvironmentType;
   userPlan$: Observable<string | null>;
-  
-  constructor(
-    private billingService: BillingService,
-    private environmentService: EnvService,
-  ) {
+
+  constructor() {
     this.environment = this.environmentService.getEnvironmentType();
     this.userPlan$ = this.billingService.getUserPlan();
   }
@@ -81,4 +85,3 @@ export class FeatureNotEnabledComponent {
     }
   }
 }
-

@@ -5,7 +5,7 @@ import { PgApiUtilService } from '~/app/utils/pg-api.util';
 export class WhoisQueries {
   constructor(
     private pgApiUtil: PgApiUtilService,
-    private handleError: (error: any) => Observable<never>,
+    private handleError: (error: unknown) => Observable<never>,
   ) {}
 
   async saveWhoisInfo(domainId: string, whois: SaveDomainData['whois']): Promise<void> {
