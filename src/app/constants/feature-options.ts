@@ -6,15 +6,15 @@
 
 import { BillingPlans } from '~/app/services/billing.service';
 
-export type FeatureConfig<T> = {
+export interface FeatureConfig<T> {
   default: T;
   managed?: T | Record<BillingPlans, T>;
   selfHosted?: T;
   dev?: T;
   demo?: T;
-};
+}
 
-export type FeatureDefinitions = {
+export interface FeatureDefinitions {
   domainLimit: FeatureConfig<number>;
   notificationChannels: FeatureConfig<boolean>;
   changeNotifications: FeatureConfig<boolean>;
@@ -31,7 +31,7 @@ export type FeatureDefinitions = {
   enablePreviewDomain: FeatureConfig<boolean>;
   enableDeletionTool: FeatureConfig<boolean>;
   enableAdvancedInfo: FeatureConfig<boolean>;
-};
+}
 
 export const features: FeatureDefinitions = {
   domainLimit: {
@@ -139,7 +139,10 @@ export const features: FeatureDefinitions = {
   },
 };
 
-export const featureDescriptions: Record<keyof FeatureDefinitions, { label: string; description: string }> = {
+export const featureDescriptions: Record<
+  keyof FeatureDefinitions,
+  { label: string; description: string }
+> = {
   domainLimit: {
     label: 'Domain Limit',
     description: 'The maximum number of domains you can add to your account',
@@ -158,7 +161,8 @@ export const featureDescriptions: Record<keyof FeatureDefinitions, { label: stri
   },
   domainMonitor: {
     label: 'Domain Monitor',
-    description: 'Monitor the status of your domains for uptime, responsiveness, and more',
+    description:
+      'Monitor the status of your domains for uptime, responsiveness, and more',
   },
   changeHistory: {
     label: 'Change History',
@@ -182,7 +186,8 @@ export const featureDescriptions: Record<keyof FeatureDefinitions, { label: stri
   },
   enableSocialLogin: {
     label: 'Enable Social Login',
-    description: 'Allow users to sign up or log in with social accounts (like Google, GitHub, etc)',
+    description:
+      'Allow users to sign up or log in with social accounts (like Google, GitHub, etc)',
   },
   enableBilling: {
     label: 'Enable Billing',
@@ -190,15 +195,18 @@ export const featureDescriptions: Record<keyof FeatureDefinitions, { label: stri
   },
   allowLocalDbConfig: {
     label: 'Allow Local DB Config',
-    description: 'Allow users to configure which database to use, and connect to it through the app',
+    description:
+      'Allow users to configure which database to use, and connect to it through the app',
   },
   enablePreviewDomain: {
     label: 'Enable Domain Preview',
-    description: 'Enables the /preview/:domain route, to fetch and display domain info without saving it',
+    description:
+      'Enables the /preview/:domain route, to fetch and display domain info without saving it',
   },
   enableDeletionTool: {
     label: 'Enable Deletion Tool',
-    description: 'Allow users to use the tools at /settings/delete-account to selectively and bulk delete data',
+    description:
+      'Allow users to use the tools at /settings/delete-account to selectively and bulk delete data',
   },
   enableAdvancedInfo: {
     label: 'Advanced Info',

@@ -1,66 +1,101 @@
 <p-contextMenu #menu [model]="contextMenuItems" appendTo="body"></p-contextMenu>
 
 @if (tags && tags.length > 0) {
-  <div class="grid {{ miniGrid ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2' : 'grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3'}}" *ngIf="!loading">
-    <a 
-      *ngFor="let tag of tags"
-      [routerLink]="['/assets/tags', tag.name]"
-      class="p-card w-full p-2 flex align-items-center gap-2 no-underline overflow-hidden 
-      text-{{tag.color || 'primary'}}-400
-      transition ease-in duration-300 border-transparent border-3 hover:border-{{tag.color || 'primary'}}-300"
-      (contextmenu)="onRightClick($event, tag)"
-      [pTooltip]="tooltipContent"
-      showDelay="350" 
-      hideDelay="50"
-      pAnimateOnScroll enterClass="fadeIn" leaveClass="fadeOut"
-      >
-      @if (tag.icon) {
-        <div class="tag-icon larger-larger" style="mask-image: url('https://api.iconify.design/{{tag.icon}}.svg');"></div>
-      }
-      <div class="flex flex-col flex-1 overflow-hidden">
-        <div class="flex items-center justify-between gap-1">
-          <h2 class="capitalize text-lg m-0 truncate">{{ tag.name }}</h2>
-          <strong>{{ tag.domain_count }}</strong>
-        </div>
-        @if (tag.description) {
-          <p class="m-0 italic truncate text-{{tag.color || 'gray'}}-400 opacity-65">{{ tag.description }}</p>
-        }
-      </div>
-      <ng-template #tooltipContent>
-        <div class="flex flex-col">
-          <span>
-            <b>{{ tag.name }}</b>
-            @if (tag.domain_count > 0) {
-              <p class="m-0">{{ 'ASSETS.TAG_GRID.TOOLTIP.CONTAINS_DOMAINS' | translate:{ count: tag.domain_count } }}</p>
-            } @else {
-              <p class="m-0">{{ 'ASSETS.TAG_GRID.TOOLTIP.NO_DOMAINS' | translate }}</p>
-            }
-          </span>
-          <p class="m-0 text-{{tag.color || 'gray'}}-400">{{ tag.description }}</p>
-          @if (!tag.description && !tag.icon && !tag.color) {
-            <p class="m-0 mt-2 text-xs text-blue-400">{{ 'ASSETS.TAG_GRID.TOOLTIP.TIP_ADD_DETAILS' | translate }}</p>
+  @if (!loading) {
+    <div
+      class="grid {{
+        miniGrid
+          ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2'
+          : 'grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3'
+      }}"
+    >
+      @for (tag of tags; track tag) {
+        <a
+          [routerLink]="['/assets/tags', tag.name]"
+          class="p-card w-full p-2 flex align-items-center gap-2 no-underline overflow-hidden 
+      text-{{ tag.color || 'primary' }}-400
+      transition ease-in duration-300 border-transparent border-3 hover:border-{{
+            tag.color || 'primary'
+          }}-300"
+          (contextmenu)="onRightClick($event, tag)"
+          [pTooltip]="tooltipContent"
+          showDelay="350"
+          hideDelay="50"
+          pAnimateOnScroll
+          enterClass="fadeIn"
+          leaveClass="fadeOut"
+        >
+          @if (tag.icon) {
+            <div
+              class="tag-icon larger-larger"
+              style="mask-image: url('https://api.iconify.design/{{ tag.icon }}.svg');"
+            ></div>
           }
-          <p class="m-0 text-xs opacity-70">{{ 'ASSETS.TAG_GRID.TOOLTIP.RIGHT_CLICK_OPTIONS' | translate }}</p>
-        </div>
-      </ng-template>
-    </a>
-  </div>
+          <div class="flex flex-col flex-1 overflow-hidden">
+            <div class="flex items-center justify-between gap-1">
+              <h2 class="capitalize text-lg m-0 truncate">{{ tag.name }}</h2>
+              <strong>{{ tag.domain_count }}</strong>
+            </div>
+            @if (tag.description) {
+              <p
+                class="m-0 italic truncate text-{{ tag.color || 'gray' }}-400 opacity-65"
+              >
+                {{ tag.description }}
+              </p>
+            }
+          </div>
+          <ng-template #tooltipContent>
+            <div class="flex flex-col">
+              <span>
+                <b>{{ tag.name }}</b>
+                @if (tag.domain_count > 0) {
+                  <p class="m-0">
+                    {{
+                      'ASSETS.TAG_GRID.TOOLTIP.CONTAINS_DOMAINS'
+                        | translate: { count: tag.domain_count }
+                    }}
+                  </p>
+                } @else {
+                  <p class="m-0">
+                    {{ 'ASSETS.TAG_GRID.TOOLTIP.NO_DOMAINS' | translate }}
+                  </p>
+                }
+              </span>
+              <p class="m-0 text-{{ tag.color || 'gray' }}-400">{{ tag.description }}</p>
+              @if (!tag.description && !tag.icon && !tag.color) {
+                <p class="m-0 mt-2 text-xs text-blue-400">
+                  {{ 'ASSETS.TAG_GRID.TOOLTIP.TIP_ADD_DETAILS' | translate }}
+                </p>
+              }
+              <p class="m-0 text-xs opacity-70">
+                {{ 'ASSETS.TAG_GRID.TOOLTIP.RIGHT_CLICK_OPTIONS' | translate }}
+              </p>
+            </div>
+          </ng-template>
+        </a>
+      }
+    </div>
+  }
 
   <p class="mx-0 mt-4 mb-2 float-right text-xs text-surface-300">
-    {{ 'ASSETS.TAG_GRID.SHOWING_TAGS' | translate:{ count: tags.length } }} - 
+    {{ 'ASSETS.TAG_GRID.SHOWING_TAGS' | translate: { count: tags.length } }} -
     <a class="text-primary opacity-70" routerLink="/assets/tags">
-      {{ 'ASSETS.TAG_GRID.VIEW_ALL_TAGS' | translate }}
-    </a><br>
+      {{ 'ASSETS.TAG_GRID.VIEW_ALL_TAGS' | translate }} </a
+    ><br />
     {{ 'ASSETS.TAG_GRID.RIGHT_CLICK_INSTRUCTIONS' | translate }}
   </p>
 } @else {
-  <p class="text-center text-2xl text-surface-300 italic">{{ 'ASSETS.TAG_GRID.NO_TAGS_CREATED' | translate }}</p>
+  <p class="text-center text-2xl text-surface-300 italic">
+    {{ 'ASSETS.TAG_GRID.NO_TAGS_CREATED' | translate }}
+  </p>
   <p class="text-center text-surface-300 mt-0 mb-8">
-    {{ 'ASSETS.TAG_GRID.NO_TAGS_INSTRUCTIONS' | translate }} 
+    {{ 'ASSETS.TAG_GRID.NO_TAGS_INSTRUCTIONS' | translate }}
     <a class="text-primary opacity-70" routerLink="/assets/tags/new">
-      {{ 'ASSETS.TAG_GRID.CREATE_NEW_TAG' | translate }}
-    </a>.
+      {{ 'ASSETS.TAG_GRID.CREATE_NEW_TAG' | translate }} </a
+    >.
   </p>
 }
 
-<p-progressSpinner *ngIf="loading"></p-progressSpinner>
+@if (loading) {
+  <p-progressSpinner></p-progressSpinner>
+}

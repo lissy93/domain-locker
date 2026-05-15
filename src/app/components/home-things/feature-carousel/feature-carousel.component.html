@@ -10,35 +10,45 @@
   <ng-template pTemplate="item" let-feature>
     <div class="flex gap-2 p-card mx-2 p-0 h-full flex-wrap sm:flex-nowrap">
       <!-- Left side: text, icon, bullet points -->
-      <div class="w-full {{ feature.screenshot ?? 'sm:w-2/6' }} flex flex-col gap-2 pl-4 py-4">
+      <div
+        class="w-full {{
+          feature.screenshot ?? 'sm:w-2/6'
+        }} flex flex-col gap-2 pl-4 py-4"
+      >
         <div class="flex gap-2 items-center">
-          <dl-icon
+          <app-dl-icon
             [icon]="feature.icon"
             class="min-w-[3rem] text-center h-12 rounded bg-surface-100 p-2"
             classNames="h-full"
             color="var(--primary-400)"
-          ></dl-icon>
+          ></app-dl-icon>
           <h3 class="m-0 text-3xl">{{ feature.featureTitle }}</h3>
         </div>
         <ul class="pl-2 list-none">
-          <li *ngFor="let point of feature.featureInfo" class="flex gap-2">
-            <i class="pi pi-check-circle text-primary-400 text-lg pt-1"></i>
-            {{ point }}
-          </li>
+          @for (point of feature.featureInfo; track point) {
+            <li class="flex gap-2">
+              <i class="pi pi-check-circle text-primary-400 text-lg pt-1"></i>
+              {{ point }}
+            </li>
+          }
         </ul>
       </div>
       <!-- Right side: screenshot -->
-      <div *ngIf="feature.screenshot" class="relative w-full sm:w-3/4 flex p-0 max-h-[400px]">
-        <img
-          [src]="feature.screenshot || 'https://placehold.co/600x300/1f2937/fff'"
-          [alt]="feature.featureTitle + ' Screenshot'"
-          class="w-full h-auto m-0 p-0 rounded"
-        />
-        <div
-          class="absolute inset-0 pointer-events-none rounded w-1/6"
-          style="background: linear-gradient(90deg, var(--surface-e) 2%, transparent 98% );"
-        ></div>
-      </div>
+      @if (feature.screenshot) {
+        <div class="relative w-full sm:w-3/4 flex p-0 max-h-[400px]">
+          <img
+            [src]="feature.screenshot || 'https://placehold.co/600x300/1f2937/fff'"
+            [alt]="feature.featureTitle + ' Screenshot'"
+            class="w-full h-auto m-0 p-0 rounded"
+          />
+          <div
+            class="absolute inset-0 pointer-events-none rounded w-1/6"
+            style="
+              background: linear-gradient(90deg, var(--surface-e) 2%, transparent 98%);
+            "
+          ></div>
+        </div>
+      }
     </div>
   </ng-template>
 </p-carousel>

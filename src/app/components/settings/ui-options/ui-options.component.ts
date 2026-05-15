@@ -1,20 +1,31 @@
-import { ChangeDetectorRef, Component, Input, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { ChangeDetectorRef, Component, Input, OnInit, inject } from '@angular/core';
+
 import { PrimeNgModule } from '~/app/prime-ng.module';
 import { ThemeService, Theme, FontOption } from '~/app/services/theme.service';
 import { SupabaseService } from '~/app/services/supabase.service';
 import { TranslationService } from '~/app/services/translation.service';
 import { Subscription } from 'rxjs';
-import { AccessibilityService, defaultAccessibilityOptions, accessibilityOptionsInfo, AccessibilityOptions } from '~/app/services/accessibility-options.service';
+import {
+  AccessibilityService,
+  defaultAccessibilityOptions,
+  accessibilityOptionsInfo,
+  AccessibilityOptions,
+} from '~/app/services/accessibility-options.service';
 
 @Component({
   standalone: true,
   selector: 'app-ui-settings',
-  imports: [CommonModule, PrimeNgModule],
+  imports: [PrimeNgModule],
   templateUrl: './ui-options.component.html',
-  styleUrls: ['./ui-options.component.scss']
+  styleUrls: ['./ui-options.component.scss'],
 })
 export class UiSettingsComponent implements OnInit {
+  supabaseService = inject(SupabaseService);
+  private themeService = inject(ThemeService);
+  private languageService = inject(TranslationService);
+  private accessibilityService = inject(AccessibilityService);
+  private cdr = inject(ChangeDetectorRef);
+
   @Input() isAuthenticated?: boolean = false; // Is user logged in
   @Input() standAlone?: boolean = false; // Is running in dialog or settings page
 
@@ -22,10 +33,10 @@ export class UiSettingsComponent implements OnInit {
   private subscriptions: Subscription = new Subscription();
 
   // Selected light/dark mode, and options
-  isDarkTheme: boolean = false;
+  isDarkTheme = false;
   darkModeOptions = [
     { label: 'Light', value: false, icon: 'pi pi-sun' },
-    { label: 'Dark', value: true, icon: 'pi pi-moon' }
+    { label: 'Dark', value: true, icon: 'pi pi-moon' },
   ];
 
   // Selected scale, and scale options
@@ -33,32 +44,26 @@ export class UiSettingsComponent implements OnInit {
   scaleOptions = [
     { label: 'Small', value: 'small', icon: 'pi pi-minus-circle' },
     { label: 'Medium', value: 'medium', icon: 'pi pi-circle-off' },
-    { label: 'Large', value: 'large', icon: 'pi pi-plus-circle' }
+    { label: 'Large', value: 'large', icon: 'pi pi-plus-circle' },
   ];
 
   // Selected theme, and theme options
   selectedTheme: Theme;
   themes: Theme[];
-  
+
   // Selected font, and font options
   selectedFont: FontOption | null = null;
   fonts: FontOption[] = [];
-  
+
   // Selected language, and language options
-  selectedLanguage: string = 'en';
-  languages: any[] = [];
-  
+  selectedLanguage = 'en';
+  languages: { code: string; name: string; flag: string }[] = [];
+
   // Set accessibility preferences, and all accessibility options
   accessibility = defaultAccessibilityOptions;
   public accessibilityFields = accessibilityOptionsInfo;
 
-  constructor(
-    public supabaseService: SupabaseService,
-    private themeService: ThemeService,
-    private languageService: TranslationService,
-    private accessibilityService: AccessibilityService,
-    private cdr: ChangeDetectorRef,
-  ) {
+  constructor() {
     this.themes = this.themeService.getThemes();
     this.selectedTheme = this.themes[0];
 
@@ -66,30 +71,29 @@ export class UiSettingsComponent implements OnInit {
     this.subscriptions.add(
       this.themeService.selectedFont$.subscribe((font) => {
         this.selectedFont = font;
-      })
+      }),
     );
   }
-
 
   ngOnInit(): void {
     // Languages
     this.languages = this.languageService.availableLanguages;
     this.selectedLanguage = this.languageService.translateService.currentLang;
-    
+
     // Dark/light mode
     this.subscriptions.add(
-      this.themeService.isDarkTheme$.subscribe(isDark => {
+      this.themeService.isDarkTheme$.subscribe((isDark) => {
         this.isDarkTheme = isDark;
         this.cdr.detectChanges();
-      })
+      }),
     );
 
     // Theme
     this.subscriptions.add(
-      this.themeService.selectedTheme$.subscribe(theme => {
+      this.themeService.selectedTheme$.subscribe((theme) => {
         this.selectedTheme = theme;
         this.cdr.detectChanges();
-      })
+      }),
     );
 
     // Accessibility
@@ -141,7 +145,7 @@ export class UiSettingsComponent implements OnInit {
   public syncLargeTextAndScale(source: 'scale' | 'accessibility'): void {
     if (source === 'scale') {
       // If user changed scale => update largeText
-      this.accessibility.largeText = (this.scale === 'large');
+      this.accessibility.largeText = this.scale === 'large';
     } else if (source === 'accessibility') {
       // If user toggled largeText => adjust scale
       this.scale = this.accessibility.largeText ? 'large' : 'medium';
@@ -153,5 +157,4 @@ export class UiSettingsComponent implements OnInit {
     await this.supabaseService.signOut();
     window.location.href = '/login';
   }
-
 }

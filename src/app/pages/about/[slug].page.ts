@@ -1,12 +1,17 @@
-import { ContentFile, injectContent, injectContentFiles, MarkdownComponent } from '@analogjs/content';
-import { CommonModule, NgIf } from '@angular/common';
-import { Component, OnInit, ViewEncapsulation } from '@angular/core';
+import {
+  ContentFile,
+  injectContent,
+  injectContentFiles,
+  MarkdownComponent,
+} from '@analogjs/content';
+
+import { Component, OnInit, ViewEncapsulation, inject } from '@angular/core';
 import { aboutPages, AboutLink } from './data/about-page-list';
 import { ActivatedRoute } from '@angular/router';
 import { Observable, switchMap } from 'rxjs';
 import { PrimeNgModule } from '~/app/prime-ng.module';
 
-import NotFoundPage from '~/app/pages/[...not-found].page'
+import NotFoundPage from '~/app/pages/[...not-found].page';
 import { MetaTagsService } from '~/app/services/meta-tags.service';
 
 export interface DocAttributes {
@@ -19,26 +24,42 @@ export interface DocAttributes {
 
 @Component({
   standalone: true,
-  imports: [MarkdownComponent, NgIf, CommonModule, PrimeNgModule, NotFoundPage],
+  selector: 'app-about-slug-page',
+  imports: [MarkdownComponent, PrimeNgModule, NotFoundPage],
   templateUrl: './[slug].page.html',
   styleUrls: ['../../styles/prism.css'],
   encapsulation: ViewEncapsulation.None,
-  styles: [`
-    h2 { opacity: 70%; }
-    h3 { opacity: 90%; margin-top: 1rem !important; }
-    hr {
-      border-color: var(--surface-50);
-      margin-bottom: 2rem;
-    }
-    img { border-radius: 4px; display: flex; margin: 0 auto; opacity: 90%; max-width: 100%; }
-  `],
+  styles: [
+    `
+      h2 {
+        opacity: 70%;
+      }
+      h3 {
+        opacity: 90%;
+        margin-top: 1rem !important;
+      }
+      hr {
+        border-color: var(--surface-50);
+        margin-bottom: 2rem;
+      }
+      img {
+        border-radius: 4px;
+        display: flex;
+        margin: 0 auto;
+        opacity: 90%;
+        max-width: 100%;
+      }
+    `,
+  ],
 })
 export default class DocsComponent implements OnInit {
+  private route = inject(ActivatedRoute);
+  private metaTagsService = inject(MetaTagsService);
 
   public aboutPages = aboutPages;
   public currentPage = '';
 
-  public docsNotFound: boolean = false;
+  public docsNotFound = false;
   public linksTitle: string | null = null;
   public links: AboutLink[] = [];
 
@@ -49,16 +70,11 @@ export default class DocsComponent implements OnInit {
   public doc: ContentFile | null = null;
 
   readonly docs = injectContentFiles<DocAttributes>((contentFile) => {
-    return contentFile.filename.includes('/src/content/docs/')
+    return contentFile.filename.includes('/src/content/docs/');
   });
 
-  constructor(
-    private route: ActivatedRoute,
-    private metaTagsService: MetaTagsService,
-  ) {}
-
   async ngOnInit(): Promise<void> {
-    this.doc$.subscribe(doc => {
+    this.doc$.subscribe((doc) => {
       if (!doc?.slug) {
         this.docsNotFound = true;
       } else {
@@ -74,15 +90,17 @@ export default class DocsComponent implements OnInit {
       }
     });
 
-    this.route.params.pipe(
-      switchMap(params => {
-        this.currentPage = params['slug'];
-        this.fondLinks(this.currentPage);
-        return params['slug'];
-      })
-    ).subscribe(slug => {
-      this.currentPage = slug as string;
-    });
+    this.route.params
+      .pipe(
+        switchMap((params) => {
+          this.currentPage = params['slug'];
+          this.fondLinks(this.currentPage);
+          return params['slug'];
+        }),
+      )
+      .subscribe((slug) => {
+        this.currentPage = slug as string;
+      });
   }
 
   makeId(title: string): string {
@@ -93,7 +111,7 @@ export default class DocsComponent implements OnInit {
     this.links = [];
 
     // Find list of docs which are in the current content directory
-    this.docs.forEach(doc => {
+    this.docs.forEach((doc) => {
       if (doc.filename.includes(`/${this.currentPage}/`)) {
         this.links.push({
           title: doc.attributes.title,
@@ -118,7 +136,9 @@ export default class DocsComponent implements OnInit {
     });
 
     // Find list of docs which are defined in the about-page-list.ts
-    const foundSection = this.aboutPages.find(page => this.makeId(page.title) === this.makeId(title));
+    const foundSection = this.aboutPages.find(
+      (page) => this.makeId(page.title) === this.makeId(title),
+    );
     if (foundSection) {
       this.linksTitle = foundSection.title;
       this.links = [...this.links, ...foundSection.links];
@@ -127,5 +147,4 @@ export default class DocsComponent implements OnInit {
     }
     return null;
   }
-
 }

@@ -1,11 +1,12 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { PrimeNgModule } from '~/app/prime-ng.module';
 import { supportContent } from '~/app/pages/about/data/support-links';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, PrimeNgModule],
+  selector: 'app-about-support-page',
+  imports: [PrimeNgModule],
   templateUrl: './index.page.html',
   styles: [``],
 })

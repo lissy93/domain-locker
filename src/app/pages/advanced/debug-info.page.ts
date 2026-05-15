@@ -1,13 +1,7 @@
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import {
-  Component,
-  Inject,
-  OnInit,
-  PLATFORM_ID,
-  APP_ID
-} from '@angular/core';
+import { Component, OnInit, PLATFORM_ID, APP_ID, inject } from '@angular/core';
 import { PrimeNgModule } from '~/app/prime-ng.module';
-import { ErrorHandlerService } from '~/app/services/error-handler.service';
+import { ErrorHandlerService, ErrorLogEntry } from '~/app/services/error-handler.service';
 import { EnvService, EnvironmentType, EnvVar } from '~/app/services/environment.service';
 import { BillingService } from '~/app/services/billing.service';
 import { from, Observable } from 'rxjs';
@@ -17,11 +11,12 @@ import { SupabaseService } from '~/app/services/supabase.service';
 import { TranslationService } from '~/app/services/translation.service';
 import DatabaseService from '~/app/services/database.service';
 import { FeatureService } from '~/app/services/features.service';
-import { AccessibilityOptions, AccessibilityService } from '~/app/services/accessibility-options.service';
+import {
+  AccessibilityOptions,
+  AccessibilityService,
+} from '~/app/services/accessibility-options.service';
 import { GlobalMessageService } from '~/app/services/messaging.service';
 
-
-// @ts-ignore
 declare const __APP_VERSION__: string;
 // Similarly for app name
 declare const __APP_NAME__: string;
@@ -42,16 +37,30 @@ interface ScreenInfo {
 
 @Component({
   standalone: true,
+  selector: 'app-advanced-debug-info-page',
   imports: [CommonModule, PrimeNgModule],
   templateUrl: './debug-info.page.html',
   styles: [``],
 })
 export default class DebugInfoPage implements OnInit {
+  private errorHandler = inject(ErrorHandlerService);
+  private billingService = inject(BillingService);
+  private envService = inject(EnvService);
+  private themeService = inject(ThemeService);
+  private supabaseService = inject(SupabaseService);
+  private translationService = inject(TranslationService);
+  private databaseService = inject(DatabaseService);
+  private featureService = inject(FeatureService);
+  private accessibilityService = inject(AccessibilityService);
+  private messagingService = inject(GlobalMessageService);
+  platformId = inject<object>(PLATFORM_ID);
+  appId = inject(APP_ID);
+
   // Basic app info
   public appVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.0.0';
   public appName = typeof __APP_NAME__ !== 'undefined' ? __APP_NAME__ : 'DL-App';
   public environmentType!: EnvironmentType;
-  public errorLog: { date: Date; message: string; location?: string; error?: any }[] = [];
+  public errorLog: ErrorLogEntry[] = [];
   public enabledDb = { supabase: false, postgres: false };
 
   // Observables / data from services
@@ -59,10 +68,10 @@ export default class DebugInfoPage implements OnInit {
   user$?: Observable<User | null>;
   displayOptions?: { theme: string; darkMode: boolean; font: string; scale: string };
   accessibilityOptions?: AccessibilityOptions;
-  language: string = 'English';
-  localStorageKeys: string = '';
-  cookies: string = '';
-  userInfo: any = {};
+  language = 'English';
+  localStorageKeys = '';
+  cookies = '';
+  userInfo: Record<string, unknown> = {};
 
   // Domain / Browser Info (client side)
   public domainInfo?: DomainInfo;
@@ -87,21 +96,6 @@ export default class DebugInfoPage implements OnInit {
   public tableChecks: { table: string; count: number | string; success: string }[] = [];
   public loadingTableChecks = false;
 
-  constructor(
-    private errorHandler: ErrorHandlerService,
-    private billingService: BillingService,
-    private envService: EnvService,
-    private themeService: ThemeService,
-    private supabaseService: SupabaseService,
-    private translationService: TranslationService,
-    private databaseService: DatabaseService,
-    private featureService: FeatureService,
-    private accessibilityService: AccessibilityService,
-    private messagingService: GlobalMessageService,
-    @Inject(PLATFORM_ID) public platformId: Object,
-    @Inject(APP_ID) public appId: string
-  ) {}
-
   ngOnInit(): void {
     // 1) Basic logs, environment type, DB usage
     this.errorLog = this.errorHandler.getRecentErrorLog();
@@ -123,16 +117,23 @@ export default class DebugInfoPage implements OnInit {
     // 3) Only gather certain data in browser
     if (isPlatformBrowser(this.platformId)) {
       this.localStorageKeys = Object.keys(window.localStorage).join('\n');
-      const authTokenKey = Object.keys(window.localStorage).find(key => key.includes('sb-') && key.includes('-auth-token'));
-      this.userInfo = authTokenKey ? (JSON.parse(window.localStorage.getItem(authTokenKey) || '{}'))?.user || {} : {};
-      this.cookies = document.cookie ? document.cookie.replaceAll('; ', '\n') : 'No cookies found';
+      const authTokenKey = Object.keys(window.localStorage).find(
+        (key) => key.includes('sb-') && key.includes('-auth-token'),
+      );
+      this.userInfo = authTokenKey
+        ? JSON.parse(window.localStorage.getItem(authTokenKey) || '{}')?.user || {}
+        : {};
+      this.cookies = document.cookie
+        ? document.cookie.replaceAll('; ', '\n')
+        : 'No cookies found';
       this.gatherDomainAndBrowserInfo();
       this.gatherExtendedNavigatorInfo();
       this.fetchUserIpAddress();
     }
 
     // 4) Feature checks
-    this.featureService.featureReportForDebug()
+    this.featureService
+      .featureReportForDebug()
       .then((features) => {
         this.featureChecks = features;
       })
@@ -147,7 +148,7 @@ export default class DebugInfoPage implements OnInit {
     // 5) Attempt table checks
     try {
       this.onCheckTables();
-    } catch (err: any) {
+    } catch (err) {
       this.errorHandler.handleError({
         error: err,
         message: 'Failed to check tables',
@@ -178,7 +179,9 @@ export default class DebugInfoPage implements OnInit {
       this.screenInfo = {
         width: window.screen.width,
         height: window.screen.height,
-        devicePixelRatio: window.devicePixelRatio ? parseFloat(window.devicePixelRatio.toFixed(4)) : 1,
+        devicePixelRatio: window.devicePixelRatio
+          ? parseFloat(window.devicePixelRatio.toFixed(4))
+          : 1,
       };
 
       // cookies
@@ -205,9 +208,9 @@ export default class DebugInfoPage implements OnInit {
       this.doNotTrack = navigator.doNotTrack;
       this.isOnline = navigator.onLine;
       this.hardwareConcurrency = navigator.hardwareConcurrency || 1;
-      this.deviceMemory = (navigator as any).deviceMemory || undefined;
-      this.timeZone =
-        Intl.DateTimeFormat().resolvedOptions().timeZone || 'UnknownZone';
+      this.deviceMemory =
+        (navigator as unknown as { deviceMemory?: number }).deviceMemory || undefined;
+      this.timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UnknownZone';
       this.orientation = window.screen.orientation?.type || 'UnknownOrientation';
     } catch (err) {
       console.warn('Extended navigator info fetch failed:', err);
@@ -215,20 +218,33 @@ export default class DebugInfoPage implements OnInit {
   }
 
   private async getUserAgentData() {
-    const nav = navigator as any;
-    
+    interface UABrand {
+      brand: string;
+      version: string;
+    }
+    interface UAData {
+      brands: UABrand[];
+      mobile: boolean;
+      platform: string;
+      uaFullVersion?: string;
+      getHighEntropyValues?: (
+        hints: string[],
+      ) => Promise<{ platform: string; uaFullVersion: string }>;
+    }
+    const nav = navigator as unknown as { userAgentData?: UAData };
+
     if (nav.userAgentData) {
       const { brands, mobile, platform, uaFullVersion } = nav.userAgentData;
-      
+
       if (nav.userAgentData.getHighEntropyValues) {
         const highEntropy = await nav.userAgentData.getHighEntropyValues([
           'platform',
           'model',
           'uaFullVersion',
         ]);
-        return `Using ${brands.map((b: { brand: any; version: any; }) => `${b.brand} (V${b.version})`).join(' → ')}, on ${highEntropy.platform} (${mobile ? 'mobile' : 'not mobile'}) with UA Version: ${highEntropy.uaFullVersion}`;
+        return `Using ${brands.map((b) => `${b.brand} (V${b.version})`).join(' → ')}, on ${highEntropy.platform} (${mobile ? 'mobile' : 'not mobile'}) with UA Version: ${highEntropy.uaFullVersion}`;
       }
-      return `Using ${brands.map((b: { brand: any; version: any; }) => `${b.brand} (V${b.version})`).join(' → ')}, on ${platform} (${mobile ? 'mobile' : 'not mobile'}) with UA Version: ${uaFullVersion}`;
+      return `Using ${brands.map((b) => `${b.brand} (V${b.version})`).join(' → ')}, on ${platform} (${mobile ? 'mobile' : 'not mobile'}) with UA Version: ${uaFullVersion}`;
     }
     const { appName, appVersion, platform, userAgent } = navigator;
     return `${appName} V${appVersion} on ${platform}. User-Agent: ${userAgent}`;
@@ -286,37 +302,51 @@ export default class DebugInfoPage implements OnInit {
 
   copyAllToClipboard(): void {
     // 1) Safely get each pre element by ID
-    const envPre = document.getElementById('debug_environmentInfo') as HTMLPreElement | null;
+    const envPre = document.getElementById(
+      'debug_environmentInfo',
+    ) as HTMLPreElement | null;
     const errPre = document.getElementById('debug_errorLogs') as HTMLPreElement | null;
     const diagPre = document.getElementById('debug_diagnostics') as HTMLPreElement | null;
     const userPre = document.getElementById('debug_userInfo') as HTMLPreElement | null;
-  
+
     // 2) Extract text content, fallback to empty string if not found
     const envText = envPre?.innerText ?? '';
     const errText = errPre?.innerText ?? '';
     const diagText = diagPre?.innerText ?? '';
     const userText = userPre?.innerText ?? '';
-  
+
     // 3) Concatenate them with blank lines separating each
     const combinedText = [
       envText.trim(),
       errText.trim(),
       diagText.trim(),
-      userText.trim()
-    ].filter(section => section.length > 0).join('\n\n');
-  
+      userText.trim(),
+    ]
+      .filter((section) => section.length > 0)
+      .join('\n\n');
+
     // 4) Copy to clipboard, if available
     if (navigator?.clipboard && combinedText) {
-      navigator.clipboard.writeText(combinedText)
+      navigator.clipboard
+        .writeText(combinedText)
         .then(() => {
-          this.messagingService.showSuccess('Copied', 'All debug data has been copied to your clipboard.');
+          this.messagingService.showSuccess(
+            'Copied',
+            'All debug data has been copied to your clipboard.',
+          );
         })
-        .catch(err => {
-          this.errorHandler.handleError({ error: err, message: 'Failed to copy debug data to clipboard', showToast: true });
+        .catch((err) => {
+          this.errorHandler.handleError({
+            error: err,
+            message: 'Failed to copy debug data to clipboard',
+            showToast: true,
+          });
         });
     } else {
-      this.errorHandler.handleError({ message: 'Browser does not support clipboard.', showToast: true });
+      this.errorHandler.handleError({
+        message: 'Browser does not support clipboard.',
+        showToast: true,
+      });
     }
   }
-  
 }

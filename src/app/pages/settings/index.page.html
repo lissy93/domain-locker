@@ -1,52 +1,75 @@
-<p-splitter 
-  [panelSizes]="hideSideBar ? [1,99] : [25, 75]"
-  styleClass="h-full min-h-[85vh] px-1 py-2 bg-transparent border-none">
-    <ng-template pTemplate>
-      <nav #sidebarNav class="border-surface-50 border-2 w-full rounded-l p-1 !border-r-0 bg-surface-25 relative">
-        <div class="flex sticky top-0 flex flex-col justify-between items-center max-h-[80vh] overflow-y-auto">
-          <div>
-            <a routerLink="/settings" class="no-underline text-default transition-all hover:text-primary">
-              <h3 class="m-3 flex gap-2 items-center">
-                <app-profile-picture [size]="36" />
-                Settings
-              </h3>
-            </a>
-            <ul class="list-none p-0 mt-2 flex flex-col gap-0.5 w-fit">
-              @for (item of items; track item.label) {
-                <li class="rounded-lg py-2 px-3 transition-all ease-in-out hover:surface-50
-                  {{ isActive(item['routerLink']) ? 'font-bold text-primary' : 'text-default'}}"
-                  [pTooltip]="item['description']"
-                  showDelay="350"  
+<p-splitter
+  [panelSizes]="hideSideBar ? [1, 99] : [25, 75]"
+  styleClass="h-full min-h-[85vh] px-1 py-2 bg-transparent border-none"
+>
+  <ng-template pTemplate>
+    <nav
+      #sidebarNav
+      class="border-surface-50 border-2 w-full rounded-l p-1 !border-r-0 bg-surface-25 relative"
+    >
+      <div
+        class="flex sticky top-0 flex flex-col justify-between items-center max-h-[80vh] overflow-y-auto"
+      >
+        <div>
+          <a
+            routerLink="/settings"
+            class="no-underline text-default transition-all hover:text-primary"
+          >
+            <h3 class="m-3 flex gap-2 items-center">
+              <app-profile-picture [size]="36" />
+              Settings
+            </h3>
+          </a>
+          <ul class="list-none p-0 mt-2 flex flex-col gap-0.5 w-fit">
+            @for (item of items; track item.label) {
+              <li
+                class="rounded-lg py-2 px-3 transition-all ease-in-out hover:surface-50
+                  {{
+                  isActive(item['routerLink']) ? 'font-bold text-primary' : 'text-default'
+                }}"
+                [pTooltip]="item['description']"
+                showDelay="350"
+              >
+                <a
+                  routerLink="{{ item['routerLink'] }}"
+                  class="flex gap-2 align-items-center no-underline text-inherit text-md text-default"
                 >
-                  <a routerLink="{{ item['routerLink'] }}" class="flex gap-2 align-items-center no-underline text-inherit text-md text-default">
-                    <i class="{{ item.icon }} opacity-70"></i>
-                    <span *ngIf="!hideTextLabels">{{ item.label }}</span>
-                  </a>
-                </li>
-              }
-            </ul>
-          </div>
-          <div class="flex flex-col gap-2 items-center">
-            <p-button
-              label="Logout"
-              icon="pi pi-sign-out"
-              (click)="logout()"
-              size="small"
-              [outlined]="true"
-              class="w-full mt-4 flex justify-center"
-            />
-            <a routerLink="/advanced" class="w-full mt-2 flex justify-center text-default opacity-70 text-sm no-underline">Advanced</a>
-          </div>
+                  <i class="{{ item.icon }} opacity-70"></i>
+                  @if (!hideTextLabels) {
+                    <span>{{ item.label }}</span>
+                  }
+                </a>
+              </li>
+            }
+          </ul>
         </div>
-      </nav>
-    </ng-template>
-    <ng-template pTemplate>
-      <div class="py-2 px-4 pb-4 w-full border-2 !border-l-0 border-surface-50 rounded-r overflow-y-visible">
-        @if ((settingsEnabled$ | async) && databaseServiceType === 'supabase') {
-          <router-outlet></router-outlet>
-        } @else {
-          <app-feature-not-enabled feature="accountSettings" />
-        }
+        <div class="flex flex-col gap-2 items-center">
+          <p-button
+            label="Logout"
+            icon="pi pi-sign-out"
+            (click)="logout()"
+            size="small"
+            [outlined]="true"
+            class="w-full mt-4 flex justify-center"
+          />
+          <a
+            routerLink="/advanced"
+            class="w-full mt-2 flex justify-center text-default opacity-70 text-sm no-underline"
+            >Advanced</a
+          >
+        </div>
       </div>
-    </ng-template>
+    </nav>
+  </ng-template>
+  <ng-template pTemplate>
+    <div
+      class="py-2 px-4 pb-4 w-full border-2 !border-l-0 border-surface-50 rounded-r overflow-y-visible"
+    >
+      @if ((settingsEnabled$ | async) && databaseServiceType === 'supabase') {
+        <router-outlet></router-outlet>
+      } @else {
+        <app-feature-not-enabled feature="accountSettings" />
+      }
+    </div>
+  </ng-template>
 </p-splitter>

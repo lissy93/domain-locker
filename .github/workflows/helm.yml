@@ -45,7 +45,7 @@ jobs:
             echo "❌ No valid version provided."
             exit 1
           fi
-          echo "tag=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: 📝 Patch Chart.yaml with version
         run: |

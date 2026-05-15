@@ -4,12 +4,12 @@
  * If the environment variable is not set, it falls back to the values in this file
  * The difference between the two is that these values are dynamic and can be changed at runtime,
  * where as the values in the .env file are static and are set at build time.
- * 
- * 
+ *
+ *
  * This file will be replaced by the environment.[environment].ts file during the build process
- * See the environment.service.ts or docs for all available variable keys. 
+ * See the environment.service.ts or docs for all available variable keys.
  * See the end of this file, on how to add additional environments.
- * 
+ *
  * IMPORTANT:
  * - Do not add sensitive information here, as it can be accessed by the client
  * - Do not commit new environment files to source control if they contain secrets
@@ -30,7 +30,6 @@ export const environment = {
   // PLAUSIBLE_URL: '',       // URL to Plausible instance, for hit counting
   // PLAUSIBLE_SITE: '',      // Plausible site ID /  URL, for hit counting
 };
-
 
 /**
  Adding additional environments:

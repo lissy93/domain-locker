@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
@@ -14,19 +14,19 @@ import { ModifiedLink } from '~/app/pages/assets/links/index.page';
   templateUrl: './edit-link.component.html',
 })
 export class LinkDialogComponent implements OnInit {
+  private fb = inject(FormBuilder);
+  private databaseService = inject(DatabaseService);
+  config = inject(DynamicDialogConfig);
+  ref = inject(DynamicDialogRef);
+
   linkForm: FormGroup;
-  domainOptions$: Observable<string[]> | any;
+  domainOptions$: Observable<string[]> | undefined;
   visible = true;
 
   isEdit: boolean;
   link: ModifiedLink | null;
 
-  constructor(
-    private fb: FormBuilder,
-    private databaseService: DatabaseService,
-    public config: DynamicDialogConfig, // Inject config to get passed data
-    public ref: DynamicDialogRef // For dialog control
-  ) {
+  constructor() {
     const { link, isEdit } = this.config.data || {};
     this.link = link || null;
     this.isEdit = !!isEdit;

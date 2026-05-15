@@ -1,33 +1,187 @@
-name: 🥏 Create GitHub Release
+# Publishes GH release for new versions, with compiled app attached
+# - Triggered when a git tag matching vX.Y.0 (major or minor) is pushed
+# - Or if manually dispatched with any valid and existing tag specified
+# - Check out the source at the requested tag
+# - Run a clean production build (npm run build → dist/)
+# - Bundle dist/ + start.sh + schema.sql + package.json into tar.gz and zip
+# - Create a DRAFT GH release with auto-gen changelog and bundled artifacts attached
+
+name: 🚀 Create GitHub Release
 
 on:
   push:
     tags:
-      - 'v*'
+      # Match major/minor tags in either format: v0.2.0 or 0.2.0
+      - 'v[0-9]*.[0-9]*.0'
+      - '[0-9]*.[0-9]*.0'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing git tag to release (e.g. v0.2.0 or 0.2.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+concurrency:
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
 
 jobs:
-  create-release:
+  release:
+    name: 🚀 Build & Publish Release
     runs-on: ubuntu-latest
-
     steps:
-      - name: Check out repo with bot token
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.BOT_TOKEN }}
+      - name: 🏷️ Resolve tag
+        id: tag
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+          EVENT_NAME: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+        run: |
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            TAG="$INPUT_TAG"
+          else
+            TAG="${REF#refs/tags/}"
+          fi
+          if ! echo "$TAG" | grep -qE '^v?[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Invalid tag '$TAG'. Expected semver (e.g. v0.2.0 or 0.2.0)."
+            exit 1
+          fi
+          if [ "$EVENT_NAME" = "push" ] && ! echo "$TAG" | grep -qE '^v?[0-9]+\.[0-9]+\.0$'; then
+            echo "::notice::Tag '$TAG' is not a major/minor release (patch != 0); skipping."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Releasing tag: $TAG"
 
-      - name: Generate Changelog
-        id: changelog
-        uses: requarks/changelog-action@v1.10.2
+      - name: 🛎️ Checkout source at tag
+        if: steps.tag.outputs.skip != 'true'
+        uses: actions/checkout@v6
         with:
-          token: ${{ secrets.BOT_TOKEN }}
-          tag: ${{ github.ref_name }}
-          writeToFile: false
-          includeInvalidCommits: true
+          ref: refs/tags/${{ steps.tag.outputs.tag }}
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+      - name: 🔧 Setup Node.js
+        if: steps.tag.outputs.skip != 'true'
+        uses: actions/setup-node@v6
         with:
-          token: ${{ secrets.BOT_TOKEN }}
-          tag_name: ${{ github.ref_name }}
-          name: "Release ${{ github.ref_name }} of Domain Locker"
-          body: ${{ steps.changelog.outputs.changes }}
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        if: steps.tag.outputs.skip != 'true'
+        run: npm ci --legacy-peer-deps
+
+      - name: 🏗️ Build for production
+        if: steps.tag.outputs.skip != 'true'
+        env:
+          NODE_OPTIONS: --max-old-space-size=8192
+          DL_ENV_TYPE: selfHosted
+        run: npm run build
+
+      - name: ✅ Verify build output
+        if: steps.tag.outputs.skip != 'true'
+        run: |
+          if [ ! -f "dist/analog/server/index.mjs" ]; then
+            echo "::error::Build failed: dist/analog/server/index.mjs not found"
+            exit 1
+          fi
+          echo "✅ Build successful"
+
+      - name: 🗜️ Package release artifacts
+        id: package
+        if: steps.tag.outputs.skip != 'true'
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          STAGING="domain-locker-${TAG}"
+          rm -rf "$STAGING"
+          mkdir -p "$STAGING"
+          cp -r dist "$STAGING/"
+          cp package.json package-lock.json .npmrc .nvmrc start.sh "$STAGING/"
+          cp db/schema.sql "$STAGING/schema.sql"
+          for f in .env.sample docker-compose.yml LICENSE README.md; do
+            [ -f "$f" ] && cp "$f" "$STAGING/"
+          done
+
+          TARBALL="${STAGING}.tar.gz"
+          ZIPFILE="${STAGING}.zip"
+          tar -czf "$TARBALL" "$STAGING"
+          zip -qr "$ZIPFILE" "$STAGING"
+
+          ls -lh "$TARBALL" "$ZIPFILE"
+          echo "tarball=$TARBALL" >> "$GITHUB_OUTPUT"
+          echo "zipfile=$ZIPFILE" >> "$GITHUB_OUTPUT"
+
+      - name: 🪪 Attest build provenance
+        id: attest
+        if: steps.tag.outputs.skip != 'true'
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: |
+            ${{ steps.package.outputs.tarball }}
+            ${{ steps.package.outputs.zipfile }}
+
+      - name: 🚀 Create draft release
+        id: release
+        if: steps.tag.outputs.skip != 'true'
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: Domain Locker ${{ steps.tag.outputs.tag }}
+          draft: true
+          prerelease: false
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            ${{ steps.package.outputs.tarball }}
+            ${{ steps.package.outputs.zipfile }}
+          token: ${{ secrets.BOT_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: 📋 Job summary
+        if: always()
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+          SKIP: ${{ steps.tag.outputs.skip }}
+          REF_NAME: ${{ github.ref_name }}
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+          RELEASE_URL: ${{ steps.release.outputs.url }}
+          RELEASE_OUTCOME: ${{ steps.release.outcome }}
+          ATTEST_URL: ${{ steps.attest.outputs.attestation-url }}
+          ATTEST_OUTCOME: ${{ steps.attest.outcome }}
+        run: |
+          {
+            echo "| Step | Result |"
+            echo "|------|--------|"
+            if [ "$SKIP" = "true" ]; then
+              echo "| Tag | \`${REF_NAME}\` (not major/minor) |"
+              echo "| Draft release | ⏭️ Skipped |"
+            elif [ -n "$TAG" ]; then
+              echo "| Tag | [\`${TAG}\`](${REPO_URL}/releases/tag/${TAG}) |"
+              if [ "$RELEASE_OUTCOME" = "success" ]; then
+                if [ -n "$RELEASE_URL" ]; then
+                  echo "| Draft release | ✅ [View draft](${RELEASE_URL}) |"
+                else
+                  echo "| Draft release | ✅ [View releases](${REPO_URL}/releases) |"
+                fi
+                echo "| Artifacts | \`domain-locker-${TAG}.tar.gz\`, \`domain-locker-${TAG}.zip\` |"
+              else
+                echo "| Draft release | ❌ Failed (outcome: ${RELEASE_OUTCOME:-unknown}) |"
+              fi
+              if [ "$ATTEST_OUTCOME" = "success" ]; then
+                if [ -n "$ATTEST_URL" ]; then
+                  echo "| Provenance | ✅ [View attestation](${ATTEST_URL}) |"
+                else
+                  echo "| Provenance | ✅ Attested |"
+                fi
+              elif [ -n "$ATTEST_OUTCOME" ]; then
+                echo "| Provenance | ⚠️ ${ATTEST_OUTCOME} |"
+              fi
+            else
+              echo "| Tag | ❌ Could not resolve |"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

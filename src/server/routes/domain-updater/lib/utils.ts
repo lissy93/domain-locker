@@ -1,4 +1,3 @@
-
 export function getEnvVar(name: string, fallback?: string): string {
   const val = process.env[name] || (import.meta.env && import.meta.env[name]);
   if (!val && fallback === undefined) {
@@ -12,7 +11,7 @@ export function normalizeStr(input: string | null | undefined): string {
 }
 
 export function removeUrlChars(input: string | null | undefined): string {
-  return (input || '').trim().replace(/[\/\\?#%]/g, '');
+  return (input || '').trim().replace(/[/\\?#%]/g, '');
 }
 
 export function normalizeDate(input: string | null | undefined): string {
@@ -37,12 +36,11 @@ export function datesDifferBeyondThreshold(a?: string, b?: string, days = 1): bo
   return diff > days * 86400 * 1000;
 }
 
-
 export async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return Promise.race([
     promise,
     new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error(`Timed out after ${ms}ms`)), ms)
+      setTimeout(() => reject(new Error(`Timed out after ${ms}ms`)), ms),
     ),
   ]);
 }

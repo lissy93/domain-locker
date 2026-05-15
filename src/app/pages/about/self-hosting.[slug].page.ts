@@ -1,16 +1,20 @@
 import { injectContent, injectContentFiles } from '@analogjs/content';
-import { CommonModule } from '@angular/common';
+
 import { Component } from '@angular/core';
 import { PrimeNgModule } from '~/app/prime-ng.module';
-import { DocsViewerComponent, DocAttributes } from '~/app/components/about-things/doc-viewer.component';
+import {
+  DocsViewerComponent,
+  DocAttributes,
+} from '~/app/components/about-things/doc-viewer.component';
 import { SponsorMessageComponent } from '~/app/components/sponsor-thanks/sponsor-thanks.component';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, PrimeNgModule, DocsViewerComponent, SponsorMessageComponent],
+  selector: 'app-about-self-hosting-slug-page',
+  imports: [PrimeNgModule, DocsViewerComponent, SponsorMessageComponent],
   template: `
-  <app-docs-viewer [doc$]="doc$" [allDocs]="files" [categoryName]="category" />
-  <app-sponsor-message />
+    <app-docs-viewer [doc$]="doc$" [allDocs]="files" [categoryName]="category" />
+    <app-sponsor-message />
   `,
 })
 export default class DocsComponent {
@@ -23,6 +27,6 @@ export default class DocsComponent {
   });
   // Fetch all the files in the same subdirectory
   readonly files = injectContentFiles<DocAttributes>((contentFile) =>
-    contentFile.filename.includes(`/${this.category}/`)
+    contentFile.filename.includes(`/${this.category}/`),
   );
 }

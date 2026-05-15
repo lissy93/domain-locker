@@ -8,7 +8,7 @@ import { H3Event, getRequestHeader } from 'h3';
  * @param fallback - Optional fallback URL (defaults to http://localhost:3000)
  * @returns The base URL (e.g., "http://localhost:5173" or "https://domain-locker.com")
  */
-export function getBaseUrl(event: H3Event, fallback: string = 'http://localhost:3000'): string {
+export function getBaseUrl(event: H3Event, fallback = 'http://localhost:3000'): string {
   // Check environment variable first
   const envBaseUrl = process.env['DL_BASE_URL'];
   if (envBaseUrl) {
@@ -28,7 +28,7 @@ export function getBaseUrl(event: H3Event, fallback: string = 'http://localhost:
     if (hostname) {
       return `${protocol}://${hostname}`;
     }
-  } catch (e) {
+  } catch {
     // Fall through to fallback
   }
 

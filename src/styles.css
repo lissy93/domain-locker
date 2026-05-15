@@ -3,7 +3,8 @@
 @import 'primeng/resources/primeng.min.css';
 @import 'primeicons/primeicons.css';
 @import 'primeng/resources/themes/lara-dark-purple/theme.css' (prefers-color-scheme: dark);
-@import 'primeng/resources/themes/lara-light-purple/theme.css' (prefers-color-scheme: light);
+@import 'primeng/resources/themes/lara-light-purple/theme.css'
+  (prefers-color-scheme: light);
 @import 'primeflex/primeflex.css';
 
 @import 'tailwindcss/components';
@@ -37,7 +38,12 @@ body {
   margin: 0;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: var(--heading-font);
   margin-top: 0;
   margin-bottom: 0.5rem;

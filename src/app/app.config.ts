@@ -1,19 +1,27 @@
 import {
-  ApplicationConfig, importProvidersFrom,
-  APP_INITIALIZER, PLATFORM_ID,
-  APP_ID} from '@angular/core';
+  ApplicationConfig,
+  importProvidersFrom,
+  APP_INITIALIZER,
+  PLATFORM_ID,
+  APP_ID,
+} from '@angular/core';
 // Importing providers
-import { HTTP_INTERCEPTORS, provideHttpClient, withFetch, withInterceptorsFromDi } from '@angular/common/http';
+import {
+  HTTP_INTERCEPTORS,
+  provideHttpClient,
+  withFetch,
+  withInterceptorsFromDi,
+} from '@angular/common/http';
 import { provideClientHydration } from '@angular/platform-browser';
 import { provideFileRouter } from '@analogjs/router';
-import { withShikiHighlighter } from '@analogjs/content/shiki-highlighter'
+import { withShikiHighlighter } from '@analogjs/content/shiki-highlighter';
 import { provideContent, withMarkdownRenderer } from '@analogjs/content';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { ConfirmationService, MessageService } from 'primeng/api';
 // Importing router providers
 import {
-    withEnabledBlockingInitialNavigation,
-    withInMemoryScrolling,
+  withEnabledBlockingInitialNavigation,
+  withInMemoryScrolling,
 } from '@angular/router';
 // Importing translation providers
 import {
@@ -45,20 +53,14 @@ export const appConfig: ApplicationConfig = {
     // Core Providers
     provideHttpClient(withFetch()),
     provideClientHydration(),
-    provideContent(
-      withMarkdownRenderer(),
-      withShikiHighlighter(),
-    ),
+    provideContent(withMarkdownRenderer(), withShikiHighlighter()),
     provideAnimations(),
     provideFileRouter(
-      withInMemoryScrolling({scrollPositionRestoration: 'enabled'}),
+      withInMemoryScrolling({ scrollPositionRestoration: 'enabled' }),
       withEnabledBlockingInitialNavigation(),
     ),
     // HTTP Interceptors
-    provideHttpClient(
-      withFetch(),
-      withInterceptorsFromDi()
-    ),
+    provideHttpClient(withFetch(), withInterceptorsFromDi()),
     { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
 
     // PrimeNG Services
@@ -81,9 +83,9 @@ export const appConfig: ApplicationConfig = {
         },
         missingTranslationHandler: {
           provide: MissingTranslationHandler,
-          useClass: CustomMissingTranslationHandler
+          useClass: CustomMissingTranslationHandler,
         },
-      })
+      }),
     ),
   ],
 };

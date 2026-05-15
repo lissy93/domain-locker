@@ -1,5 +1,13 @@
-import { Component, OnInit, AfterViewInit, PLATFORM_ID, Inject, ViewEncapsulation, ChangeDetectorRef } from '@angular/core';
-import { CommonModule, isPlatformBrowser } from '@angular/common';
+import {
+  Component,
+  OnInit,
+  AfterViewInit,
+  PLATFORM_ID,
+  ViewEncapsulation,
+  ChangeDetectorRef,
+  inject,
+} from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import DatabaseService from '~/app/services/database.service';
 import { Host } from '~/app/../types/Database';
 import { ThemeService } from '~/app/services/theme.service';
@@ -11,36 +19,34 @@ import { ErrorHandlerService } from '~/app/services/error-handler.service';
 @Component({
   selector: 'app-host-map',
   standalone: true,
-  imports: [CommonModule, PrimeNgModule, TranslateModule],
+  imports: [PrimeNgModule, TranslateModule],
   templateUrl: './host-map.component.html',
   styleUrl: './host-map.component.scss',
   encapsulation: ViewEncapsulation.None, // So I can load Leaflet styles
 })
 export class HostMapComponent implements OnInit, AfterViewInit {
-  private map: any;
-  private hosts: (Host & { domainCount: number })[] = [];
-  private L: any;
-  private isDarkTheme: boolean = false;
-  private subscriptions: Subscription = new Subscription();
+  private databaseService = inject(DatabaseService);
+  private platformId = inject<object>(PLATFORM_ID);
+  private cdr = inject(ChangeDetectorRef);
+  private themeService = inject(ThemeService);
+  private errorHandler = inject(ErrorHandlerService);
 
-  constructor(
-    private databaseService: DatabaseService,
-    @Inject(PLATFORM_ID) private platformId: Object,
-    private cdr: ChangeDetectorRef,
-    private themeService: ThemeService,
-    private errorHandler: ErrorHandlerService,
-  ) {}
+  private map!: import('leaflet').Map;
+  private hosts: (Host & { domainCount: number })[] = [];
+  private L!: typeof import('leaflet');
+  private isDarkTheme = false;
+  private subscriptions: Subscription = new Subscription();
 
   ngOnInit() {
     if (isPlatformBrowser(this.platformId)) {
       this.loadHosts();
     }
     this.subscriptions.add(
-      this.themeService.isDarkTheme$.subscribe(isDark => {
+      this.themeService.isDarkTheme$.subscribe((isDark) => {
         this.isDarkTheme = isDark;
         this.cdr.detectChanges();
         this.setTheme();
-      })
+      }),
     );
   }
 
@@ -56,23 +62,23 @@ export class HostMapComponent implements OnInit, AfterViewInit {
 
   private loadHosts() {
     this.databaseService.instance.hostsQueries.getHostsWithDomainCounts().subscribe(
-      hosts => {
-        this.hosts = hosts.map(host => ({
+      (hosts) => {
+        this.hosts = hosts.map((host) => ({
           ...host,
-          domainCount: host.domain_count
+          domainCount: host.domain_count,
         }));
         if (this.map) {
           this.addMarkers();
         }
       },
-      error => {
+      (error) => {
         this.errorHandler.handleError({
           error,
           message: 'Failed to load hosts',
           location: 'HostMapComponent.loadHosts',
           showToast: true,
         });
-      }
+      },
     );
   }
 
@@ -101,14 +107,16 @@ export class HostMapComponent implements OnInit, AfterViewInit {
 
   private addMarkers() {
     if (!this.L || !this.map) return;
-    this.hosts.forEach(host => {
+    this.hosts.forEach((host) => {
       if (host.lat && host.lon) {
         // Make marker
-        const marker = this.L.marker([host.lat, host.lon], { icon: this.getCustomIcon() });
+        const marker = this.L.marker([host.lat, host.lon], {
+          icon: this.getCustomIcon(),
+        });
         // Make marker popup
         marker.bindPopup(`
           <b>${host.isp}</b><br>
-          ${host.org !== host.isp ? ' <i class="opacity-60">'+host.org +'</i><br>' : ''}
+          ${host.org !== host.isp ? ' <i class="opacity-60">' + host.org + '</i><br>' : ''}
           Domains: ${host.domain_count} (<a href="/assets/hosts/${host.isp}">View</a>)<br>
           Location: ${host.city}, ${host.country}
         `);
@@ -118,7 +126,10 @@ export class HostMapComponent implements OnInit, AfterViewInit {
     });
 
     // Adjust the map bounds to fit all markers
-    const markerBounds = this.hosts.map(host => [host.lat, host.lon]);
+    const markerBounds: [number, number][] = this.hosts.map((host) => [
+      host.lat,
+      host.lon,
+    ]);
     if (markerBounds.length > 0) {
       const bounds = this.L.latLngBounds(markerBounds);
       this.map.fitBounds(bounds, { padding: [10, 10] });
@@ -148,7 +159,7 @@ export class HostMapComponent implements OnInit, AfterViewInit {
       className: 'custom-marker-icon',
       iconSize: [24, 30],
       iconAnchor: [15, 40],
-      popupAnchor: [0, -30]
+      popupAnchor: [0, -30],
     });
     return customIcon;
   }

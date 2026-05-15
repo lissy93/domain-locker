@@ -1,8 +1,10 @@
-
 <!-- Unauthenticated homepage -->
 @if (!isAuthenticated) {
   <div
-    class="flex flex-col gap-2 duration-200 transition-all {{ loading ? 'opacity-80' : 'opacity-100' }}">
+    class="flex flex-col gap-2 duration-200 transition-all {{
+      loading ? 'opacity-80' : 'opacity-100'
+    }}"
+  >
     <app-hero />
     <p-divider />
     <h3 class="mt-2 mb-0 text-3xl">{{ 'HOME.FEATURES' | translate }}</h3>
@@ -14,10 +16,10 @@
     <p-divider />
     <h3 class="mt-2 mb-0 text-3xl">{{ 'HOME.DEMO_TITLE' | translate }}</h3>
     <app-demo />
-    <app-feature-carousel class="mt-3"/>
+    <app-feature-carousel class="mt-3" />
     <p-divider />
     <h3 class="mt-2 mb-0 text-3xl">{{ 'HOME.DOCS_TITLE' | translate }}</h3>
-    <about-links />
+    <app-about-links />
     <p-divider />
     <app-cta />
   </div>
@@ -25,13 +27,22 @@
 
 <!-- Authenticated homepage -->
 @if (isAuthenticated) {
-  <app-demo-welcome *ngIf="isDemoInstance" [isDemoInstance]="true" />
-  <app-demo-welcome *ngIf="isDevInstance" [isDevInstance]="true" />
+  @if (isDemoInstance) {
+    <app-demo-welcome [isDemoInstance]="true" />
+  }
+  @if (isDevInstance) {
+    <app-demo-welcome [isDevInstance]="true" />
+  }
 
-  <loading *ngIf="loading" [loadingTitle]="'HOME.LOADING_TITLE' | translate" [loadingDescription]="'HOME.LOADING_DESCRIPTION' | translate" />
+  @if (loading) {
+    <app-loading
+      [loadingTitle]="'HOME.LOADING_TITLE' | translate"
+      [loadingDescription]="'HOME.LOADING_DESCRIPTION' | translate"
+    />
+  }
 
   @if (!loading && domains.length === 0) {
-    <welcome />
+    <app-welcome />
   } @else if (!loading) {
     <h2 class="my-4 block">{{ 'HOME.SUBHEADINGS.DASHBOARD' | translate }}</h2>
     <div class="p-card p-4" pAnimateOnScroll enterClass="fadeIn" leaveClass="fadeOut">
@@ -39,7 +50,9 @@
       <app-domain-expiration-bar />
     </div>
     @if (showInsights) {
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 relative my-4 mx-0.5">
+      <div
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 relative my-4 mx-0.5"
+      >
         <div class="p-card p-4">
           <h4>{{ 'HOME.DOMAIN_PROVIDERS' | translate }}</h4>
           <div class="w-full">
@@ -88,7 +101,9 @@
           <i class="pi pi-angle-double-down"></i>
         </div>
       } @else {
-        <div class="flex gap-2 items-center px-1 py-1 cursor-pointer hover:text-primary text-xs opacity-70">
+        <div
+          class="flex gap-2 items-center px-1 py-1 cursor-pointer hover:text-primary text-xs opacity-70"
+        >
           <i class="pi pi-angle-double-up"></i>
           <span>{{ 'HOME.HIDE_STATS' | translate }}</span>
           <i class="pi pi-angle-double-up"></i>
@@ -96,21 +111,32 @@
       }
     </p-divider>
     <h2 class="my-4 block">{{ 'HOME.SUBHEADINGS.DOMAINS' | translate }}</h2>
-    <app-domain-view
-      *ngIf="!loading"
-      [domains]="domains"
-      [showFooter]="false"
-      [loading]="loading"
-      ($triggerReload)="newDomainAdded($event)"
-      pAnimateOnScroll enterClass="fadeIn" leaveClass="fadeOut"
-    />
+    @if (!loading) {
+      <app-domain-view
+        [domains]="domains"
+        [showFooter]="false"
+        [loading]="loading"
+        ($triggerReload)="newDomainAdded($event)"
+        pAnimateOnScroll
+        enterClass="fadeIn"
+        leaveClass="fadeOut"
+      />
+    }
     <p-divider />
     <h2 class="my-4 block">{{ 'HOME.SUBHEADINGS.CATEGORIES' | translate }}</h2>
     <app-tag-grid pAnimateOnScroll enterClass="fadeIn" leaveClass="fadeOut" />
     <p-divider />
-    <app-asset-list class="block m-2" pAnimateOnScroll enterClass="fadeIn" leaveClass="fadeOut" />
+    <app-asset-list
+      class="block m-2"
+      pAnimateOnScroll
+      enterClass="fadeIn"
+      leaveClass="fadeOut"
+    />
     <p class="mx-0 mt-4 mb-2 float-right text-xs text-surface-300">
-      <a class="text-primary opacity-70" routerLink="/assets">{{ 'HOME.VIEW_ALL_ASSETS' | translate }}</a><br>
+      <a class="text-primary opacity-70" routerLink="/assets">{{
+        'HOME.VIEW_ALL_ASSETS' | translate
+      }}</a
+      ><br />
     </p>
   }
 
@@ -122,4 +148,3 @@
   <p-divider />
   <app-sponsor-message />
 }
-

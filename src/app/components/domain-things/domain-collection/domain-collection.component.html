@@ -12,63 +12,84 @@
 
 @if (domains.length === 0) {
   <div class="p-card p-4">
-    <h4 class="mt-0 mb-4">{{ 'DOMAINS.DOMAIN_COLLECTION.NO_DOMAINS_FOUND' | translate }}</h4>
+    <h4 class="mt-0 mb-4">
+      {{ 'DOMAINS.DOMAIN_COLLECTION.NO_DOMAINS_FOUND' | translate }}
+    </h4>
     <p>
       {{ 'DOMAINS.DOMAIN_COLLECTION.NO_DOMAINS_TEXT_1' | translate }}
-      <a routerLink="/domains/add" class="text-primary underline">{{ 'DOMAINS.DOMAIN_COLLECTION.ADD_FIRST_DOMAIN' | translate }}</a>.
+      <a routerLink="/domains/add" class="text-primary underline">{{
+        'DOMAINS.DOMAIN_COLLECTION.ADD_FIRST_DOMAIN' | translate
+      }}</a
+      >.
     </p>
   </div>
 }
 
-
-<ng-container *ngIf="!loading">
-
-<!-- Domain Grid (cards) -->
-<ng-container *ngIf="isGridLayout; else tableLayout">
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-    <app-domain-card
-      *ngFor="let domain of filteredDomains"
-      [domain]="domain"
-      [visibleFields]="visibleFields"
-    ></app-domain-card>
-  </div>
-</ng-container>
-
-<!-- Domain List (table) -->
-<ng-template #tableLayout>
-  <app-domain-list
-    [domains]="filteredDomains"
-    [loading]="loading"
-    [visibleColumns]="visibleColumns"
-  ></app-domain-list>
-</ng-template>
-
-</ng-container>
+@if (!loading) {
+  <!-- Domain Grid (cards) -->
+  @if (isGridLayout) {
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      @for (domain of filteredDomains; track domain) {
+        <app-domain-card
+          [domain]="domain"
+          [visibleFields]="visibleFields"
+        ></app-domain-card>
+      }
+    </div>
+  } @else {
+    <app-domain-list
+      [domains]="filteredDomains"
+      [loading]="loading"
+      [visibleColumns]="visibleColumns"
+    ></app-domain-list>
+  }
+  <!-- Domain List (table) -->
+}
 
 <!-- Note (count of visible fields, and usage instructions) -->
-<div *ngIf="showFooter" class="flex space-between justify-between items-center flex-wrap mt-4 text-surface-400">
-  <p>
-    {{ 'DOMAINS.DOMAIN_COLLECTION.VIEWING' | translate }} {{ filteredDomains.length }} {{ 'DOMAINS.DOMAIN_COLLECTION.OF' | translate }} {{ domains.length }} {{ 'DOMAINS.DOMAIN_COLLECTION.DOMAINS' | translate }} {{ preFilteredText }}
-    <ng-container *ngIf="searchTerm">
-      {{ 'DOMAINS.DOMAIN_COLLECTION.MATCHING_SEARCH' | translate }} "{{ searchTerm }}"
-    </ng-container>,
-    {{ 'DOMAINS.DOMAIN_COLLECTION.WITH' | translate }} {{ visibleColumns.length }} {{ 'DOMAINS.DOMAIN_COLLECTION.FIELDS_VISIBLE_IN' | translate }} 
-    {{ isGridLayout ? ('DOMAINS.DOMAIN_COLLECTION.GRID_VIEW' | translate) : ('DOMAINS.DOMAIN_COLLECTION.LIST_VIEW' | translate) }}<br>
-    <ng-container *ngIf="searchTerm || visibleFields.length !== 3">
-      <span (click)="resetFilters()" class="text-primary opacity-70 underline cursor-pointer">
-        {{ 'DOMAINS.DOMAIN_COLLECTION.RESET_FILTERS' | translate }}
-      </span>
-    </ng-container>
-
-    <ng-container *ngIf="(searchTerm || visibleFields.length !== 3) && preFilteredText">
-      {{ 'DOMAINS.DOMAIN_COLLECTION.OR' | translate }}
-    </ng-container>
-
-    <ng-container *ngIf="preFilteredText">
-      <a routerLink="/domains" (click)="resetFilters()" class="text-primary opacity-70 underline cursor-pointer">
-        {{ 'DOMAINS.DOMAIN_COLLECTION.VIEW_ALL' | translate }}
-      </a>
-    </ng-container>
-  </p>
-  <p class="text-xs" [innerHTML]="'DOMAINS.DOMAIN_COLLECTION.INSTRUCTIONS' | translate"></p>
-</div>
+@if (showFooter) {
+  <div
+    class="flex space-between justify-between items-center flex-wrap mt-4 text-surface-400"
+  >
+    <p>
+      {{ 'DOMAINS.DOMAIN_COLLECTION.VIEWING' | translate }} {{ filteredDomains.length }}
+      {{ 'DOMAINS.DOMAIN_COLLECTION.OF' | translate }} {{ domains.length }}
+      {{ 'DOMAINS.DOMAIN_COLLECTION.DOMAINS' | translate }} {{ preFilteredText }}
+      @if (searchTerm) {
+        {{ 'DOMAINS.DOMAIN_COLLECTION.MATCHING_SEARCH' | translate }} "{{ searchTerm }}"
+      }
+      , {{ 'DOMAINS.DOMAIN_COLLECTION.WITH' | translate }} {{ visibleColumns.length }}
+      {{ 'DOMAINS.DOMAIN_COLLECTION.FIELDS_VISIBLE_IN' | translate }}
+      {{
+        isGridLayout
+          ? ('DOMAINS.DOMAIN_COLLECTION.GRID_VIEW' | translate)
+          : ('DOMAINS.DOMAIN_COLLECTION.LIST_VIEW' | translate)
+      }}<br />
+      @if (searchTerm || visibleFields.length !== 3) {
+        <button
+          type="button"
+          (click)="resetFilters()"
+          class="text-primary opacity-70 underline cursor-pointer bg-transparent border-none p-0"
+        >
+          {{ 'DOMAINS.DOMAIN_COLLECTION.RESET_FILTERS' | translate }}
+        </button>
+      }
+      @if ((searchTerm || visibleFields.length !== 3) && preFilteredText) {
+        {{ 'DOMAINS.DOMAIN_COLLECTION.OR' | translate }}
+      }
+      @if (preFilteredText) {
+        <a
+          routerLink="/domains"
+          (click)="resetFilters()"
+          class="text-primary opacity-70 underline cursor-pointer"
+        >
+          {{ 'DOMAINS.DOMAIN_COLLECTION.VIEW_ALL' | translate }}
+        </a>
+      }
+    </p>
+    <p
+      class="text-xs"
+      [innerHTML]="'DOMAINS.DOMAIN_COLLECTION.INSTRUCTIONS' | translate"
+    ></p>
+  </div>
+}

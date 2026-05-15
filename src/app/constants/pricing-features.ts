@@ -1,4 +1,3 @@
-
 // Sponsor: All Hobby features (free for sponsors)
 // Complimentary: Hobby features, but for free
 // Tester: All features, debugging and logging enabled, only for running locally
@@ -20,7 +19,7 @@ export interface PricingFeature {
   features: string[];
   antiFeatures?: string[];
   suggested?: boolean;
-};
+}
 
 export const pricingFeatures = [
   {
@@ -28,11 +27,7 @@ export const pricingFeatures = [
     planId: 'free',
     priceMonth: '0',
     priceAnnual: '0',
-    features: [
-      '5 Domains',
-      'Domain Info',
-      'Expiry Emails',
-    ]
+    features: ['5 Domains', 'Domain Info', 'Expiry Emails'],
   },
   {
     title: 'Hobby',
@@ -47,13 +42,13 @@ export const pricingFeatures = [
       'Domain Change History',
       'Statistics',
       'Alerts',
-    ]
+    ],
   },
   {
     title: 'Pro',
     planId: 'pro',
     priceMonth: '25',
-    priceAnnual: '20', 
+    priceAnnual: '20',
     features: [
       '100 Domains',
       'Detailed Domain Info',
@@ -68,10 +63,10 @@ export const pricingFeatures = [
   },
 ];
 
-export const selfHostedFeatures =  {
+export const selfHostedFeatures = {
   title: 'Self-Hosted',
   priceMonth: '0',
-  priceAnnual: '0', 
+  priceAnnual: '0',
   features: [
     'All the features of Pro',
     'Highly configurable with code',
@@ -79,15 +74,15 @@ export const selfHostedFeatures =  {
   ],
   antiFeatures: [
     'You provision and maintain your own infrastructure',
-    'You\'re responsible for server security, backups and availability',
+    "You're responsible for server security, backups and availability",
     'Community support only',
   ],
 };
 
-export const enterpriseFeatures =  {
+export const enterpriseFeatures = {
   title: 'Enterprise',
   priceMonth: '500',
-  priceAnnual: '500', 
+  priceAnnual: '500',
   features: [
     'Includes all Pro plan features (+1000 domains)',
     'Commercial usage rights',
@@ -108,7 +103,7 @@ export const billingFaq = [
       You will be able to use the service until the end of the current billing period`,
   },
   {
-    question: 'I can\'t afford the Pro plan, can I get a discount?',
+    question: "I can't afford the Pro plan, can I get a discount?",
     answer: `
       We offer a smaller Hobby plan at an affordable price, as well as a discount for paying annually instead of monthly.
       And since the code is open source, you can also run Domain Locker locally for free.\n
@@ -118,11 +113,13 @@ export const billingFaq = [
   },
   {
     question: 'What happens if I exceed the domain limit?',
-    answer: 'You will be notified and given the option to upgrade your plan or remove domains',
+    answer:
+      'You will be notified and given the option to upgrade your plan or remove domains',
   },
   {
     question: 'Do you offer a lifetime plan?',
-    answer: 'Not currently, because the monthly/annual subscriptions are needed to cover the ongoing server costs',
+    answer:
+      'Not currently, because the monthly/annual subscriptions are needed to cover the ongoing server costs',
   },
   {
     question: 'What payment methods do you accept?',
@@ -137,6 +134,6 @@ export const billingFaq = [
   },
   {
     question: 'Can I get an invoice for my subscription?',
-    answer: `Yes, under Settings --> Billing, you can download a PDF invoice for all of your transactions.`
+    answer: `Yes, under Settings --> Billing, you can download a PDF invoice for all of your transactions.`,
   },
 ];

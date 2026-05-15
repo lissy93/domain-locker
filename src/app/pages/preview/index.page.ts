@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PrimeNgModule } from '../../prime-ng.module';
 import { DomainUtils } from '~/app/services/domain-utils.service';
@@ -11,32 +11,24 @@ import { EnvService } from '~/app/services/environment.service';
 
 @Component({
   standalone: true,
-  selector: 'app-domain-details',
-  imports: [
-    CtaComponent,
-    CommonModule,
-    PrimeNgModule,
-    BusinessFeaturesComponent,
-  ],
+  selector: 'app-preview-page',
+  imports: [CtaComponent, CommonModule, PrimeNgModule, BusinessFeaturesComponent],
   providers: [ConfirmationService, MessageService],
   templateUrl: 'index.page.html',
 })
-export default class DomainDetailsPage {
+export default class DomainDetailsPage implements OnInit {
+  domainUtils = inject(DomainUtils);
+  private featureService = inject(FeatureService);
+  private environmentService = inject(EnvService);
+  private router = inject(Router);
+
   enablePreviewDomain$ = this.featureService.isFeatureEnabled('enablePreviewDomain');
   public environmentType: string | null = null;
-  public domain: string = '';
-
-  constructor(
-    public domainUtils: DomainUtils,
-    private featureService: FeatureService,
-    private environmentService: EnvService,
-    private router: Router
-  ) {}
+  public domain = '';
 
   ngOnInit() {
     this.environmentType = this.environmentService.getEnvironmentType();
   }
-
 
   cleanDomain(domain: string): string {
     if (!domain) return '';
@@ -48,6 +40,5 @@ export default class DomainDetailsPage {
     if (this.domain) {
       this.router.navigate(['/preview', this.domain]);
     }
-    
   }
 }

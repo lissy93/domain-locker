@@ -1,18 +1,11 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component } from '@angular/core';
+
 import { PrimeNgModule } from '~/app/prime-ng.module';
 
 @Component({
-  selector: 'app-faq',
+  selector: 'app-about-support-faq-page',
   standalone: true,
-  imports: [CommonModule, PrimeNgModule],
+  imports: [PrimeNgModule],
   templateUrl: './index.page.html',
 })
-export default class FaqPage implements OnInit {
-
-  constructor() { }
-
-  ngOnInit(): void {
-  }
-
-}
+export default class FaqPage {}

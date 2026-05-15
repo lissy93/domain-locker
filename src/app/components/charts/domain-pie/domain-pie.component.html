@@ -2,102 +2,119 @@
   <p-tabView (onChange)="onTabChange($event)">
     <p-tabPanel [header]="'DOMAIN_STATS.PROVIDERS.REGISTRARS' | translate">
       <div #chartContainer class="chart-container">
-        <apx-chart *ngIf="registrarChartReady"
-          [series]="registrarChartOptions.series"
-          [chart]="registrarChartOptions.chart"
-          [labels]="registrarChartOptions.labels"
-          [responsive]="registrarChartOptions.responsive"
-          [theme]="registrarChartOptions.theme"
-          [legend]="registrarChartOptions.legend"
-          [stroke]="registrarChartOptions.stroke"
-          [colors]="registrarChartOptions.colors"
-        ></apx-chart>
+        @if (registrarChartReady) {
+          <apx-chart
+            [series]="registrarChartOptions.series!"
+            [chart]="registrarChartOptions.chart!"
+            [labels]="registrarChartOptions.labels!"
+            [responsive]="registrarChartOptions.responsive!"
+            [theme]="registrarChartOptions.theme!"
+            [legend]="registrarChartOptions.legend!"
+            [stroke]="registrarChartOptions.stroke!"
+            [colors]="registrarChartOptions.colors!"
+          ></apx-chart>
+        }
       </div>
       <a
         routerLink="/assets/registrars"
-        class="text-xs text-primary-600 text-right block w-full opacity-70 hover:opacity-100">
+        class="text-xs text-primary-600 text-right block w-full opacity-70 hover:opacity-100"
+      >
         {{ 'DOMAIN_STATS.PROVIDERS.VIEW_ALL_REGISTRARS' | translate }}
       </a>
     </p-tabPanel>
     <p-tabPanel [header]="'DOMAIN_STATS.PROVIDERS.SSL_ISSUERS' | translate">
       <div class="chart-container">
-        <apx-chart *ngIf="sslIssuerChartReady"
-          [series]="sslIssuerChartOptions.series"
-          [chart]="sslIssuerChartOptions.chart"
-          [labels]="sslIssuerChartOptions.labels"
-          [responsive]="sslIssuerChartOptions.responsive"
-          [theme]="sslIssuerChartOptions.theme"
-          [legend]="sslIssuerChartOptions.legend"
-          [stroke]="sslIssuerChartOptions.stroke"
-          [colors]="sslIssuerChartOptions.colors"
-        ></apx-chart>
+        @if (sslIssuerChartReady) {
+          <apx-chart
+            [series]="sslIssuerChartOptions.series!"
+            [chart]="sslIssuerChartOptions.chart!"
+            [labels]="sslIssuerChartOptions.labels!"
+            [responsive]="sslIssuerChartOptions.responsive!"
+            [theme]="sslIssuerChartOptions.theme!"
+            [legend]="sslIssuerChartOptions.legend!"
+            [stroke]="sslIssuerChartOptions.stroke!"
+            [colors]="sslIssuerChartOptions.colors!"
+          ></apx-chart>
+        }
       </div>
       <a
         routerLink="/assets/certs"
-        class="text-xs text-primary-600 text-right block w-full opacity-70 hover:opacity-100">
+        class="text-xs text-primary-600 text-right block w-full opacity-70 hover:opacity-100"
+      >
         {{ 'DOMAIN_STATS.PROVIDERS.VIEW_ALL_CERT_PROVIDERS' | translate }}
       </a>
     </p-tabPanel>
     <p-tabPanel [header]="'DOMAIN_STATS.PROVIDERS.HOSTS' | translate">
       <div class="chart-container">
-        <apx-chart *ngIf="hostChartReady"
-          [series]="hostChartOptions.series"
-          [chart]="hostChartOptions.chart"
-          [labels]="hostChartOptions.labels"
-          [responsive]="hostChartOptions.responsive"
-          [theme]="hostChartOptions.theme"
-          [legend]="hostChartOptions.legend"
-          [stroke]="hostChartOptions.stroke"
-          [colors]="hostChartOptions.colors"
-        ></apx-chart>
+        @if (hostChartReady) {
+          <apx-chart
+            [series]="hostChartOptions.series!"
+            [chart]="hostChartOptions.chart!"
+            [labels]="hostChartOptions.labels!"
+            [responsive]="hostChartOptions.responsive!"
+            [theme]="hostChartOptions.theme!"
+            [legend]="hostChartOptions.legend!"
+            [stroke]="hostChartOptions.stroke!"
+            [colors]="hostChartOptions.colors!"
+          ></apx-chart>
+        }
         <a
           routerLink="/assets/hosts"
-          class="text-xs text-primary-600 text-right block w-full opacity-70 hover:opacity-100">
+          class="text-xs text-primary-600 text-right block w-full opacity-70 hover:opacity-100"
+        >
           {{ 'DOMAIN_STATS.PROVIDERS.VIEW_ALL_HOSTS' | translate }}
         </a>
       </div>
     </p-tabPanel>
   </p-tabView>
 } @else {
-  <div class="mt-4 grid grid-cols-1 gap-1 w-full mx-auto place-items-center md:grid-cols-2 lg:grid-cols-3 md:max-w-full">
+  <div
+    class="mt-4 grid grid-cols-1 gap-1 w-full mx-auto place-items-center md:grid-cols-2 lg:grid-cols-3 md:max-w-full"
+  >
     <div class="p-card p-1 h-full">
       <h2 class="m-0 mb-2">{{ 'DOMAIN_STATS.PROVIDERS.REGISTRARS' | translate }}</h2>
-      <apx-chart *ngIf="registrarChartReady"
-        [series]="registrarChartOptions.series"
-        [chart]="registrarChartOptions.chart"
-        [labels]="registrarChartOptions.labels"
-        [responsive]="registrarChartOptions.responsive"
-        [theme]="registrarChartOptions.theme"
-        [legend]="registrarChartOptions.legend"
-        [stroke]="registrarChartOptions.stroke"
-        [colors]="registrarChartOptions.colors"
-      ></apx-chart>
+      @if (registrarChartReady) {
+        <apx-chart
+          [series]="registrarChartOptions.series!"
+          [chart]="registrarChartOptions.chart!"
+          [labels]="registrarChartOptions.labels!"
+          [responsive]="registrarChartOptions.responsive!"
+          [theme]="registrarChartOptions.theme!"
+          [legend]="registrarChartOptions.legend!"
+          [stroke]="registrarChartOptions.stroke!"
+          [colors]="registrarChartOptions.colors!"
+        ></apx-chart>
+      }
     </div>
     <div class="p-card p-1 mt-1 h-full">
       <h2 class="m-0 mb-2">{{ 'DOMAIN_STATS.PROVIDERS.SSL_ISSUERS' | translate }}</h2>
-      <apx-chart *ngIf="sslIssuerChartReady"
-        [series]="sslIssuerChartOptions.series"
-        [chart]="sslIssuerChartOptions.chart"
-        [labels]="sslIssuerChartOptions.labels"
-        [responsive]="sslIssuerChartOptions.responsive"
-        [theme]="sslIssuerChartOptions.theme"
-        [legend]="sslIssuerChartOptions.legend"
-        [stroke]="sslIssuerChartOptions.stroke"
-        [colors]="sslIssuerChartOptions.colors"
-      ></apx-chart>
+      @if (sslIssuerChartReady) {
+        <apx-chart
+          [series]="sslIssuerChartOptions.series!"
+          [chart]="sslIssuerChartOptions.chart!"
+          [labels]="sslIssuerChartOptions.labels!"
+          [responsive]="sslIssuerChartOptions.responsive!"
+          [theme]="sslIssuerChartOptions.theme!"
+          [legend]="sslIssuerChartOptions.legend!"
+          [stroke]="sslIssuerChartOptions.stroke!"
+          [colors]="sslIssuerChartOptions.colors!"
+        ></apx-chart>
+      }
     </div>
     <div class="p-card p-1 mt-1 h-full">
       <h2 class="m-0 mb-2">{{ 'DOMAIN_STATS.PROVIDERS.HOSTS' | translate }}</h2>
-      <apx-chart *ngIf="hostChartReady"
-        [series]="hostChartOptions.series"
-        [chart]="hostChartOptions.chart"
-        [labels]="hostChartOptions.labels"
-        [responsive]="hostChartOptions.responsive"
-        [theme]="hostChartOptions.theme"
-        [legend]="hostChartOptions.legend"
-        [stroke]="hostChartOptions.stroke"
-        [colors]="hostChartOptions.colors"
-      ></apx-chart>
+      @if (hostChartReady) {
+        <apx-chart
+          [series]="hostChartOptions.series!"
+          [chart]="hostChartOptions.chart!"
+          [labels]="hostChartOptions.labels!"
+          [responsive]="hostChartOptions.responsive!"
+          [theme]="hostChartOptions.theme!"
+          [legend]="hostChartOptions.legend!"
+          [stroke]="hostChartOptions.stroke!"
+          [colors]="hostChartOptions.colors!"
+        ></apx-chart>
+      }
     </div>
   </div>
 }

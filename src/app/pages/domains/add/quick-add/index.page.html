@@ -1,11 +1,16 @@
 <div class="{{ isInModal ? '' : 'p-card p-3' }} max-w-96 mx-auto my-0">
-  <h2 *ngIf="!isInModal" class="text-2xl font-semibold">Add New Domain</h2>
-  <p class="m-0">Enter the domain name you'd like to track, and we'll fetch the details automatically.</p>
+  @if (!isInModal) {
+    <h2 class="text-2xl font-semibold">Add New Domain</h2>
+  }
+  <p class="m-0">
+    Enter the domain name you'd like to track, and we'll fetch the details automatically.
+  </p>
 
   <form [formGroup]="domainForm" (ngSubmit)="onSubmit()">
     <div class="field flex flex-col gap-1 mt-4">
       <p-floatLabel>
-        <input pInputText
+        <input
+          pInputText
           (blur)="onDomainNameBlur()"
           id="domainName"
           type="text"
@@ -17,14 +22,23 @@
         <label for="username">Domain Name</label>
       </p-floatLabel>
 
-      <small class="p-error" *ngIf="domainForm.get('domainName')?.invalid && domainForm.get('domainName')?.touched">
-        {{ domainForm.get('domainName')?.errors?.['required'] ? 'Domain name is required.' : 'Enter a valid domain name.' }}
-      </small>
+      @if (
+        domainForm.get('domainName')?.invalid && domainForm.get('domainName')?.touched
+      ) {
+        <small class="p-error">
+          {{
+            domainForm.get('domainName')?.errors?.['required']
+              ? 'Domain name is required.'
+              : 'Enter a valid domain name.'
+          }}
+        </small>
+      }
     </div>
 
     <button
       pButton
       label="Add Domain"
+      aria-label="Add domain"
       type="submit"
       [disabled]="domainForm.invalid || isLoading"
       [loading]="isLoading"
@@ -33,6 +47,7 @@
     <button
       pButton
       label="Add Extra Details"
+      aria-label="Add extra details"
       [outlined]="true"
       severity="secondary"
       (click)="navigateToDetailedAdd()"

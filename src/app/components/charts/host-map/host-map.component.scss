@@ -7,7 +7,6 @@
   height: 100%;
 }
 
-
 #map {
   position: relative;
   width: 100%;
@@ -17,7 +16,8 @@
 
 .leaflet-control-container {
   .leaflet-control-zoom.leaflet-bar.leaflet-control {
-    .leaflet-control-zoom-in, .leaflet-control-zoom-out {
+    .leaflet-control-zoom-in,
+    .leaflet-control-zoom-out {
       background: var(--surface-50);
       color: var(--primary-100);
     }
@@ -25,8 +25,12 @@
   .leaflet-bottom .leaflet-control-attribution.leaflet-control {
     opacity: 0.4;
     background: var(--surface-50);
-    a { color: var(--primary-100); }
-    &:hover { opacity: 1; }
+    a {
+      color: var(--primary-100);
+    }
+    &:hover {
+      opacity: 1;
+    }
   }
 }
 

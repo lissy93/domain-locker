@@ -12,7 +12,7 @@ export default defineEventHandler((event) => {
   if (envType !== 'selfHosted') {
     return {
       error: true,
-      message: 'This endpoint is only available for selfHosted environment.'
+      message: 'This endpoint is only available for selfHosted environment.',
     };
   }
 
@@ -24,15 +24,15 @@ export default defineEventHandler((event) => {
     const envVars: Record<string, string> = {};
     for (const [envKey, envValue] of Object.entries(environmentVariables)) {
       if (
-        (envKey.startsWith('DL_') || envKey.startsWith('SUPABASE_'))
-        && !envKey.includes('_POSTGRES')
+        (envKey.startsWith('DL_') || envKey.startsWith('SUPABASE_')) &&
+        !envKey.includes('_POSTGRES')
       ) {
         envVars[envKey] = envValue || '';
       }
     }
     return {
       error: false,
-      env: envVars
+      env: envVars,
     };
   } else {
     // Single key fetch
@@ -40,7 +40,7 @@ export default defineEventHandler((event) => {
     return {
       error: false,
       key,
-      value
+      value,
     };
   }
 });

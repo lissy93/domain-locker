@@ -1,5 +1,13 @@
 // Angular
-import { Component, OnInit, Inject, PLATFORM_ID, OnDestroy, ChangeDetectorRef, ErrorHandler } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  PLATFORM_ID,
+  OnDestroy,
+  ChangeDetectorRef,
+  ErrorHandler,
+  inject,
+} from '@angular/core';
 import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 
@@ -21,7 +29,10 @@ import { ThemeService } from '~/app/services/theme.service';
 import { GlobalMessageService } from '~/app/services/messaging.service';
 import { SupabaseService } from '~/app/services/supabase.service';
 import { HitCountingService } from '~/app/services/hit-counting.service';
-import { ErrorHandlerService, GlobalErrorHandler } from '~/app/services/error-handler.service';
+import {
+  ErrorHandlerService,
+  GlobalErrorHandler,
+} from '~/app/services/error-handler.service';
 import { AccessibilityService } from '~/app/services/accessibility-options.service';
 import { EnvService } from '~/app/services/environment.service';
 import { FeatureService } from '~/app/services/features.service';
@@ -49,11 +60,15 @@ import { MetaTagsService } from '~/app/services/meta-tags.service';
     <app-navbar />
     <div class="main-container">
       <!-- Main content container -->
-      <div class="content-container" [ngClass]="{ 'full': isFullWidth }">
+      <div class="content-container" [ngClass]="{ full: isFullWidth }">
         <!-- Create router outlet -->
-        <breadcrumbs *ngIf="pagePath" [pagePath]="pagePath" />
+        @if (pagePath) {
+          <app-breadcrumbs [pagePath]="pagePath" />
+        }
         <!-- Router outlet for main content -->
-        <router-outlet *ngIf="!loading || publicPath" />
+        @if (!loading || publicPath) {
+          <router-outlet />
+        }
         <!-- Global components -->
         <p-scrollTop />
         <p-toast />
@@ -62,47 +77,54 @@ import { MetaTagsService } from '~/app/services/meta-tags.service';
       <!-- Footer -->
       <app-footer [big]="isBigFooter" />
       <!-- While initializing, show loading spinner -->
-      <loading *ngIf="loading" [isAbsolute]="true" />
+      @if (loading) {
+        <app-loading [isAbsolute]="true" />
+      }
     </div>
   `,
-  styles: [`
-    :host {
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-    }
-
-  `],
+  styles: [
+    `
+      :host {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+    `,
+  ],
 })
 export class AppComponent implements OnInit, OnDestroy {
+  private router = inject(Router);
+  private cdr = inject(ChangeDetectorRef);
+  private supabaseService = inject(SupabaseService);
+  private messageService = inject(MessageService);
+  private confirmationService = inject(ConfirmationService);
+  private globalMessageService = inject(GlobalMessageService);
+  private errorHandler = inject(ErrorHandlerService);
+  _themeService = inject(ThemeService);
+  hitCountingService = inject(HitCountingService);
+  private accessibilityService = inject(AccessibilityService);
+  private environmentService = inject(EnvService);
+  private featureService = inject(FeatureService);
+  private metaTagsService = inject(MetaTagsService);
+  private platformId = inject<object>(PLATFORM_ID);
+
   private subscription: Subscription | undefined;
-  private publicRoutes =  new Set([
-    '/home', '/about', '/login', '/advanced', '/preview',
-    '/advanced/status', '/advanced/debug-info', '/advanced/admin-links',
+  private publicRoutes = new Set([
+    '/home',
+    '/about',
+    '/login',
+    '/advanced',
+    '/preview',
+    '/advanced/status',
+    '/advanced/debug-info',
+    '/advanced/admin-links',
   ]);
   private fullWidthRoutes: string[] = ['/settings', '/stats'];
 
-  public loading: boolean = true;
-  public pagePath: string = '';
-  public isFullWidth: boolean = false;
-  public isBigFooter: boolean = false;
-
-  constructor(
-    private router: Router,
-    private cdr: ChangeDetectorRef,
-    private supabaseService: SupabaseService,
-    private messageService: MessageService,
-    private confirmationService: ConfirmationService,
-    private globalMessageService: GlobalMessageService,
-    private errorHandler: ErrorHandlerService,
-    public _themeService: ThemeService,
-    public hitCountingService: HitCountingService,
-    private accessibilityService: AccessibilityService,
-    private environmentService: EnvService,
-    private featureService: FeatureService,
-    private metaTagsService: MetaTagsService,
-    @Inject(PLATFORM_ID) private platformId: Object,
-  ) {}
+  public loading = true;
+  public pagePath = '';
+  public isFullWidth = false;
+  public isBigFooter = false;
 
   ngOnInit() {
     // Setup error handling, and pretty console
@@ -119,7 +141,7 @@ export class AppComponent implements OnInit, OnDestroy {
         this.metaTagsService.setRouteMeta(navEndEvent.urlAfterRedirects);
         // Track page view for analytics
         this.hitCountingService.trackPageView(navEndEvent.urlAfterRedirects);
-    });
+      });
 
     // Check auth state
     if (isPlatformBrowser(this.platformId)) {
@@ -138,7 +160,9 @@ export class AppComponent implements OnInit, OnDestroy {
           }
 
           // Some pages should be full wider (like /settings or /stats), we add a class if they are active
-          this.isFullWidth = this.fullWidthRoutes.some(route => currentRoute.includes(route));
+          this.isFullWidth = this.fullWidthRoutes.some((route) =>
+            currentRoute.includes(route),
+          );
 
           // Public route: no auth, set meta tags, and show the outlet
           if (this.isPublicRoute(currentRoute, false)) {
@@ -151,29 +175,30 @@ export class AppComponent implements OnInit, OnDestroy {
           this.metaTagsService.allowRobots(false);
 
           // Auth needed for current route, check if user authenticated
-          this.checkAuthentication().then((isAuthenticated) => {
-            if (!isAuthenticated) {
-              this.redirectToLogin();
-              return;
-            }
-          }).catch(async (error) => {
-            this.errorHandler.handleError({
-              error,
-              message: 'Unable to validate auth state',
-              showToast: true,
-              location: 'app.component',
+          this.checkAuthentication()
+            .then((isAuthenticated) => {
+              if (!isAuthenticated) {
+                this.redirectToLogin();
+                return;
+              }
+            })
+            .catch(async (error) => {
+              this.errorHandler.handleError({
+                error,
+                message: 'Unable to validate auth state',
+                showToast: true,
+                location: 'app.component',
+              });
+            })
+            .finally(() => {
+              this.loading = false;
+              this.cdr.detectChanges();
             });
-          })
-          .finally(() => {
-            this.loading = false;
-            this.cdr.detectChanges();
-          })
-          ;
         }
       });
     }
     // Initialize the global message service for showing toasts
-    this.subscription = this.globalMessageService.getMessage().subscribe(message => {
+    this.subscription = this.globalMessageService.getMessage().subscribe((message) => {
       if (message) {
         this.messageService.add(message);
       } else {
@@ -197,7 +222,7 @@ export class AppComponent implements OnInit, OnDestroy {
     return this.isPublicRoute(this.pagePath, true);
   }
 
-  private isPublicRoute(route: string, allowHome: boolean = false): boolean {
+  private isPublicRoute(route: string, allowHome = false): boolean {
     if (!route) return true;
     if (route === '/' && allowHome) return true;
     if (this.publicRoutes.has(route)) return true;
@@ -209,7 +234,6 @@ export class AppComponent implements OnInit, OnDestroy {
 
   /* Check if user is authenticated, and take appropriate action */
   private async checkAuthentication(): Promise<boolean> {
-
     // No need to continue if visiting homepage or public route
     if (this.isPublicRoute(this.pagePath, true)) {
       return Promise.resolve(true);
@@ -223,17 +247,19 @@ export class AppComponent implements OnInit, OnDestroy {
     try {
       // Check if authenticated
       const isAuthenticated = await this.supabaseService.isAuthenticated();
-      if (!isAuthenticated) { // Not authenticated, redirect to login
+      if (!isAuthenticated) {
+        // Not authenticated, redirect to login
         return Promise.resolve(false);
       }
 
       // Authenticated, now check if MFA is required
       const hasMFA = await this.supabaseService.isMFAEnabled();
       if (hasMFA) {
-        const { currentLevel } = await this.supabaseService.getAuthenticatorAssuranceLevel();
+        const { currentLevel } =
+          await this.supabaseService.getAuthenticatorAssuranceLevel();
         if (currentLevel !== 'aal2') {
           await this.router.navigate(['/login'], {
-            queryParams: { requireMFA: 'true' }
+            queryParams: { requireMFA: 'true' },
           });
         }
       }
@@ -271,10 +297,11 @@ export class AppComponent implements OnInit, OnDestroy {
           header: 'Documentation not Enabled',
           message: 'Would you want to view this page on the Domain Locker website?',
           icon: 'pi pi-book',
-          acceptIcon:'pi pi-reply mr-2',
-          rejectIcon:'pi pi-arrow-left mr-2',
-          acceptButtonStyleClass:'p-button-sm p-button-primary p-button-text',
-          rejectButtonStyleClass:'p-button-sm p-button-secondary p-button-text p-button-text',
+          acceptIcon: 'pi pi-reply mr-2',
+          rejectIcon: 'pi pi-arrow-left mr-2',
+          acceptButtonStyleClass: 'p-button-sm p-button-primary p-button-text',
+          rejectButtonStyleClass:
+            'p-button-sm p-button-secondary p-button-text p-button-text',
           closeOnEscape: true,
           accept: () => {
             window.open(`https://domain-locker.com/${docsPath}`, '_blank');

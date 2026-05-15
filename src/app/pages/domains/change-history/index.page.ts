@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PrimeNgModule } from '~/app/prime-ng.module';
 import { DomainUpdatesComponent } from '~/app/components/domain-things/domain-updates/domain-updates.component';
@@ -8,11 +8,18 @@ import { FeatureNotEnabledComponent } from '~/app/components/misc/feature-not-en
 
 @Component({
   standalone: true,
-  selector: 'app-domain-details',
-  imports: [CommonModule, PrimeNgModule, DomainUpdatesComponent, ChangeHistoryChartComponent, FeatureNotEnabledComponent ],
+  selector: 'app-domains-change-history-page',
+  imports: [
+    CommonModule,
+    PrimeNgModule,
+    DomainUpdatesComponent,
+    ChangeHistoryChartComponent,
+    FeatureNotEnabledComponent,
+  ],
   templateUrl: './change-history.page.html',
 })
 export default class ChangeHistoryPage {
+  private featureService = inject(FeatureService);
+
   changeHistoryEnabled$ = this.featureService.isFeatureEnabled('changeHistory');
-  constructor(private featureService: FeatureService) {}
 }

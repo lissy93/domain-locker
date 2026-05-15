@@ -1,7 +1,7 @@
 <div class="w-full flex justify-between flex-wrap">
   <h1>Domain Valuation</h1>
   <a routerLink="/value/edit">
-    <button pButton label="Edit" icon="pi pi-pencil"></button>
+    <button pButton label="Edit" aria-label="Edit" icon="pi pi-pencil"></button>
   </a>
 </div>
 
@@ -9,48 +9,64 @@
   <div class="p-card p-4 flex flex-col justify-between">
     <div>
       <h4>Annual Renewal Cost</h4>
-      <p class="text-4xl m-0">{{ currencySymbol }}{{ totalRenewalCost | number:'1.2-2' }}</p>
+      <p class="text-4xl m-0">
+        {{ currencySymbol }}{{ totalRenewalCost | number: '1.2-2' }}
+      </p>
     </div>
     <div>
-      <p class="text-surface-500 text-sm m-0">Average cost of {{ currencySymbol }}{{ totalRenewalCost / 12 | number:'1.2-2' }} / month</p>
+      <p class="text-surface-500 text-sm m-0">
+        Average cost of {{ currencySymbol
+        }}{{ totalRenewalCost / 12 | number: '1.2-2' }} / month
+      </p>
     </div>
   </div>
   <div class="p-card p-4 flex flex-col justify-between">
     <div>
       <h4>Portfolio Worth</h4>
-      <p class="text-4xl m-0">{{ currencySymbol }}{{ portfolioWorth | number:'1.2-2' }}</p>
+      <p class="text-4xl m-0">
+        {{ currencySymbol }}{{ portfolioWorth | number: '1.2-2' }}
+      </p>
     </div>
     <div class="w-full">
-      <span class="text-green-300 text-sm">Total Value: {{ currencySymbol }}{{ totalValue | number:'1.2-2' }}</span> -
-      <span class="text-red-300 text-sm">Total Cost: {{ currencySymbol }}{{ totalPurchaseCost | number:'1.2-2' }}</span>
+      <span class="text-green-300 text-sm"
+        >Total Value: {{ currencySymbol }}{{ totalValue | number: '1.2-2' }}</span
+      >
+      -
+      <span class="text-red-300 text-sm"
+        >Total Cost: {{ currencySymbol }}{{ totalPurchaseCost | number: '1.2-2' }}</span
+      >
     </div>
   </div>
   <div class="p-card p-4">
     <h4>Upcoming Payments</h4>
     <div class="w-full">
       <ul class="p-0 list-none mb-0">
-        <li *ngFor="let payment of upcomingPayments" class="flex w-full justify-between">
-          <span>
-            {{ payment.expiryDate }}: {{ payment.domainName }}
-          </span>
-          @if (payment.renewalCost && !payment.autoRenew) {
-            <span class="text-red-300" pTooltip="Auto-renew not enabled. Pay bill manually before domain expires">
-              {{ currencySymbol }}{{ payment.renewalCost | number:'1.2-2' }}
-            </span>
-          } @else if (payment.renewalCost && payment.autoRenew){
-            <span class="text-blue-300" pTooltip="Auto-renew enabled">
-              {{ currencySymbol }}{{ payment.renewalCost | number:'1.2-2' }}
-            </span>
-          } @else {
-            <span class="text-yellow-400">Unset</span>
-          }
-        </li>
+        @for (payment of upcomingPayments; track payment) {
+          <li class="flex w-full justify-between">
+            <span> {{ payment.expiryDate }}: {{ payment.domainName }} </span>
+            @if (payment.renewalCost && !payment.autoRenew) {
+              <span
+                class="text-red-300"
+                pTooltip="Auto-renew not enabled. Pay bill manually before domain expires"
+              >
+                {{ currencySymbol }}{{ payment.renewalCost | number: '1.2-2' }}
+              </span>
+            } @else if (payment.renewalCost && payment.autoRenew) {
+              <span class="text-blue-300" pTooltip="Auto-renew enabled">
+                {{ currencySymbol }}{{ payment.renewalCost | number: '1.2-2' }}
+              </span>
+            } @else {
+              <span class="text-yellow-400">Unset</span>
+            }
+          </li>
+        }
       </ul>
-      <small *ngIf="upcomingPayments.length === 0">No upcoming payments</small>
+      @if (upcomingPayments.length === 0) {
+        <small>No upcoming payments</small>
+      }
     </div>
   </div>
 </div>
-
 
 <p-table
   #costingsTable
@@ -64,27 +80,47 @@
   <ng-template pTemplate="header">
     <tr>
       <th pSortableColumn="domain_name">Domain Name</th>
-      <th [pTooltip]="'The one-off fee you paid for the domain'" pSortableColumn="purchase_price">Purchase Price</th>
-      <th [pTooltip]="'The current sell-value of the domain'"  pSortableColumn="current_value">Current Value</th>
-      <th [pTooltip]="'The annual cost to renew the domain'"  pSortableColumn="renewal_cost">Annual Renewal Cost</th>
-      <th [pTooltip]="'Whether or not the domain auto-renews'"  pSortableColumn="auto_renew">Auto Renew</th>
+      <th
+        [pTooltip]="'The one-off fee you paid for the domain'"
+        pSortableColumn="purchase_price"
+      >
+        Purchase Price
+      </th>
+      <th
+        [pTooltip]="'The current sell-value of the domain'"
+        pSortableColumn="current_value"
+      >
+        Current Value
+      </th>
+      <th
+        [pTooltip]="'The annual cost to renew the domain'"
+        pSortableColumn="renewal_cost"
+      >
+        Annual Renewal Cost
+      </th>
+      <th
+        [pTooltip]="'Whether or not the domain auto-renews'"
+        pSortableColumn="auto_renew"
+      >
+        Auto Renew
+      </th>
     </tr>
   </ng-template>
   <ng-template pTemplate="body" let-domain>
     <tr>
       <td>
-        <a [routerLink]="'/domains/'+domain.domain_name" class="text-primary">
+        <a [routerLink]="'/domains/' + domain.domain_name" class="text-primary">
           {{ domain.domain_name }}
         </a>
       </td>
       <td [class]="domain.purchasePriceClass">
-        {{ currencySymbol }}{{ domain.purchase_price | number:'1.2-2' }}
+        {{ currencySymbol }}{{ domain.purchase_price | number: '1.2-2' }}
       </td>
       <td [class]="domain.currentValueClass">
-        {{ currencySymbol }}{{ domain.current_value | number:'1.2-2' }}
+        {{ currencySymbol }}{{ domain.current_value | number: '1.2-2' }}
       </td>
       <td [class]="domain.renewalCostClass">
-        {{ currencySymbol }}{{ domain.renewal_cost | number:'1.2-2' }}
+        {{ currencySymbol }}{{ domain.renewal_cost | number: '1.2-2' }}
       </td>
       <td>
         @if (domain.auto_renew) {

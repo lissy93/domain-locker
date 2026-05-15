@@ -14,13 +14,9 @@ interface PageRoute {
 }
 
 @Component({
-  selector: 'app-page-list',
+  selector: 'app-advanced-page-list-page',
   standalone: true,
-  imports: [
-    CommonModule,
-    RouterModule,
-    PrimeNgModule
-  ],
+  imports: [CommonModule, RouterModule, PrimeNgModule],
   templateUrl: './page-list.page.html',
 })
 export default class PageListComponent implements OnInit {
@@ -28,8 +24,8 @@ export default class PageListComponent implements OnInit {
 
   // discover all *.page.ts files at build time, eager, filter self out
   rawRoutes = Object.keys(
-    import.meta.glob('/src/app/pages/**/*.page.ts', { eager: true })
-  ).filter(path => !path.includes('page-list'));
+    import.meta.glob('/src/app/pages/**/*.page.ts', { eager: true }),
+  ).filter((path) => !path.includes('page-list'));
 
   routeTree: PageRoute[] = [];
 
@@ -38,8 +34,9 @@ export default class PageListComponent implements OnInit {
     this.routeTree = this.buildRouteTree(this.rawRoutes);
 
     // 2) fetch sitemap.xml, parse & merge any new public URLs
-    this.http.get('https://domain-locker.com/sitemap.xml', { responseType: 'text' })
-      .subscribe(xml => {
+    this.http
+      .get('https://domain-locker.com/sitemap.xml', { responseType: 'text' })
+      .subscribe((xml) => {
         const urls = this.parseSitemap(xml);
         this.mergeSitemapUrls(urls);
       });
@@ -49,9 +46,9 @@ export default class PageListComponent implements OnInit {
     const doc = new DOMParser().parseFromString(xml, 'application/xml');
     const locTags = Array.from(doc.getElementsByTagName('loc'));
     const paths = locTags
-      .map(el => el.textContent?.trim() || '')
-      .filter(u => !!u)
-      .map(u => {
+      .map((el) => el.textContent?.trim() || '')
+      .filter((u) => !!u)
+      .map((u) => {
         try {
           return new URL(u).pathname;
         } catch {
@@ -71,7 +68,7 @@ export default class PageListComponent implements OnInit {
     };
     collect(this.routeTree);
 
-    urls.forEach(link => {
+    urls.forEach((link) => {
       if (!existing.has(link)) {
         const rawName = link === '/' ? 'home' : link.split('/').pop() || '';
         const name = this.formatName(rawName, link === '/' ? 'Home' : undefined);
@@ -79,7 +76,7 @@ export default class PageListComponent implements OnInit {
           path: `sitemap:${link}`,
           link,
           name,
-          isPublic: true
+          isPublic: true,
         };
         const parts = link.replace(/^\//, '').split('/').filter(Boolean);
         this.insertIntoTree(this.routeTree, parts, page);
@@ -90,10 +87,10 @@ export default class PageListComponent implements OnInit {
   private buildRouteTree(rawRoutes: string[]): PageRoute[] {
     const tree: PageRoute[] = [];
 
-    rawRoutes.forEach(route => {
+    rawRoutes.forEach((route) => {
       let rel = route.replace('src/app/pages/', '');
-      rel = rel.replace(/^\([^\/]+\)\//, '');
-      rel = rel.replace(/^\([^\/]+\)\.page\.ts$/, '');
+      rel = rel.replace(/^\([^/]+\)\//, '');
+      rel = rel.replace(/^\([^/]+\)\.page\.ts$/, '');
       let routePath = rel.replace('.page.ts', '');
       if (routePath.endsWith('/index')) {
         routePath = routePath.replace(/\/index$/, '');
@@ -108,7 +105,11 @@ export default class PageListComponent implements OnInit {
       rawName = rawName.replace(/^\.\.\./, '');
       const name = this.formatName(rawName, routePath === '' ? 'Home' : undefined);
       let isPublic = false;
-      if (link === '/' || link === '/login' || (link && (link.startsWith('/about') || link.startsWith('/advanced')))) {
+      if (
+        link === '/' ||
+        link === '/login' ||
+        (link && (link.startsWith('/about') || link.startsWith('/advanced')))
+      ) {
         isPublic = true;
       }
       const page: PageRoute = { path: route, link, name, isPublic };
@@ -124,9 +125,16 @@ export default class PageListComponent implements OnInit {
       return;
     }
     const part = parts[0];
-    let node = tree.find(n => n.name.toLowerCase() === this.formatName(part).toLowerCase());
+    let node = tree.find(
+      (n) => n.name.toLowerCase() === this.formatName(part).toLowerCase(),
+    );
     if (!node) {
-      node = { path: '', name: this.formatName(part), isPublic: page.isPublic, children: [] };
+      node = {
+        path: '',
+        name: this.formatName(part),
+        isPublic: page.isPublic,
+        children: [],
+      };
       tree.push(node);
     }
     if (parts.length === 1) {
@@ -142,10 +150,10 @@ export default class PageListComponent implements OnInit {
       return override;
     }
     return name
-      .replace(/[\[\]\/]/g, '')
-      .split(/[\.\-\_]/)
+      .replace(/[[\]/]/g, '')
+      .split(/[.\-_]/)
       .filter(Boolean)
-      .map(s => s.charAt(0).toUpperCase() + s.slice(1))
+      .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
       .join(' ');
   }
 }

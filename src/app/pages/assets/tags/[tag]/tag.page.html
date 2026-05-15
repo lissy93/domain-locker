@@ -1,46 +1,76 @@
 <div class="flex justify-between align-items-center">
-  <h1 [class]="'capitalize flex align-items-center gap-2 ' + ' text-'+tag.color+'-400'">
+  <h1
+    [class]="'capitalize flex align-items-center gap-2 ' + ' text-' + tag.color + '-400'"
+  >
     @if (tag.icon) {
-      <div class="tag-icon" style="mask-image: url('https://api.iconify.design/{{tag.icon}}.svg');"></div>
+      <div
+        class="tag-icon"
+        style="mask-image: url('https://api.iconify.design/{{ tag.icon }}.svg');"
+      ></div>
     }
     {{ tagName }}
   </h1>
   <div class="flex gap-2">
-    <p-button (onClick)="showAddDomainsDialog()" label="Add/Remove Domains" icon="pi pi-check-square" severity="secondary" />
+    <p-button
+      (onClick)="showAddDomainsDialog()"
+      label="Add/Remove Domains"
+      icon="pi pi-check-square"
+      severity="secondary"
+    />
     <p-button (onClick)="showEditDialog()" label="Edit Tag" icon="pi pi-pencil" />
-    <p-button (onClick)="deleteTag()" pTooltip="Delete tag: {{tag.name}}" icon="pi pi-trash" severity="danger" />
+    <p-button
+      (onClick)="deleteTag()"
+      pTooltip="Delete tag: {{ tag.name }}"
+      icon="pi pi-trash"
+      severity="danger"
+    />
   </div>
 </div>
 
-<div *ngIf="tag.color" class="my-4 w-full h-1 bg-{{tag.color}}-800 rounded-lg"></div>
-<div *ngIf="tag.description">
-  <p class="mt-2 mb-4 text-lg italic text-{{tag.color || 'primary'}}-600">{{ tag.description }}</p>
-</div>
+@if (tag.color) {
+  <div class="my-4 w-full h-1 bg-{{ tag.color }}-800 rounded-lg"></div>
+}
+@if (tag.description) {
+  <div>
+    <p class="mt-2 mb-4 text-lg italic text-{{ tag.color || 'primary' }}-600">
+      {{ tag.description }}
+    </p>
+  </div>
+}
 
-<app-domain-view [domains]="domains" [showAddButton]="false" *ngIf="!loading" [preFilteredText]="'tagged with \''+ tagName+'\''"></app-domain-view>
-<p-progressSpinner *ngIf="loading"></p-progressSpinner>
+@if (!loading) {
+  <app-domain-view
+    [domains]="domains"
+    [showAddButton]="false"
+    [preFilteredText]="'tagged with \'' + tagName + '\''"
+  ></app-domain-view>
+}
+@if (loading) {
+  <p-progressSpinner></p-progressSpinner>
+}
 
-<p-dialog 
-    header="Edit Tag" 
-    [modal]="true"
-    [(visible)]="editDialogOpen" 
-    [style]="{ width: '50rem' }" 
-    [breakpoints]="{ '1199px': '75vw', '575px': '90vw' }" 
-    [maximizable]="true">
-    <app-tag-editor [tag]="tag" ($afterSave)="afterEditSave()"></app-tag-editor>
+<p-dialog
+  header="Edit Tag"
+  [modal]="true"
+  [(visible)]="editDialogOpen"
+  [style]="{ width: '50rem' }"
+  [breakpoints]="{ '1199px': '75vw', '575px': '90vw' }"
+  [maximizable]="true"
+>
+  <app-tag-editor [tag]="tag" ($afterSave)="afterEditSave()"></app-tag-editor>
 </p-dialog>
 
-<p-dialog 
-    header="Add Domains" 
-    [modal]="true"
-    [(visible)]="addDomainsDialogOpen" 
-    (onHide)="refreshDomainsAfterDialogClose()"
-    [style]="{ width: '50rem' }" 
-    [breakpoints]="{ '1199px': '75vw', '575px': '90vw' }" 
-    ($afterSave)="afterAddDomainsSave()"
-    [maximizable]="true">
-    @if (tag.id) {
-      <app-domain-tag-picklist [tagId]="tag.id" ($afterSave)="afterAddDomainsSave()" />
-    }
+<p-dialog
+  header="Add Domains"
+  [modal]="true"
+  [(visible)]="addDomainsDialogOpen"
+  (onHide)="refreshDomainsAfterDialogClose()"
+  [style]="{ width: '50rem' }"
+  [breakpoints]="{ '1199px': '75vw', '575px': '90vw' }"
+  ($afterSave)="afterAddDomainsSave()"
+  [maximizable]="true"
+>
+  @if (tag.id) {
+    <app-domain-tag-picklist [tagId]="tag.id" ($afterSave)="afterAddDomainsSave()" />
+  }
 </p-dialog>
-

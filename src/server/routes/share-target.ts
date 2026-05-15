@@ -16,8 +16,6 @@ function extractDomainFromUrl(url: string): string | null {
     const { hostname } = new URL(url);
     return hostname || null;
   } catch {
-    
     return null;
   }
 }
-

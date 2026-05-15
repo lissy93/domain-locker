@@ -1,90 +1,116 @@
 <div class="mx-auto">
   <!-- Billing Toggle -->
   <div class="flex justify-center my-4">
-    <p-selectButton 
-      [options]="billingCycleOptions" 
-      [(ngModel)]="isAnnual" 
-      optionLabel="label" 
+    <p-selectButton
+      [options]="billingCycleOptions"
+      [(ngModel)]="isAnnual"
+      optionLabel="label"
       optionValue="value"
     />
   </div>
 
   <!-- Pricing Cards -->
   <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
-    <div *ngFor="let plan of pricingPlans" class="p-card px-2 py-6 flex flex-col space-betweem gap-4"> 
-      <div class="flex flex-col items-center h-full gap-2">
-        <h2 class="text-2xl font-bold m-0 mb-2">{{ plan.title }}</h2>
-        <p class="text-5xl font-semibold text-primary-600 m-0">
-          ${{ getPrice(plan) }}<span class="text-lg font-medium text-gray-500">/mo</span>
-        </p>
-        <p class="text-gray-400 mb-4">{{ isAnnual ? 'Billed annually' : 'Billed monthly' }}</p>
-        
-        <ul class="text-surface-500 space-y-2 list-none m-0 p-0">
-          <li *ngFor="let feature of plan.features">
-            <i class="pi pi-check-circle mr-2 text-green-500"></i>{{ feature }}
-          </li>
-        </ul>
-      </div>  
-      <button pButton
-        routerLink="/settings/upgrade"
-        label="Get Started"
-        class="mx-4 p-button-primary {{ plan.suggested ? '' : 'p-button-outlined' }}"></button>
-    </div>
+    @for (plan of pricingPlans; track plan) {
+      <div class="p-card px-2 py-6 flex flex-col space-betweem gap-4">
+        <div class="flex flex-col items-center h-full gap-2">
+          <h2 class="text-2xl font-bold m-0 mb-2">{{ plan.title }}</h2>
+          <p class="text-5xl font-semibold text-primary-600 m-0">
+            ${{ getPrice(plan)
+            }}<span class="text-lg font-medium text-gray-500">/mo</span>
+          </p>
+          <p class="text-gray-400 mb-4">
+            {{ isAnnual ? 'Billed annually' : 'Billed monthly' }}
+          </p>
+          <ul class="text-surface-500 space-y-2 list-none m-0 p-0">
+            @for (feature of plan.features; track feature) {
+              <li><i class="pi pi-check-circle mr-2 text-green-500"></i>{{ feature }}</li>
+            }
+          </ul>
+        </div>
+        <button
+          pButton
+          routerLink="/settings/upgrade"
+          label="Get Started"
+          aria-label="Get started"
+          class="mx-4 p-button-primary {{ plan.suggested ? '' : 'p-button-outlined' }}"
+        ></button>
+      </div>
+    }
   </div>
 
   @if (showFullPricing) {
-  
     <!-- Self-Hosted -->
-    <div class="p-card px-2 py-6 mt-4"> 
+    <div class="p-card px-2 py-6 mt-4">
       <div class="flex flex-col items-center h-full gap-2">
         <h2 class="text-2xl font-bold m-0 mb-2">Self-Hosted</h2>
-        <p class="text-5xl font-semibold text-cyan-400 m-0">
-          Free
-        </p>
+        <p class="text-5xl font-semibold text-cyan-400 m-0">Free</p>
         <p class="text-surface-400 m-0 mb-2 italic">
-          Domain Locker is open source.
-          If you've got a server, you can host it yourself for free!
+          Domain Locker is open source. If you've got a server, you can host it yourself
+          for free!
         </p>
-        
+
         <div class="grid grid-cols-1 sm:grid-cols-2 max-w-[60rem] mx-2">
           <ul class="text-surface-500 space-y-2 list-none p-0 m-0">
-            <li *ngFor="let feature of selfHostedFeatures.features">
-              <i class="pi pi-check-circle mr-2 text-green-500"></i>{{ feature }}
-            </li>
+            @for (feature of selfHostedFeatures.features; track feature) {
+              <li><i class="pi pi-check-circle mr-2 text-green-500"></i>{{ feature }}</li>
+            }
           </ul>
           <ul class="text-surface-500 space-y-2 list-none p-0 m-0">
-            <li *ngFor="let feature of selfHostedFeatures.antiFeatures">
-              <i class="pi pi-info-circle mr-2 text-blue-500"></i>{{ feature }}
-            </li>
+            @for (feature of selfHostedFeatures.antiFeatures; track feature) {
+              <li><i class="pi pi-info-circle mr-2 text-blue-500"></i>{{ feature }}</li>
+            }
           </ul>
         </div>
       </div>
       <div class="mx-auto mt-4 mb-2 w-fit flex gap-2">
-        <a href="https://github.com/lissy93/domain-locker" target="_blank" rel="noopener noreferrer">
-          <button pButton label="Get the Code" class="p-button-primary bg-cyan-400 border-cyan-600" icon="pi pi-github"></button>
+        <a
+          href="https://github.com/lissy93/domain-locker"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <button
+            pButton
+            label="Get the Code"
+            aria-label="Get the code"
+            class="p-button-primary bg-cyan-400 border-cyan-600"
+            icon="pi pi-github"
+          ></button>
         </a>
-        <button pButton routerLink="/about/self-hosting" label="Read the Docs" class="p-button-outlined p-button-primary border-cyan-400 text-cyan-400" icon="pi pi-book"></button>
+        <button
+          pButton
+          routerLink="/about/self-hosting"
+          label="Read the Docs"
+          aria-label="Read the docs"
+          class="p-button-outlined p-button-primary border-cyan-400 text-cyan-400"
+          icon="pi pi-book"
+        ></button>
       </div>
-      
+
       <details class="max-w-[40rem] my-2 mx-auto opacity-70">
-        <summary class="text-center hover:text-cyan-400 cursor-pointer w-fit mx-auto">Important Info</summary>
+        <summary class="text-center hover:text-cyan-400 cursor-pointer w-fit mx-auto">
+          Important Info
+        </summary>
         <ul class="text-sm mb-2 p-0">
           <li>
             <strong class="font-semibold">Security:</strong>
-            It will be your responsibility to keep your server secure and up-to-date.
-            I take security very seriously, but the self-hosted edition has no warranty or guarantees.
+            It will be your responsibility to keep your server secure and up-to-date. I
+            take security very seriously, but the self-hosted edition has no warranty or
+            guarantees.
           </li>
           <li>
             <strong class="font-semibold">Features:</strong>
-            Currently some features, like email and push notifications are only available in the cloud version,
-            this is because they rely on non-free services to function.
-            I'm working on making these features available to self-hosted users in the future.
+            Currently some features, like email and push notifications are only available
+            in the cloud version, this is because they rely on non-free services to
+            function. I'm working on making these features available to self-hosted users
+            in the future.
           </li>
           <li>
             <strong class="font-semibold">Need help?</strong>
-            Due to limitations on my time, I'm unable to offer comprehensive support for self-hosted users.
-            But there is community support, priority support for sponsors, and if you need
-            additional help, we can offer a paid installation service to help you get up and running.
+            Due to limitations on my time, I'm unable to offer comprehensive support for
+            self-hosted users. But there is community support, priority support for
+            sponsors, and if you need additional help, we can offer a paid installation
+            service to help you get up and running.
           </li>
         </ul>
       </details>
@@ -95,118 +121,174 @@
       <div class="flex flex-col items-center h-full gap-2">
         <h2 class="text-2xl font-bold m-0 mb-2">Supporter Plan</h2>
 
-        <p class="text-5xl font-semibold text-pink-500 m-0">
-          Free*
-        </p>
+        <p class="text-5xl font-semibold text-pink-500 m-0">Free*</p>
         <span class="text-sm font-medium text-gray-500">*for sponsors</span>
-        
+
         <div class="max-w-[50rem] mx-2">
           <p class="m-0">
-            The development of Domain Locker was made possible by the support of our GitHub Sponsors 💖
+            The development of Domain Locker was made possible by the support of our
+            GitHub Sponsors 💖
           </p>
           <p class="m-0">
-            As a small thank you, all current and new sponsors get free access to all features in the Hobby plan,
-            as well as across our <a class="text-primary" href="https://as93.net" target="_blank">our other projects</a>.
-            You'll also get a special badge on your GitHub profile, and a shout out in our README and credits pages.
+            As a small thank you, all current and new sponsors get free access to all
+            features in the Hobby plan, as well as across our
+            <a class="text-primary" href="https://as93.net" target="_blank"
+              >our other projects</a
+            >. You'll also get a special badge on your GitHub profile, and a shout out in
+            our README and credits pages.
           </p>
           <p class="text-surface-500 text-sm">
-            After setting up a sponsorship, simply login with your GitHub account to claim your Hobby plan for free.
-            <br>
+            After setting up a sponsorship, simply login with your GitHub account to claim
+            your Hobby plan for free.
+            <br />
             Recommended donation: $10/mo.
           </p>
         </div>
         <div class="mx-auto mt-4 mb-0 w-fit flex gap-2">
-          <a href="https://github.com/sponsors/Lissy93" target="_blank" rel="noopener noreferrer">
-            <button pButton label="Sponsor" class="bg-pink-500 hover:bg-pink-300 border-pink-600 min-w-32" icon="pi pi-heart"></button>
+          <a
+            href="https://github.com/sponsors/Lissy93"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <button
+              pButton
+              label="Sponsor"
+              aria-label="Sponsor"
+              class="bg-pink-500 hover:bg-pink-300 border-pink-600 min-w-32"
+              icon="pi pi-heart"
+            ></button>
           </a>
-          <button pButton routerLink="/login" label="Login" class="p-button-outlined p-button-primary border-pink-400 text-pink-400 min-w-32" icon="pi pi-user"></button>
+          <button
+            pButton
+            routerLink="/login"
+            label="Login"
+            aria-label="Login"
+            class="p-button-outlined p-button-primary border-pink-400 text-pink-400 min-w-32"
+            icon="pi pi-user"
+          ></button>
         </div>
       </div>
     </div>
 
     <!-- Charities -->
     <div class="p-card px-2 py-4 mt-4">
-      <div
-        class="flex items-center justify-center align-center gap-2 cursor-pointer"
+      <button
+        type="button"
+        class="flex items-center justify-center align-center gap-2 cursor-pointer w-full bg-transparent border-none text-default"
+        [attr.aria-expanded]="showCharity"
         [pTooltip]="showCharity ? '' : 'Show Charity Options'"
-        (click)="showCharity = !showCharity">
-        <h2 class="text-2xl font-bold m-0">Charity {{ showCharity ? 'Plan' : 'Options' }}</h2>
-        <i [class]="showCharity ? 'pi pi-chevron-up' : 'pi pi-chevron-down'" class="text-lg"></i>
-      </div>
+        (click)="showCharity = !showCharity"
+      >
+        <h2 class="text-2xl font-bold m-0">
+          Charity {{ showCharity ? 'Plan' : 'Options' }}
+        </h2>
+        <i
+          [class]="showCharity ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
+          class="text-lg"
+        ></i>
+      </button>
 
-      <div *ngIf="showCharity" @slideDown class="flex flex-col items-center h-full gap-2 mt-4">
-        <p class="text-5xl font-semibold text-purple-500 m-0">
-          Free*
-        </p>
-        <span class="text-sm font-medium text-gray-500">*for registered charities, Churches and non-profits</span>
-        
-
-        <div class="max-w-[50rem] mx-2">
-          <p class="m-0">
-            Staying on top of your domain names is really important.
-            We don't think that cost should be a barrier to that, so we offer Domain Locker for free to users who are doing good in the world 💖
-          </p>
-          <p class="m-0">
-            Just get in contact below, and I'll sort you out with a free account with all the features of the Pro plan.
-          </p>
+      @if (showCharity) {
+        <div @slideDown class="flex flex-col items-center h-full gap-2 mt-4">
+          <p class="text-5xl font-semibold text-purple-500 m-0">Free*</p>
+          <span class="text-sm font-medium text-gray-500"
+            >*for registered charities, Churches and non-profits</span
+          >
+          <div class="max-w-[50rem] mx-2">
+            <p class="m-0">
+              Staying on top of your domain names is really important. We don't think that
+              cost should be a barrier to that, so we offer Domain Locker for free to
+              users who are doing good in the world 💖
+            </p>
+            <p class="m-0">
+              Just get in contact below, and I'll sort you out with a free account with
+              all the features of the Pro plan.
+            </p>
+          </div>
+          <a href="mailto:support@as93.net">
+            <button
+              pButton
+              label="Contact Us"
+              aria-label="Contact us"
+              class="mt-4 p-button-primary bg-purple-400 border-purple-700 w-fit"
+              icon="pi pi-heart-fill"
+            ></button>
+          </a>
         </div>
-        
-        <a href="mailto:support@as93.net">
-          <button pButton label="Contact Us" class=" mt-4 p-button-primary bg-purple-400 border-purple-700 w-fit" icon="pi pi-heart-fill"></button>
-        </a>
-        
-      </div>
+      }
     </div>
 
     <!-- Corporate -->
     <div class="p-card px-2 py-4 mt-4">
-      <div
-        class="flex items-center justify-center align-center gap-2 cursor-pointer"
+      <button
+        type="button"
+        class="flex items-center justify-center align-center gap-2 cursor-pointer w-full bg-transparent border-none text-default"
+        [attr.aria-expanded]="showEnterprise"
         [pTooltip]="showEnterprise ? '' : 'Show Enterprise Pricing Options'"
-        (click)="showEnterprise = !showEnterprise">
-        <h2 class="text-2xl font-bold m-0">Enterprise {{ showEnterprise ? 'Plan' : 'Options' }}</h2>
-        <i [class]="showEnterprise ? 'pi pi-chevron-up' : 'pi pi-chevron-down'" class="text-lg"></i>
-      </div>
+        (click)="showEnterprise = !showEnterprise"
+      >
+        <h2 class="text-2xl font-bold m-0">
+          Enterprise {{ showEnterprise ? 'Plan' : 'Options' }}
+        </h2>
+        <i
+          [class]="showEnterprise ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
+          class="text-lg"
+        ></i>
+      </button>
 
-      <div *ngIf="showEnterprise" @slideDown class="flex flex-col items-center h-full gap-2 mt-4">
-        <p class="text-5xl font-semibold text-orange-400 m-0">
-          ${{ getPrice(enterpriseFeatures) }}<span class="text-lg font-medium text-gray-500">/mo</span>
-        </p>
-        <p class="text-gray-400 mb-4">{{ isAnnual ? 'Billed annually' : 'Billed monthly' }}</p>
-        <ul class="text-surface-500 space-y-2 list-none p-0 m-0">
-          <li *ngFor="let feature of enterpriseFeatures.features">
-            <i class="pi pi-check-circle mr-2 text-green-500"></i>{{ feature }}
-          </li>
-        </ul>
-        <div class="mx-auto mt-4 mb-0 w-fit flex flex-col gap-2 items-center">
-          <a href="mailto:support@as93.net">
-            <button pButton label="Contact Us" class="p-button-primary bg-orange-400 border-orange-600 w-fit" icon="pi pi-phone"></button>
-          </a>
-          <p class="m-0 max-w-96 text-surface-400">
-            Need a custom plan? Contact us to discuss your requirements, and we'll tailor a plan to suit your needs at a competitive price.
+      @if (showEnterprise) {
+        <div @slideDown class="flex flex-col items-center h-full gap-2 mt-4">
+          <p class="text-5xl font-semibold text-orange-400 m-0">
+            ${{ getPrice(enterpriseFeatures)
+            }}<span class="text-lg font-medium text-gray-500">/mo</span>
           </p>
+          <p class="text-gray-400 mb-4">
+            {{ isAnnual ? 'Billed annually' : 'Billed monthly' }}
+          </p>
+          <ul class="text-surface-500 space-y-2 list-none p-0 m-0">
+            @for (feature of enterpriseFeatures.features; track feature) {
+              <li><i class="pi pi-check-circle mr-2 text-green-500"></i>{{ feature }}</li>
+            }
+          </ul>
+          <div class="mx-auto mt-4 mb-0 w-fit flex flex-col gap-2 items-center">
+            <a href="mailto:support@as93.net">
+              <button
+                pButton
+                label="Contact Us"
+                aria-label="Contact us"
+                class="p-button-primary bg-orange-400 border-orange-600 w-fit"
+                icon="pi pi-phone"
+              ></button>
+            </a>
+            <p class="m-0 max-w-96 text-surface-400">
+              Need a custom plan? Contact us to discuss your requirements, and we'll
+              tailor a plan to suit your needs at a competitive price.
+            </p>
+          </div>
         </div>
+      }
+    </div>
+  } @else {
+    <div class="p-card px-2 py-4 mt-4">
+      <h3 class="ml-4">More Pricing Options</h3>
+      <div class="flex items-center justify-between flex-wrap sm:flex-nowrap gap-4">
+        <p class="m-0 ml-4 opacity-90">
+          We offer special pricing for charities, non-profits, and GitHub sponsors, as
+          well as custom plans for enterprise customers.
+          <br />
+          Self-hosting Domain Locker on your own infrastructure is free, and you can get
+          the code on GitHub.
+        </p>
+        <p-button
+          routerLink="/about/pricing"
+          label="See Pricing"
+          class="mx-4 p-button-primary"
+          icon="pi pi-arrow-circle-right"
+          styleClass="w-[12rem]"
+          [outlined]="true"
+        >
+        </p-button>
       </div>
     </div>
-} @else {
-  <div class="p-card px-2 py-4 mt-4">
-    <h3 class="ml-4">More Pricing Options</h3>
-    <div class="flex items-center justify-between flex-wrap sm:flex-nowrap gap-4">
-      <p class="m-0 ml-4 opacity-90">
-        We offer special pricing for charities, non-profits, and GitHub sponsors, as well as custom plans for enterprise customers.
-        <br>
-        Self-hosting Domain Locker on your own infrastructure is free, and you can get the code on GitHub.
-      </p>
-      <p-button
-        routerLink="/about/pricing"
-        label="See Pricing"
-        class="mx-4 p-button-primary"
-        icon="pi pi-arrow-circle-right"
-        styleClass="w-[12rem]"
-        [outlined]="true"
-        >
-      </p-button>
-    </div>
-  </div>
-}
+  }
 </div>

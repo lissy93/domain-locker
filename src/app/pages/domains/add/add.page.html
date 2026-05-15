@@ -6,266 +6,405 @@
       : {{ initialDomain }}
     }
   </h2>
-  <p-steps [model]="[{label: 'Domain Name'}, {label: 'Domain Details'}, {label: 'Notifications'}, {label: 'Confirm'}]" [activeIndex]="activeIndex"></p-steps>
+  <p-steps
+    [model]="[
+      { label: 'Domain Name' },
+      { label: 'Domain Details' },
+      { label: 'Notifications' },
+      { label: 'Confirm' },
+    ]"
+    [activeIndex]="activeIndex"
+  ></p-steps>
 
-  <p-message *ngIf="errorMessage" severity="error" [text]="errorMessage"></p-message>
+  @if (errorMessage) {
+    <p-message severity="error" [text]="errorMessage"></p-message>
+  }
 
-  <form [formGroup]="domainForm" (ngSubmit)="onSubmit()" (keydown.enter)="onEnterKey($event)">
+  <form
+    [formGroup]="domainForm"
+    (ngSubmit)="onSubmit()"
+    (keydown.enter)="onEnterKey($event)"
+  >
     <p-card>
-      <ng-container [ngSwitch]="activeIndex">
+      @switch (activeIndex) {
         <!-- Step 1: Domain Name -->
-        <div *ngSwitchCase="0">
-          <div class="field">
-            <label for="domainName">
-              Domain Name
-              <small>Enter the domain name you want to track</small>
-            </label>
-            <div class="input-wrap">
-              <input pInputText
-                id="domainName"
-                type="text"
-                formControlName="domainName"
-                aria-describedby="Input field for domain name to add"
-              >
-              <small class="p-error" *ngIf="domainForm.get('domainName')?.invalid && domainForm.get('domainName')?.touched">
-                {{ getDomainErrorMessage() || 'Please enter a valid domain name.' }}
-              </small>
-              <small class="p-success text-green-400" *ngIf="!domainForm.get('domainName')?.invalid && domainForm.get('domainName')?.touched">
-                Looks good! Click Next to continue.
-              </small>
+        @case (0) {
+          <div>
+            <div class="field">
+              <label for="domainName">
+                Domain Name
+                <small>Enter the domain name you want to track</small>
+              </label>
+              <div class="input-wrap">
+                <input
+                  pInputText
+                  id="domainName"
+                  type="text"
+                  formControlName="domainName"
+                  aria-describedby="Input field for domain name to add"
+                />
+                @if (
+                  domainForm.get('domainName')?.invalid &&
+                  domainForm.get('domainName')?.touched
+                ) {
+                  <small class="p-error">
+                    {{ getDomainErrorMessage() || 'Please enter a valid domain name.' }}
+                  </small>
+                }
+                @if (
+                  !domainForm.get('domainName')?.invalid &&
+                  domainForm.get('domainName')?.touched
+                ) {
+                  <small class="p-success text-green-400">
+                    Looks good! Click Next to continue.
+                  </small>
+                }
+              </div>
+            </div>
+            <div class="button-wrap">
+              <div class="flex flex-col fit-content w-fit">
+                <p class="m-0 text-xs">Looking to import many domains?</p>
+                <a
+                  pButton
+                  routerLink="/domains/add/bulk-add"
+                  label="Bulk Add"
+                  class="p-button-link text-xs w-fit p-1 mt-1 no-underline"
+                  icon="pi pi-file-import"
+                  [outlined]="true"
+                  [text]="true"
+                  severity="secondary"
+                >
+                </a>
+              </div>
+              <button
+                pButton
+                type="button"
+                label="Next"
+                aria-label="Next"
+                (click)="onNextStep()"
+                [disabled]="domainForm.get('domainName')?.invalid"
+                [loading]="isLoading"
+              ></button>
             </div>
           </div>
-          <div class="button-wrap">
-            <div class="flex flex-col fit-content w-fit">
-              <p class="m-0 text-xs">Looking to import many domains?</p>
-              <a pButton
-                routerLink="/domains/add/bulk-add"
-                label="Bulk Add"
-                class="p-button-link text-xs w-fit p-1 mt-1 no-underline"
-                icon="pi pi-file-import"
-                [outlined]="true"
-                [text]="true"
-                severity="secondary">
-            </a>
-            </div>
-            <button pButton
-              type="button"
-              label="Next"
-              (click)="onNextStep()"
-              [disabled]="domainForm.get('domainName')?.invalid"
-              [loading]="isLoading"></button>
-          </div>
-        </div>
-
+        }
         <!-- Step 2: Domain Details -->
-        <div *ngSwitchCase="1" class="space-y-4">
-          <p-message
-            *ngIf="incompleteDomainInfo"
-            severity="warn"
-            text="We were unable to auto-fetch some info. Please complete the registrar and scheduled expiry date manually."
-            styleClass="w-full mb-4"
-          />
-          <div class="field">
-            <label for="registrar">
-              Registrar
-              <small>The company that the domain was registered with</small>
-            </label>
-            <div class="input-wrap">
-              <p-autoComplete
-                *ngIf="!registrarLoadFailed"
-                id="registrar"
-                formControlName="registrar"
-                [suggestions]="filteredRegistrars"
-                (completeMethod)="filterRegistrars($event)"
-                [dropdown]="true"
-                [forceSelection]="false"
-                placeholder="Select or type registrar name..."
-                styleClass="w-full"
-                [inputStyle]="{'width':'100%'}"
-              ></p-autoComplete>
-              <input
-                *ngIf="registrarLoadFailed"
-                id="registrar"
-                type="text"
-                pInputText
-                formControlName="registrar"
-                class="w-full"
-                placeholder="Enter registrar name"
-              >
+        @case (1) {
+          <div class="space-y-4">
+            @if (incompleteDomainInfo) {
+              <p-message
+                severity="warn"
+                text="We were unable to auto-fetch some info. Please complete the registrar and scheduled expiry date manually."
+                styleClass="w-full mb-4"
+              />
+            }
+            <div class="field">
+              <label for="registrar">
+                Registrar
+                <small>The company that the domain was registered with</small>
+              </label>
+              <div class="input-wrap">
+                @if (!registrarLoadFailed) {
+                  <p-autoComplete
+                    id="registrar"
+                    formControlName="registrar"
+                    [suggestions]="filteredRegistrars"
+                    (completeMethod)="filterRegistrars($event)"
+                    [dropdown]="true"
+                    [forceSelection]="false"
+                    placeholder="Select or type registrar name..."
+                    styleClass="w-full"
+                    [inputStyle]="{ width: '100%' }"
+                  ></p-autoComplete>
+                }
+                @if (registrarLoadFailed) {
+                  <input
+                    id="registrar"
+                    type="text"
+                    pInputText
+                    formControlName="registrar"
+                    class="w-full"
+                    placeholder="Enter registrar name"
+                  />
+                }
+              </div>
             </div>
-          </div>
-          <div class="field">
-            <label for="expiryDate">
-              Expiry Date
-              <small>This is the date when the domain must be renewed by</small>
-            </label>
-            <div class="input-wrap">
-              <p-calendar id="expiryDate" formControlName="expiryDate" [inputStyle]="{'width':'100%'}"></p-calendar>
+            <div class="field">
+              <label for="expiryDate">
+                Expiry Date
+                <small>This is the date when the domain must be renewed by</small>
+              </label>
+              <div class="input-wrap">
+                <p-calendar
+                  id="expiryDate"
+                  formControlName="expiryDate"
+                  [inputStyle]="{ width: '100%' }"
+                ></p-calendar>
+              </div>
             </div>
-          </div>
-          <div class="field">
-            <label for="tags">
-              Tags
-              <small>Comma separated list of tags to categorise the domain</small>
-            </label>
-            <div class="input-wrap">
-              <p-chips id="tags" formControlName="tags" separator="," [addOnBlur]="true"></p-chips>
-              <small class="p-error" *ngIf="domainForm.get('tags')?.errors">{{ getTagsErrorMessage() }}</small>
+            <div class="field">
+              <label for="tags">
+                Tags
+                <small>Comma separated list of tags to categorise the domain</small>
+              </label>
+              <div class="input-wrap">
+                <p-chips
+                  id="tags"
+                  formControlName="tags"
+                  separator=","
+                  [addOnBlur]="true"
+                ></p-chips>
+                @if (domainForm.get('tags')?.errors) {
+                  <small class="p-error">{{ getTagsErrorMessage() }}</small>
+                }
+              </div>
             </div>
-          </div>
-
-          <div class="field">
-            <label for="notes">
-              Notes
-              <small>Any additional notes you want to add</small>
-            </label>
-            <div class="input-wrap">
-              <textarea
-                id="notes"
-                rows="3"
-                pInputTextarea
-                [autoResize]="true"
-                formControlName="notes"
-                class="w-full"
-                maxlength="255"></textarea>
-              <small class="p-error" *ngIf="domainForm.get('notes')?.errors">{{ getNotesErrorMessage() }}</small>
+            <div class="field">
+              <label for="notes">
+                Notes
+                <small>Any additional notes you want to add</small>
+              </label>
+              <div class="input-wrap">
+                <textarea
+                  id="notes"
+                  rows="3"
+                  pInputTextarea
+                  [autoResize]="true"
+                  formControlName="notes"
+                  class="w-full"
+                  maxlength="255"
+                ></textarea>
+                @if (domainForm.get('notes')?.errors) {
+                  <small class="p-error">{{ getNotesErrorMessage() }}</small>
+                }
+              </div>
             </div>
-          </div>
-
-          <div class="field">
-            <label for="subdomains">Subdomains</label>
-            <div class="input-wrap">
-              <p-chips id="subdomains" formControlName="subdomains" separator="," [addOnBlur]="true" class="w-full"></p-chips>
+            <div class="field">
+              <label for="subdomains">Subdomains</label>
+              <div class="input-wrap">
+                <p-chips
+                  id="subdomains"
+                  formControlName="subdomains"
+                  separator=","
+                  [addOnBlur]="true"
+                  class="w-full"
+                ></p-chips>
+              </div>
             </div>
-          </div>
-
-          <p-inplace>
-            <ng-template pTemplate="display">
-              <div class="inline-flex items-center my-4">
+            <p-inplace>
+              <ng-template pTemplate="display">
+                <div class="inline-flex items-center my-4">
                   <span class="pi pi-paperclip align-middle"></span>
                   <span class="ml-2">View Domain Data</span>
-              </div>
-            </ng-template>
-            <ng-template pTemplate="content">
-              <div class="p-2 rounded-sm p-0.5 mb-4" style="background: var(--surface-100);">
-                <h3 class="text-lg font-semibold m-0 mb-4">Domain Information</h3>
-                <p-table
-                  [value]="tableData"
-                  styleClass="p-datatable-sm p-datatable-gridlines w-full"
-                  [tableStyle]="{'table-layout': 'fixed'}"
-                  scrollHeight="400px"
+                </div>
+              </ng-template>
+              <ng-template pTemplate="content">
+                <div
+                  class="p-2 rounded-sm p-0.5 mb-4"
+                  style="background: var(--surface-100)"
                 >
-                  <ng-template pTemplate="header">
-                    <tr>
-                      <th class="w-1/3 p-2 font-semibold text-sm">Property</th>
-                      <th class="w-2/3 p-2 font-semibold text-sm">Value</th>
-                    </tr>
-                  </ng-template>
-                  <ng-template pTemplate="body" let-item>
-                    <tr>
-                      <td class="w-1/3 p-2 font-medium break-words bg-transparent text-sm">{{item.key}}</td>
-                      <td class="w-2/3 p-2 break-words bg-transparent text-sm">{{item.value}}</td>
-                    </tr>
-                  </ng-template>
-                </p-table>
+                  <h3 class="text-lg font-semibold m-0 mb-4">Domain Information</h3>
+                  <p-table
+                    [value]="tableData"
+                    styleClass="p-datatable-sm p-datatable-gridlines w-full"
+                    [tableStyle]="{ 'table-layout': 'fixed' }"
+                    scrollHeight="400px"
+                  >
+                    <ng-template pTemplate="header">
+                      <tr>
+                        <th class="w-1/3 p-2 font-semibold text-sm">Property</th>
+                        <th class="w-2/3 p-2 font-semibold text-sm">Value</th>
+                      </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-item>
+                      <tr>
+                        <td
+                          class="w-1/3 p-2 font-medium break-words bg-transparent text-sm"
+                        >
+                          {{ item.key }}
+                        </td>
+                        <td class="w-2/3 p-2 break-words bg-transparent text-sm">
+                          {{ item.value }}
+                        </td>
+                      </tr>
+                    </ng-template>
+                  </p-table>
+                </div>
+              </ng-template>
+            </p-inplace>
+            <div class="button-wrap">
+              <button
+                pButton
+                type="button"
+                label="Previous"
+                aria-label="Previous"
+                (click)="onPreviousStep()"
+                class="p-button-secondary"
+              ></button>
+              <button
+                pButton
+                type="button"
+                label="Next"
+                aria-label="Next"
+                (click)="onNextStep()"
+                [disabled]="domainForm.invalid"
+              ></button>
             </div>
-            </ng-template>
-          </p-inplace>
-
-          <div class="button-wrap">
-            <button pButton type="button" label="Previous" (click)="onPreviousStep()" class="p-button-secondary"></button>
-            <button pButton type="button" label="Next" (click)="onNextStep()" [disabled]="domainForm.invalid"></button>
           </div>
-        </div>
-
+        }
         <!-- Step 3: Notifications -->
-        <div *ngSwitchCase="2">
-          <h3>Setup Notifications</h3>
-          <p class="mb-4 opacity-70 text-sm">
-            Choose the notifications you want to receive for this domain. You can always change these settings later.
-          </p>
-          <div formGroupName="notifications">
-            <div *ngFor="let option of notificationOptions" class="field">
-              <label [for]="option.key">
-                {{ option.label || option.key }}
-                <small>{{ option.description }}</small>
-                <small *ngIf="option.note" class="text-yellow-500">{{ option.note }}</small>
-              </label>
-              <div class="input-wrap flex justify-end">
-                <p-inputSwitch [formControlName]="option.key"></p-inputSwitch>
-              </div>
+        @case (2) {
+          <div>
+            <h3>Setup Notifications</h3>
+            <p class="mb-4 opacity-70 text-sm">
+              Choose the notifications you want to receive for this domain. You can always
+              change these settings later.
+            </p>
+            <div formGroupName="notifications">
+              @for (option of notificationOptions; track option) {
+                <div class="field">
+                  <label [for]="option.key">
+                    {{ option.label || option.key }}
+                    <small>{{ option.description }}</small>
+                    @if (option.note) {
+                      <small class="text-yellow-500">{{ option.note }}</small>
+                    }
+                  </label>
+                  <div class="input-wrap flex justify-end">
+                    <p-inputSwitch [formControlName]="option.key"></p-inputSwitch>
+                  </div>
+                </div>
+              }
+            </div>
+            <div class="button-wrap">
+              <button
+                pButton
+                type="button"
+                label="Previous"
+                aria-label="Previous"
+                (click)="onPreviousStep()"
+                class="p-button-secondary"
+              ></button>
+              <button
+                pButton
+                type="button"
+                label="Next"
+                aria-label="Next"
+                (click)="onNextStep()"
+              ></button>
             </div>
           </div>
-
-          <div class="button-wrap">
-            <button pButton type="button" label="Previous" (click)="onPreviousStep()" class="p-button-secondary"></button>
-            <button pButton type="button" label="Next" (click)="onNextStep()"></button>
-          </div>
-        </div>
-
+        }
         <!-- Step 4: Confirm -->
         <!-- Step 4: Confirm -->
-        <div *ngSwitchCase="3" class="space-y-6">
-          <h3 class="text-2xl font-semibold">Confirm & Save</h3>
-          <div class="flex justify-center items-center flex-col mt-0">
-            <p class="mb-2 mt-0 text-lg">
-              {{ domainForm.get('domainName')?.value }} is ready to add!
-            </p>
-          </div>
-
-          <p-accordion [multiple]="true" styleClass="w-full">
-            <p-accordionTab header="Review Domain Details">
-              <div class="grid grid-cols-2 gap-2 md:grid-cols-1 sm:grid-cols-1">
+        @case (3) {
+          <div class="space-y-6">
+            <h3 class="text-2xl font-semibold">Confirm & Save</h3>
+            <div class="flex justify-center items-center flex-col mt-0">
+              <p class="mb-2 mt-0 text-lg">
+                {{ domainForm.get('domainName')?.value }} is ready to add!
+              </p>
+            </div>
+            <p-accordion [multiple]="true" styleClass="w-full">
+              <p-accordionTab header="Review Domain Details">
+                <div class="grid grid-cols-2 gap-2 md:grid-cols-1 sm:grid-cols-1">
+                  <div>
+                    <p class="text-sm text-neutral-500 dark:text-neutral-400">
+                      Domain Name
+                    </p>
+                    <p class="text-lg m-2 font-medium">
+                      {{ domainForm.get('domainName')?.value }}
+                    </p>
+                  </div>
+                  @if (domainForm.get('registrar')?.value) {
+                    <div>
+                      <p class="text-sm text-neutral-500 dark:text-neutral-400">
+                        Registrar
+                      </p>
+                      <p class="text-lg m-2 font-medium">
+                        {{ domainForm.get('registrar')?.value }}
+                      </p>
+                    </div>
+                  }
+                  @if (domainForm.get('expiryDate')?.value) {
+                    <div>
+                      <p class="text-sm text-neutral-500 dark:text-neutral-400">
+                        Expiry Date
+                      </p>
+                      <p class="text-lg m-2 font-medium">
+                        {{ domainForm.get('expiryDate')?.value | date: 'mediumDate' }}
+                      </p>
+                    </div>
+                  }
+                </div>
+                @if (domainForm.get('tags')?.value?.length) {
+                  <div>
+                    <p class="text-sm text-neutral-500 dark:text-neutral-400 mb-2">
+                      Tags
+                    </p>
+                    <div class="flex flex-wrap gap-2">
+                      @for (tag of domainForm.get('tags')?.value; track tag) {
+                        <span
+                          class="px-3 py-1 rounded-full text-sm"
+                          style="background: var(--surface-0)"
+                        >
+                          {{ tag }}
+                        </span>
+                      }
+                    </div>
+                  </div>
+                }
+                @if (domainForm.get('notes')?.value) {
+                  <div>
+                    <p class="text-sm text-neutral-500 dark:text-neutral-400 mb-2">
+                      Notes
+                    </p>
+                    <p class="text-base p-3 rounded" style="background: var(--surface-0)">
+                      {{ domainForm.get('notes')?.value }}
+                    </p>
+                  </div>
+                }
                 <div>
-                  <p class="text-sm text-neutral-500 dark:text-neutral-400">Domain Name</p>
-                  <p class="text-lg m-2 font-medium">{{ domainForm.get('domainName')?.value }}</p>
+                  <p class="text-sm text-neutral-500 dark:text-neutral-400 mb-2">
+                    Notifications
+                  </p>
+                  <ul class="list-disc list-inside space-y-1 m-2">
+                    @for (option of notificationOptions; track option) {
+                      @if (domainForm.get('notifications')?.get(option.key)?.value) {
+                        <li>
+                          {{ option.label }}
+                        </li>
+                      }
+                    }
+                  </ul>
+                  @if (!hasEnabledNotifications()) {
+                    <p class="text-neutral-500 dark:text-neutral-400 italic">
+                      No notifications enabled
+                    </p>
+                  }
                 </div>
-                <div *ngIf="domainForm.get('registrar')?.value">
-                  <p class="text-sm text-neutral-500 dark:text-neutral-400">Registrar</p>
-                  <p class="text-lg m-2 font-medium">{{ domainForm.get('registrar')?.value }}</p>
-                </div>
-                <div *ngIf="domainForm.get('expiryDate')?.value">
-                  <p class="text-sm text-neutral-500 dark:text-neutral-400">Expiry Date</p>
-                  <p class="text-lg m-2 font-medium">{{ domainForm.get('expiryDate')?.value | date:'mediumDate' }}</p>
-                </div>
-              </div>
-
-              <div *ngIf="domainForm.get('tags')?.value?.length">
-                <p class="text-sm text-neutral-500 dark:text-neutral-400 mb-2">Tags</p>
-                <div class="flex flex-wrap gap-2">
-                  <span *ngFor="let tag of domainForm.get('tags')?.value" class="px-3 py-1 rounded-full text-sm" style="background: var(--surface-0);">
-                    {{ tag }}
-                  </span>
-                </div>
-              </div>
-
-              <div *ngIf="domainForm.get('notes')?.value">
-                <p class="text-sm text-neutral-500 dark:text-neutral-400 mb-2">Notes</p>
-                <p class="text-base p-3 rounded" style="background: var(--surface-0);">{{ domainForm.get('notes')?.value }}</p>
-              </div>
-
-              <div>
-                <p class="text-sm text-neutral-500 dark:text-neutral-400 mb-2">Notifications</p>
-                <ul class="list-disc list-inside space-y-1 m-2">
-                  <ng-container *ngFor="let option of notificationOptions">
-                    <li *ngIf="domainForm.get('notifications')?.get(option.key)?.value">
-                      {{ option.label }}
-                    </li>
-                  </ng-container>
-                </ul>
-                <p *ngIf="!hasEnabledNotifications()" class="text-neutral-500 dark:text-neutral-400 italic">
-                  No notifications enabled
-                </p>
-              </div>
-            </p-accordionTab>
-          </p-accordion>
-
-          <div class="flex justify-between items-center mt-6">
-            <button pButton type="button" label="Previous" (click)="onPreviousStep()" class="p-button-secondary"></button>
-            <p-splitButton label="Save" (onClick)="onSubmit()" [model]="saveOptions" styleClass="p-button-primary" icon="pi pi-save"></p-splitButton>
+              </p-accordionTab>
+            </p-accordion>
+            <div class="flex justify-between items-center mt-6">
+              <button
+                pButton
+                type="button"
+                label="Previous"
+                aria-label="Previous"
+                (click)="onPreviousStep()"
+                class="p-button-secondary"
+              ></button>
+              <p-splitButton
+                label="Save"
+                (onClick)="onSubmit()"
+                [model]="saveOptions"
+                styleClass="p-button-primary"
+                icon="pi pi-save"
+              ></p-splitButton>
+            </div>
           </div>
-        </div>
-      </ng-container>
+        }
+      }
     </p-card>
   </form>
 </div>

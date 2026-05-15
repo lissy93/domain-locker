@@ -1,5 +1,13 @@
-import { ChangeDetectorRef, Component, Inject, OnInit, OnDestroy, PLATFORM_ID, NgZone } from '@angular/core';
-import { CommonModule, isPlatformBrowser } from '@angular/common';
+import {
+  ChangeDetectorRef,
+  Component,
+  OnInit,
+  OnDestroy,
+  PLATFORM_ID,
+  NgZone,
+  inject,
+} from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { PrimeNgModule } from '../prime-ng.module';
 import DatabaseService from '~/app/services/database.service';
@@ -34,8 +42,8 @@ import { Router } from '@angular/router';
 
 @Component({
   standalone: true,
+  selector: 'app-home-page',
   imports: [
-    CommonModule,
     PrimeNgModule,
     AssetListComponent,
     DomainCollectionComponent,
@@ -60,32 +68,36 @@ import { Router } from '@angular/router';
     AboutLinks,
   ],
   templateUrl: './home.page.html',
-  styles: [`
-  ::ng-deep .p-divider-content { border-radius: 4px; }
-  ::ng-deep .gantt-domain-name { background: var(--surface-50) !important; }
-  `],
+  styles: [
+    `
+      ::ng-deep .p-divider-content {
+        border-radius: 4px;
+      }
+      ::ng-deep .gantt-domain-name {
+        background: var(--surface-50) !important;
+      }
+    `,
+  ],
 })
 export default class HomePageComponent implements OnInit, OnDestroy {
+  private databaseService = inject(DatabaseService);
+  supabaseService = inject(SupabaseService);
+  private environmentService = inject(EnvService);
+  private errorHandlerService = inject(ErrorHandlerService);
+  private router = inject(Router);
+  private cdr = inject(ChangeDetectorRef);
+  private ngZone = inject(NgZone);
+  private http = inject(HttpClient);
+  private platformId = inject<object>(PLATFORM_ID);
+
   domains: DbDomain[] = [];
-  loading: boolean = true;
-  isAuthenticated: boolean = false;
-  isDemoInstance: boolean = false;
-  isDevInstance: boolean = false;
-  showInsights: boolean = false;
+  loading = true;
+  isAuthenticated = false;
+  isDemoInstance = false;
+  isDevInstance = false;
+  showInsights = false;
 
   private subscriptions: Subscription = new Subscription();
-
-  constructor(
-    private databaseService: DatabaseService,
-    public supabaseService: SupabaseService,
-    private environmentService: EnvService,
-    private errorHandlerService: ErrorHandlerService,
-    private router: Router,
-    private cdr: ChangeDetectorRef,
-    private ngZone: NgZone,
-    private http: HttpClient,
-    @Inject(PLATFORM_ID) private platformId: Object,
-  ) {}
 
   ngOnInit() {
     this.setAuthState(); // Set auth state, and listen for changes
@@ -104,9 +116,9 @@ export default class HomePageComponent implements OnInit, OnDestroy {
     }
     this.isAuthenticated = await this.supabaseService.isAuthenticated();
     this.subscriptions.add(
-      this.supabaseService.authState$.subscribe(isAuthenticated => {
+      this.supabaseService.authState$.subscribe((isAuthenticated) => {
         this.isAuthenticated = isAuthenticated;
-      })
+      }),
     );
   }
 
@@ -125,12 +137,12 @@ export default class HomePageComponent implements OnInit, OnDestroy {
             message: 'Failed to load domains',
             error,
             showToast: true,
-            location: 'HomePageComponent.loadDomains'
+            location: 'HomePageComponent.loadDomains',
           });
           this.loading = false;
           this.cdr.markForCheck();
-        }
-      })
+        },
+      }),
     );
   }
 
@@ -161,7 +173,9 @@ export default class HomePageComponent implements OnInit, OnDestroy {
     }
     // Show dev banner if user is locally running the app using public dev supabase
     if (this.environmentService.getEnvironmentType() === 'dev') {
-      if ((this.environmentService.getSupabaseUrl() || '').includes('admdzkssuivrztrvzinh')) {
+      if (
+        (this.environmentService.getSupabaseUrl() || '').includes('admdzkssuivrztrvzinh')
+      ) {
         this.isDevInstance = true;
       }
     }
@@ -184,7 +198,8 @@ export default class HomePageComponent implements OnInit, OnDestroy {
     const now = Date.now();
     if (lastTrigger) {
       const timeSinceLastTrigger = now - parseInt(lastTrigger, 10);
-      if (timeSinceLastTrigger < (24 * 60 * 60 * 1000)) { // Less than 24 hours ago
+      if (timeSinceLastTrigger < 24 * 60 * 60 * 1000) {
+        // Less than 24 hours ago
         return;
       }
     }
@@ -196,10 +211,14 @@ export default class HomePageComponent implements OnInit, OnDestroy {
     try {
       // Make POST request (AuthInterceptor will add Bearer token automatically)
       await lastValueFrom(
-        this.http.post(endpoint, {}, {
-          observe: 'response',
-          responseType: 'text'
-        })
+        this.http.post(
+          endpoint,
+          {},
+          {
+            observe: 'response',
+            responseType: 'text',
+          },
+        ),
       );
 
       // Update last trigger timestamp on success
@@ -210,7 +229,7 @@ export default class HomePageComponent implements OnInit, OnDestroy {
         message: 'Failed to trigger background domain update',
         error,
         showToast: false,
-        location: 'HomePageComponent.triggerBackgroundUpdate'
+        location: 'HomePageComponent.triggerBackgroundUpdate',
       });
     }
   }

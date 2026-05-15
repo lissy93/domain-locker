@@ -1,4 +1,13 @@
-import { Component, OnInit, ViewChild, ElementRef, PLATFORM_ID, Inject } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  ViewChild,
+  ElementRef,
+  PLATFORM_ID,
+  inject,
+  AfterViewInit,
+  OnDestroy,
+} from '@angular/core';
 import { Router, RouterOutlet } from '@angular/router';
 import { PrimeNgModule } from '~/app/prime-ng.module';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
@@ -12,10 +21,23 @@ import DatabaseService from '~/app/services/database.service';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, RouterOutlet, PrimeNgModule, ProfilePictureComponent, FeatureNotEnabledComponent],
+  selector: 'app-settings-layout-page',
+  imports: [
+    CommonModule,
+    RouterOutlet,
+    PrimeNgModule,
+    ProfilePictureComponent,
+    FeatureNotEnabledComponent,
+  ],
   templateUrl: './settings/index.page.html',
 })
-export default class SettingsIndexPage implements OnInit {
+export default class SettingsIndexPage implements OnInit, AfterViewInit, OnDestroy {
+  private router = inject(Router);
+  private featureService = inject(FeatureService);
+  supabaseService = inject(SupabaseService);
+  databaseService = inject(DatabaseService);
+  private platformId = inject<object>(PLATFORM_ID);
+
   items: MenuItem[] | undefined;
   hideSideBar = false;
   @ViewChild('sidebarNav', { static: false }) sidebarNav!: ElementRef;
@@ -23,14 +45,6 @@ export default class SettingsIndexPage implements OnInit {
 
   databaseServiceType = '';
   settingsEnabled$ = this.featureService.isFeatureEnabled('accountSettings');
-
-  constructor(
-    private router: Router,
-    private featureService: FeatureService,
-    public supabaseService: SupabaseService,
-    public databaseService: DatabaseService,
-    @Inject(PLATFORM_ID) private platformId: Object,
-  ) {}
 
   ngOnInit() {
     this.items = settingsLinks;
@@ -57,7 +71,7 @@ export default class SettingsIndexPage implements OnInit {
     }
   }
 
-  ngOnDestroy() { 
+  ngOnDestroy() {
     if (isPlatformBrowser(this.platformId)) {
       window.removeEventListener('resize', this.checkWindowSize.bind(this));
     }

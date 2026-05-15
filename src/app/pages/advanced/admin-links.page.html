@@ -1,34 +1,47 @@
-
 <!-- About, info and warning message -->
 <details class="mt-1 opacity-70">
-  <summary class="text-primary cursor-pointer text-sm font-semibold ml-3">About this Page</summary>
-  <blockquote class="border-solid border-0 border-l-4 border-primary-300 m-0 pl-2 my-2 flex flex-col gap-2">
-    <span *ngFor="let detail of details" class="-indent-7 ml-5">{{ detail }}</span>
+  <summary class="text-primary cursor-pointer text-sm font-semibold ml-3">
+    About this Page
+  </summary>
+  <blockquote
+    class="border-solid border-0 border-l-4 border-primary-300 m-0 pl-2 my-2 flex flex-col gap-2"
+  >
+    @for (detail of details; track detail) {
+      <span class="-indent-7 ml-5">{{ detail }}</span>
+    }
   </blockquote>
 </details>
 
 <!-- For each section of links -->
-<div *ngFor="let section of sections; last as isLast">
-  <h2 class="mt-4 mb-2" [id]="section.id">{{ section.title }}</h2>
-  <p class="mt-0 opacity-70 italic text-lg">
-    {{ section.description}}
-  </p>
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
-    <!-- Link block for each link within section -->
-    <a
-      *ngFor="let link of section.links"
-      [href]="link.url" target="_blank" rel="noopener noreferrer"
-      class="p-card px-3 py-2 flex flex-col gap-2 no-underline transition ease-in duration-300 border-transparent border-3 hover:border-primary-300 h-full">
-      <div class="flex justify-between items-center flex-wrap">
-        <h3 class="m-0">{{ link.purpose }}</h3>
-        <span class="flex items-center gap-2 text-sm text-gray-500">
-          {{ link.provider }}
-          <app-domain-favicon [domain]="link.upstreamSite || link.url" />
-        </span>
-      </div>
-      <p class="m-0 italic opacity-80">{{ link.description }}</p>
-    </a>
+@for (section of sections; track section; let isLast = $last) {
+  <div>
+    <h2 class="mt-4 mb-2" [id]="section.id">{{ section.title }}</h2>
+    <p class="mt-0 opacity-70 italic text-lg">
+      {{ section.description }}
+    </p>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+      <!-- Link block for each link within section -->
+      @for (link of section.links; track link) {
+        <a
+          [href]="link.url"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="p-card px-3 py-2 flex flex-col gap-2 no-underline transition ease-in duration-300 border-transparent border-3 hover:border-primary-300 h-full"
+        >
+          <div class="flex justify-between items-center flex-wrap">
+            <h3 class="m-0">{{ link.purpose }}</h3>
+            <span class="flex items-center gap-2 text-sm text-gray-500">
+              {{ link.provider }}
+              <app-domain-favicon [domain]="link.upstreamSite || link.url" />
+            </span>
+          </div>
+          <p class="m-0 italic opacity-80">{{ link.description }}</p>
+        </a>
+      }
+    </div>
+    <!-- Divider between sections -->
+    @if (!isLast) {
+      <p-divider />
+    }
   </div>
-  <!-- Divider between sections -->
-  <p-divider *ngIf="!isLast" />
-</div>
+}

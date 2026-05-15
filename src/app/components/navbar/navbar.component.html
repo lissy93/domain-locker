@@ -1,14 +1,29 @@
 <div class="custom-menubar flex justify-between items-center py-2 px-4">
-  <button pButton icon="pi pi-bars" (click)="toggleSidebar()" class="p-button-text p-button-rounded mr-2 sm:hidden"></button>
-  <a routerLink="/" class="flex items-center no-underline" aria-label="Domain Locker Home">
+  <button
+    pButton
+    icon="pi pi-bars"
+    aria-label="Open menu"
+    (click)="toggleSidebar()"
+    class="p-button-text p-button-rounded mr-2 sm:hidden"
+  ></button>
+  <a
+    routerLink="/"
+    class="flex items-center no-underline"
+    aria-label="Domain Locker Home"
+  >
     <app-logo />
     <h1 class="text-xl font-bold ml-2 text-primary relative">
       Domain Locker
-      <p *ngIf="userPlan && isAuthenticated"
-        class="absolute top-[-0.5rem] right-[-1.5rem] m-0 rotate-12 text-xs
-        bg-{{planColor || 'primary'}}-400 text-surface-50 px-1 rounded opacity-90 capitalize">
-        {{ userPlanName }}
-      </p>
+      @if (userPlan && isAuthenticated) {
+        <p
+          class="absolute top-[-0.5rem] right-[-1.5rem] m-0 rotate-12 text-xs
+        bg-{{
+            planColor || 'primary'
+          }}-400 text-surface-50 px-1 rounded opacity-90 capitalize"
+        >
+          {{ userPlanName }}
+        </p>
+      }
     </h1>
   </a>
   <div class="hidden sm:flex sm:items-center">
@@ -19,16 +34,17 @@
       [attr.aria-label]="'Primary Navigation'"
     ></p-menubar>
 
-    <p-button
-      *ngIf="enableSignUp && !isAuthenticated"
-      routerLink="/login"
-      [queryParams]="{ newUser: 'true' }"
-      label="Sign Up"
-      size="small"
-      icon="pi pi-face-smile"
-      class="ml-1"
-      aria-label="Login"
-    />
+    @if (enableSignUp && !isAuthenticated) {
+      <p-button
+        routerLink="/login"
+        [queryParams]="{ newUser: 'true' }"
+        label="Sign Up"
+        size="small"
+        icon="pi pi-face-smile"
+        class="ml-1"
+        aria-label="Login"
+      />
+    }
 
     <button
       pButton
@@ -38,50 +54,63 @@
       tooltipPosition="bottom"
       showDelay="500"
       aria-label="Open Display Settings"
-      class="p-button-rounded p-button-text text-default hover:text-primary">
-    </button>
-    <p-button
-      *ngIf="isAuthenticated"
-      icon="pi pi-bell"
-      (click)="toggleNotifications($event)"
-      pTooltip="Notifications"
-      tooltipPosition="bottom"
-      showDelay="500"
-      [text]="true"
-      severity="contrast"
-      aria-label="Open Notifications"
-      class="notification-button text-default hover:text-primary">
-      <p-badge
-        *ngIf="unreadNotificationsCount"
-        [value]="unreadNotificationsCount"
-        severity="danger"
-        class="absolute top-0 right-px pointer-events-none"
-      />
-    </p-button>
+      class="p-button-rounded p-button-text text-default hover:text-primary"
+    ></button>
+    @if (isAuthenticated) {
+      <p-button
+        icon="pi pi-bell"
+        (click)="toggleNotifications($event)"
+        pTooltip="Notifications"
+        tooltipPosition="bottom"
+        showDelay="500"
+        [text]="true"
+        severity="contrast"
+        aria-label="Open Notifications"
+        class="notification-button text-default hover:text-primary"
+      >
+        @if (unreadNotificationsCount) {
+          <p-badge
+            [value]="unreadNotificationsCount"
+            severity="danger"
+            class="absolute top-0 right-px pointer-events-none"
+          />
+        }
+      </p-button>
+    }
 
     <p-overlayPanel
       #notificationsOverlay
       [showTransitionOptions]="'200ms'"
       [hideTransitionOptions]="'200ms'"
-      [dismissable]="true">
+      [dismissable]="true"
+    >
       <div class="w-80">
-        <app-notifications-list *ngIf="notificationsVisible" [isInModal]="true" />
+        @if (notificationsVisible) {
+          <app-notifications-list [isInModal]="true" />
+        }
       </div>
     </p-overlayPanel>
-    <a routerLink="/settings"  *ngIf="isAuthenticated && ((settingsEnabled$ | async) && isSupabaseEnabled)">
-      <button
-        pButton
-        icon="pi pi-cog"
-        pTooltip="Settings"
-        tooltipPosition="bottom"
-        showDelay="500"
-        aria-label="Settings"
-        class="p-button-rounded p-button-text text-default hover:text-primary">
-      </button>
-    </a>
-    <p-overlay [(visible)]="settingsVisible" #settingsButton [appendTo]="'body'"
-               [showTransitionOptions]="'0ms'" [hideTransitionOptions]="'0ms'"
-               styleClass="settings-overlay w-60">
+    @if (isAuthenticated && (settingsEnabled$ | async) && isSupabaseEnabled) {
+      <a routerLink="/settings">
+        <button
+          pButton
+          icon="pi pi-cog"
+          pTooltip="Settings"
+          tooltipPosition="bottom"
+          showDelay="500"
+          aria-label="Settings"
+          class="p-button-rounded p-button-text text-default hover:text-primary"
+        ></button>
+      </a>
+    }
+    <p-overlay
+      [(visible)]="settingsVisible"
+      #settingsButton
+      [appendTo]="'body'"
+      [showTransitionOptions]="'0ms'"
+      [hideTransitionOptions]="'0ms'"
+      styleClass="settings-overlay w-60"
+    >
       <ng-template pTemplate="content">
         <app-ui-settings [isAuthenticated]="isAuthenticated" />
       </ng-template>
@@ -90,55 +119,69 @@
 </div>
 
 <!-- Sidebar for mobile -->
-<p-sidebar [(visible)]="sidebarVisible" position="left" styleClass="p-sidebar-sm p-0" class="p-0">
+<p-sidebar
+  [(visible)]="sidebarVisible"
+  position="left"
+  styleClass="p-sidebar-sm p-0"
+  class="p-0"
+>
   <ng-template pTemplate="header">
     <div class="w-full flex flex-col justify-between">
       <a routerLink="/" class="font-semibold text-xl text-default no-underline">
-          Domain Locker
+        Domain Locker
       </a>
       <div class="w-full flex gap-1">
-      <p-button
-        routerLink="/settings/display-options"
-        icon="pi pi-palette"
-        severity="contrast"
-        [text]="true"
-        aria-label="Display Options"
-        class="text-default hover:text-primary">
-      </p-button>
-      <p-button
-        routerLink="/settings"
-        icon="pi pi-cog"
-        severity="contrast"
-        [text]="true"
-        aria-label="Settings"
-        class="text-default hover:text-primary">
-      </p-button>
-      <p-button
-        *ngIf="isAuthenticated"
-        routerLink="/notifications"
-        icon="pi pi-bell"
-        [text]="true"
-        severity="contrast"
-        aria-label="Notifications"
-        class="notification-button text-default hover:text-primary">
-        <p-badge
-          *ngIf="unreadNotificationsCount"
-          [value]="unreadNotificationsCount"
-          severity="danger"
-          class="absolute top-0 right-px pointer-events-none"
-        />
-      </p-button>
+        <p-button
+          routerLink="/settings/display-options"
+          icon="pi pi-palette"
+          severity="contrast"
+          [text]="true"
+          aria-label="Display Options"
+          class="text-default hover:text-primary"
+        >
+        </p-button>
+        <p-button
+          routerLink="/settings"
+          icon="pi pi-cog"
+          severity="contrast"
+          [text]="true"
+          aria-label="Settings"
+          class="text-default hover:text-primary"
+        >
+        </p-button>
+        @if (isAuthenticated) {
+          <p-button
+            routerLink="/notifications"
+            icon="pi pi-bell"
+            [text]="true"
+            severity="contrast"
+            aria-label="Notifications"
+            class="notification-button text-default hover:text-primary"
+          >
+            @if (unreadNotificationsCount) {
+              <p-badge
+                [value]="unreadNotificationsCount"
+                severity="danger"
+                class="absolute top-0 right-px pointer-events-none"
+              />
+            }
+          </p-button>
+        }
+      </div>
     </div>
-  </div>
-</ng-template>
+  </ng-template>
   <ng-template pTemplate="content">
-    <p-menu [model]="itemsWithSettings" styleClass="w-full bg-transparent border-none" (click)="closeSidebar()">
+    <p-menu
+      [model]="itemsWithSettings"
+      styleClass="w-full bg-transparent border-none"
+      (click)="closeSidebar()"
+    >
       <ng-template pTemplate="submenuheader" let-item>
         <a class="text-primary font-bold no-underline" [routerLink]="item.routerLink">
           <i [class]="item.icon + ' mr-2'"></i>
           {{ item.label }}
         </a>
-    </ng-template>
+      </ng-template>
     </p-menu>
   </ng-template>
 </p-sidebar>

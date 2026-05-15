@@ -1,17 +1,20 @@
 <h1 class="mt-2 mb-4">IP Addresses</h1>
 <p-tabView>
   <p-tabPanel header="IPv4">
-    <p-table 
-      [value]="ipv4Addresses" 
-      [loading]="loadingIpv4" 
-      [paginator]="true" 
-      [rows]="10" 
-      sortable="true" 
-      [tableStyle]="{'min-width': '50rem'}"
-      class="p-datatable">
+    <p-table
+      [value]="ipv4Addresses"
+      [loading]="loadingIpv4"
+      [paginator]="true"
+      [rows]="10"
+      sortable="true"
+      [tableStyle]="{ 'min-width': '50rem' }"
+      class="p-datatable"
+    >
       <ng-template pTemplate="header">
         <tr>
-          <th pSortableColumn="ip_address" style="width: 300px;">IP Address <p-sortIcon field="ip_address"></p-sortIcon></th>
+          <th pSortableColumn="ip_address" style="width: 300px">
+            IP Address <p-sortIcon field="ip_address"></p-sortIcon>
+          </th>
           <th>Associated Domains</th>
         </tr>
       </ng-template>
@@ -19,12 +22,11 @@
         <tr>
           <td>{{ ip.ip_address }}</td>
           <td>
-            <a 
-              *ngFor="let domain of ip.domains; let last = last" 
-              [routerLink]="'/domains/'+domain" 
-              class="text-primary">
-              {{ domain }}{{ last ? '' : ', ' }}
-          </a>
+            @for (domain of ip.domains; track domain; let last = $last) {
+              <a [routerLink]="'/domains/' + domain" class="text-primary">
+                {{ domain }}{{ last ? '' : ', ' }}
+              </a>
+            }
           </td>
         </tr>
       </ng-template>
@@ -32,17 +34,20 @@
   </p-tabPanel>
 
   <p-tabPanel header="IPv6">
-    <p-table 
-      [value]="ipv6Addresses" 
-      [loading]="loadingIpv6" 
-      [paginator]="true" 
-      [rows]="10" 
-      sortable="true" 
-      [tableStyle]="{'min-width': '50rem'}"
-      class="p-datatable">
+    <p-table
+      [value]="ipv6Addresses"
+      [loading]="loadingIpv6"
+      [paginator]="true"
+      [rows]="10"
+      sortable="true"
+      [tableStyle]="{ 'min-width': '50rem' }"
+      class="p-datatable"
+    >
       <ng-template pTemplate="header">
         <tr>
-          <th pSortableColumn="ip_address" style="width: 300px;">IP Address <p-sortIcon field="ip_address"></p-sortIcon></th>
+          <th pSortableColumn="ip_address" style="width: 300px">
+            IP Address <p-sortIcon field="ip_address"></p-sortIcon>
+          </th>
           <th>Associated Domains</th>
         </tr>
       </ng-template>
@@ -50,12 +55,14 @@
         <tr>
           <td>{{ ip.ip_address }}</td>
           <td>
-            <a 
-              *ngFor="let domain of ip.domains; let last = last" 
-              [routerLink]="'/domains/'+domain" 
-              class="text-primary">
-              {{ domain }}<br *ngIf="!last"/>
-            </a>
+            @for (domain of ip.domains; track domain; let last = $last) {
+              <a [routerLink]="'/domains/' + domain" class="text-primary">
+                {{ domain }}
+                @if (!last) {
+                  <br />
+                }
+              </a>
+            }
           </td>
         </tr>
       </ng-template>
@@ -63,18 +70,21 @@
   </p-tabPanel>
 
   <p-tabPanel header="Domains (IPv4)">
-    <p-table 
-      [value]="ipv4Domains" 
-      [loading]="loadingIpv4" 
-      [paginator]="true" 
-      [rows]="10" 
-      sortable="true" 
-      [tableStyle]="{'min-width': '50rem'}"
+    <p-table
+      [value]="ipv4Domains"
+      [loading]="loadingIpv4"
+      [paginator]="true"
+      [rows]="10"
+      sortable="true"
+      [tableStyle]="{ 'min-width': '50rem' }"
       selectionMode="single"
-      class="p-datatable">
+      class="p-datatable"
+    >
       <ng-template pTemplate="header">
         <tr>
-          <th pSortableColumn="domain" style="width: 300px;">Domain <p-sortIcon field="domain"></p-sortIcon></th>
+          <th pSortableColumn="domain" style="width: 300px">
+            Domain <p-sortIcon field="domain"></p-sortIcon>
+          </th>
           <th>IPs</th>
         </tr>
       </ng-template>
@@ -82,9 +92,14 @@
         <tr (click)="navigateToDomain(domain.domain)" class="cursor-pointer">
           <td>{{ domain.domain }}</td>
           <td>
-            <span *ngFor="let ip of domain.ipAddresses; let last = last">{{ ip }}
-              <br *ngIf="!last"/>
-            </span>
+            @for (ip of domain.ipAddresses; track ip; let last = $last) {
+              <span
+                >{{ ip }}
+                @if (!last) {
+                  <br />
+                }
+              </span>
+            }
           </td>
         </tr>
       </ng-template>
@@ -92,18 +107,21 @@
   </p-tabPanel>
 
   <p-tabPanel header="Domains (IPv6)">
-    <p-table 
-      [value]="ipv6Domains" 
-      [loading]="loadingIpv6" 
-      [paginator]="true" 
-      [rows]="10" 
-      sortable="true" 
-      [tableStyle]="{'min-width': '50rem'}"
+    <p-table
+      [value]="ipv6Domains"
+      [loading]="loadingIpv6"
+      [paginator]="true"
+      [rows]="10"
+      sortable="true"
+      [tableStyle]="{ 'min-width': '50rem' }"
       selectionMode="single"
-      class="p-datatable">
+      class="p-datatable"
+    >
       <ng-template pTemplate="header">
         <tr>
-          <th pSortableColumn="domain" style="width: 300px;">Domain <p-sortIcon field="domain"></p-sortIcon></th>
+          <th pSortableColumn="domain" style="width: 300px">
+            Domain <p-sortIcon field="domain"></p-sortIcon>
+          </th>
           <th>IPs</th>
         </tr>
       </ng-template>
@@ -111,10 +129,14 @@
         <tr (click)="navigateToDomain(domain.domain)" class="cursor-pointer">
           <td>{{ domain.domain }}</td>
           <td>
-            <span *ngFor="let ip of domain.ipAddresses; let last = last">
-              {{ ip }}
-              <br *ngIf="!last"/>
-            </span>
+            @for (ip of domain.ipAddresses; track ip; let last = $last) {
+              <span>
+                {{ ip }}
+                @if (!last) {
+                  <br />
+                }
+              </span>
+            }
           </td>
         </tr>
       </ng-template>

@@ -1,4 +1,4 @@
-name: 🚀 Deploy to Vercel
+name: 🔺 Deploy to Vercel
 on:
   push:
     branches:
@@ -23,22 +23,22 @@ jobs:
           # If this workflow is triggered manually AND a branch input is provided,
           # use that. Otherwise, fall back to the automatically provided ref_name.
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.branch }}" != "" ]; then
-            echo "branchName=${{ inputs.branch }}" >> $GITHUB_OUTPUT
+            echo "branchName=${{ inputs.branch }}" >> "$GITHUB_OUTPUT"
           else
-            echo "branchName=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+            echo "branchName=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
-          # Check out the branch from the previous step. 
+          # Check out the branch from the previous step.
           ref: ${{ steps.determine_branch.outputs.branchName }}
 
       - name: Use Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v6
         with:
           node-version: 22
-      
+
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
@@ -83,13 +83,13 @@ jobs:
           BRANCH="${{ steps.determine_branch.outputs.branchName }}"
           if [ "$BRANCH" = "main" ]; then
             echo "Deploying to production"
-            npx vercel deploy --prebuilt --prod --yes --token $VERCEL_TOKEN
+            npx vercel deploy --prebuilt --prod --yes --token "$VERCEL_TOKEN"
           elif [ "$BRANCH" = "demo" ]; then
             echo "Deploying to demo"
-            npx vercel deploy --prebuilt --yes --target=demo --token $VERCEL_TOKEN
+            npx vercel deploy --prebuilt --yes --target=demo --token "$VERCEL_TOKEN"
           else
             echo "Deploying to feature environment"
-            npx vercel deploy --prebuilt --yes --target=staging --token $VERCEL_TOKEN
+            npx vercel deploy --prebuilt --yes --target=staging --token "$VERCEL_TOKEN"
           fi
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}

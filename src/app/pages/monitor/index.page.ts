@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PrimeNgModule } from '~/app/prime-ng.module';
 import { FeatureService } from '~/app/services/features.service';
@@ -10,7 +10,11 @@ import { ErrorHandlerService } from '~/app/services/error-handler.service';
 import { Router, RouterModule } from '@angular/router';
 import { DomainFaviconComponent } from '~/app/components/misc/favicon.component';
 import { ApexOptions } from 'ng-apexcharts';
-import { getUptimeColor, getResponseCodeColor, getPerformanceColor } from './monitor-helpers';
+import {
+  getUptimeColor,
+  getResponseCodeColor,
+  getPerformanceColor,
+} from './monitor-helpers';
 import { EnvService } from '~/app/services/environment.service';
 
 interface DomainSummary {
@@ -38,7 +42,7 @@ interface UptimeData {
 }
 
 @Component({
-  selector: 'app-monitor',
+  selector: 'app-monitor-page',
   standalone: true,
   imports: [
     CommonModule,
@@ -50,7 +54,13 @@ interface UptimeData {
   ],
   templateUrl: './index.page.html',
 })
-export default class MonitorPage {
+export default class MonitorPage implements OnInit {
+  private router = inject(Router);
+  private featureService = inject(FeatureService);
+  private databaseService = inject(DatabaseService);
+  private errorHandlerService = inject(ErrorHandlerService);
+  private envService = inject(EnvService);
+
   monitorEnabled$ = this.featureService.isFeatureEnabled('domainMonitor');
 
   domains: DbDomain[] = [];
@@ -62,30 +72,21 @@ export default class MonitorPage {
   getResponseCodeColor = getResponseCodeColor;
   getPerformanceColor = getPerformanceColor;
 
-  sparkLineConfig: ApexOptions | any = {
+  sparkLineConfig: ApexOptions = {
     chart: {
       type: 'line',
       height: 50,
       sparkline: { enabled: true },
-    }
-  } as ApexOptions | any;
+    },
+  };
 
-  donutChartConfig: ApexOptions | any = {
+  donutChartConfig: ApexOptions = {
     chart: {
       type: 'donut',
       height: 50,
       width: 50,
     },
-  } as ApexOptions | any;
-
-  constructor(
-    private router: Router,
-    private featureService: FeatureService,
-    private databaseService: DatabaseService,
-    private errorHandlerService: ErrorHandlerService,
-    private envService: EnvService,
-  ) {}
-
+  };
 
   ngOnInit(): void {
     this.isSelfHosted = this.envService.getEnvironmentType() === 'selfHosted';
@@ -114,59 +115,76 @@ export default class MonitorPage {
 
   loadDomainSummaries(): void {
     this.domains.forEach((domain) => {
-      this.databaseService.instance.getDomainUptime(domain.user_id, domain.id, 'day').then((data: any) => {
-        if (data && !data.data) data.data = data; // data be data with data has data if data not data and data is data. Got it?
-        if (data.data) {
-          const uptimeData: UptimeData[] = data.data;
-  
-          const sparklineData = uptimeData.map((entry: UptimeData) => ({
-            x: entry.checked_at,
-            y: entry.response_time_ms || 0,
-          }));
-  
-          const responseCodeSummary = this.getResponseCodeSummary(uptimeData);
-  
-          const responseCodeSeries = responseCodeSummary.map((item) => item.count);
-          const responseCodeLabels = responseCodeSummary.map((item) => `${item.code}`);
-          const responseCodeColors = responseCodeSummary.map((item) =>
-            this.getResponseCodeColor(item.code)
-          );
-  
-          const uptimePercentage = uptimeData.length > 0
-            ? (uptimeData.filter((entry: UptimeData) => entry.is_up).length / uptimeData.length) * 100
-            : 0;
+      this.databaseService.instance
+        .getDomainUptime(domain.user_id, domain.id, 'day')
+        .then((rawData: unknown) => {
+          const data = rawData as { data?: UptimeData[] } & UptimeData[];
+          if (data && !data.data) data.data = data as unknown as UptimeData[]; // data be data with data has data if data not data and data is data. Got it?
+          if (data.data) {
+            const uptimeData: UptimeData[] = data.data;
 
-          const avgResponseTime = uptimeData.length > 0
-            ? uptimeData.reduce((sum, entry) => sum + Number(entry.response_time_ms || 0), 0) / uptimeData.length
-            : 0;
+            const sparklineData = uptimeData.map((entry: UptimeData) => ({
+              x: entry.checked_at,
+              y: entry.response_time_ms || 0,
+            }));
 
-          const avgDnsTime = uptimeData.length > 0
-            ? uptimeData.reduce((sum, entry) => sum + Number(entry.dns_lookup_time_ms || 0), 0) / uptimeData.length
-            : 0;
+            const responseCodeSummary = this.getResponseCodeSummary(uptimeData);
 
-          const avgSslTime = uptimeData.length > 0
-            ? uptimeData.reduce((sum, entry) => sum + Number(entry.ssl_handshake_time_ms || 0), 0) / uptimeData.length
-            : 0;
-            
-  
-          this.domainSummaries.push({
-            domainId: domain.id,
-            domainName: domain.domain_name,
-            sparklineData,
-            responseCodeSummary,
-            responseCodeSeries,
-            responseCodeLabels,
-            responseCodeColors,
-            uptimePercentage,
-            avgResponseTime,
-            avgDnsTime,
-            avgSslTime,
-          });
-        }
-      });
+            const responseCodeSeries = responseCodeSummary.map((item) => item.count);
+            const responseCodeLabels = responseCodeSummary.map((item) => `${item.code}`);
+            const responseCodeColors = responseCodeSummary.map((item) =>
+              this.getResponseCodeColor(item.code),
+            );
+
+            const uptimePercentage =
+              uptimeData.length > 0
+                ? (uptimeData.filter((entry: UptimeData) => entry.is_up).length /
+                    uptimeData.length) *
+                  100
+                : 0;
+
+            const avgResponseTime =
+              uptimeData.length > 0
+                ? uptimeData.reduce(
+                    (sum, entry) => sum + Number(entry.response_time_ms || 0),
+                    0,
+                  ) / uptimeData.length
+                : 0;
+
+            const avgDnsTime =
+              uptimeData.length > 0
+                ? uptimeData.reduce(
+                    (sum, entry) => sum + Number(entry.dns_lookup_time_ms || 0),
+                    0,
+                  ) / uptimeData.length
+                : 0;
+
+            const avgSslTime =
+              uptimeData.length > 0
+                ? uptimeData.reduce(
+                    (sum, entry) => sum + Number(entry.ssl_handshake_time_ms || 0),
+                    0,
+                  ) / uptimeData.length
+                : 0;
+
+            this.domainSummaries.push({
+              domainId: domain.id,
+              domainName: domain.domain_name,
+              sparklineData,
+              responseCodeSummary,
+              responseCodeSeries,
+              responseCodeLabels,
+              responseCodeColors,
+              uptimePercentage,
+              avgResponseTime,
+              avgDnsTime,
+              avgSslTime,
+            });
+          }
+        });
     });
   }
-  
+
   visitDomain(domainName: string): void {
     this.router.navigate(['/monitor/', domainName]);
   }
@@ -184,7 +202,7 @@ export default class MonitorPage {
     }));
   }
 
-  public isNaN(value: any): boolean {
+  public isNaN(value: unknown): boolean {
     return typeof value === 'number' && isNaN(value);
   }
 }

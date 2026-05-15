@@ -1,25 +1,25 @@
-import { defineEventHandler } from "h3";
-import https from "https";
-import { performance } from "perf_hooks";
-import { getBaseUrl } from "../utils/base-url";
+import { defineEventHandler } from 'h3';
+import https from 'https';
+import { performance } from 'perf_hooks';
+import { getBaseUrl } from '../utils/base-url';
 
 const HTTP_TIMEOUT_MS = 10000;
 const MAX_EXECUTION_TIME_MS = 12 * 60 * 1000;
-const CONCURRENCY_LIMIT = parseInt(process.env["DL_MONITOR_CONCURRENCY"] || "10", 10);
+const CONCURRENCY_LIMIT = parseInt(process.env['DL_MONITOR_CONCURRENCY'] || '10', 10);
 
 function getEnvVar(name: string, fallback?: string): string {
   const val = process.env[name] || (import.meta.env && import.meta.env[name]);
-  return val || fallback || "";
+  return val || fallback || '';
 }
 
 async function callPgExecutor<T>(
   endpoint: string,
   query: string,
-  params: any[] = [],
+  params: unknown[] = [],
 ): Promise<T[]> {
   const res = await fetch(endpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ query, params }),
   });
   const data = await res.json();
@@ -37,8 +37,8 @@ async function checkDomainUptime(domainName: string): Promise<{
     const req = https.request(
       {
         hostname: domainName,
-        path: "/",
-        method: "HEAD",
+        path: '/',
+        method: 'HEAD',
         timeout: HTTP_TIMEOUT_MS,
         agent: false,
       },
@@ -52,7 +52,7 @@ async function checkDomainUptime(domainName: string): Promise<{
       },
     );
 
-    req.on("error", () =>
+    req.on('error', () =>
       resolve({
         is_up: false,
         response_code: 0,
@@ -60,7 +60,7 @@ async function checkDomainUptime(domainName: string): Promise<{
       }),
     );
 
-    req.on("timeout", () => {
+    req.on('timeout', () => {
       req.destroy();
       resolve({ is_up: false, response_code: 0, response_time_ms: HTTP_TIMEOUT_MS });
     });
@@ -80,7 +80,7 @@ async function processBatch<T, R>(
     const batchResults = await Promise.allSettled(batch.map(workerFn));
     results.push(
       ...batchResults
-        .filter((r) => r.status === "fulfilled")
+        .filter((r) => r.status === 'fulfilled')
         .map((r) => (r as PromiseFulfilledResult<R>).value),
     );
   }
@@ -88,8 +88,8 @@ async function processBatch<T, R>(
 }
 
 export default defineEventHandler(async (event) => {
-  if (getEnvVar("DL_ENV_TYPE") !== "selfHosted") {
-    return { error: "Only available in self-hosted mode" };
+  if (getEnvVar('DL_ENV_TYPE') !== 'selfHosted') {
+    return { error: 'Only available in self-hosted mode' };
   }
 
   const startTime = Date.now();
@@ -98,18 +98,18 @@ export default defineEventHandler(async (event) => {
 
   const domains = await callPgExecutor<{ id: string; domain_name: string }>(
     pgUrl,
-    "SELECT id, domain_name FROM domains ORDER BY domain_name",
+    'SELECT id, domain_name FROM domains ORDER BY domain_name',
   );
 
   if (!domains.length) {
-    return { message: "No domains to check" };
+    return { message: 'No domains to check' };
   }
 
   const results = await processBatch(
     domains,
     async (d) => {
       if (Date.now() - startTime > MAX_EXECUTION_TIME_MS) {
-        return { domain: d.domain_name, status: "skipped" };
+        return { domain: d.domain_name, status: 'skipped' };
       }
 
       const uptime = await checkDomainUptime(d.domain_name);
@@ -123,7 +123,7 @@ export default defineEventHandler(async (event) => {
 
       return {
         domain: d.domain_name,
-        status: uptime.is_up ? `✅ up (${uptime.response_code})` : "❌ down",
+        status: uptime.is_up ? `✅ up (${uptime.response_code})` : '❌ down',
         is_up: uptime.is_up,
       };
     },

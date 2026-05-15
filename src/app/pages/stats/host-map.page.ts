@@ -3,10 +3,9 @@ import { HostMapComponent } from '~/app/components/charts/host-map/host-map.comp
 
 @Component({
   standalone: true,
-  selector: 'app-index-page',
+  selector: 'app-stats-host-map-page',
   template: '<h1>Host Map</h1><app-host-map />',
   imports: [HostMapComponent],
-  styles: ['::ng-deep #map { height: 600px !important; z-index: 1; } ']
+  styles: ['::ng-deep #map { height: 600px !important; z-index: 1; } '],
 })
 export default class HostMapPage {}
-

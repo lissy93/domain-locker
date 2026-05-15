@@ -1,224 +1,279 @@
-<app-feature-not-enabled *ngIf="!(enableBilling$ | async)" feature="enableBilling" />
+@if ((enableBilling$ | async) === false) {
+  <app-feature-not-enabled feature="enableBilling" />
+}
 
 @if (enableBilling$ | async) {
-<p-messages severity="success" *ngIf="status === 'success'">
-  <ng-template pTemplate>
-    <div class="flex items-center">
-      <i class="pi pi-check-circle mr-2"></i>
-      <span>
-        Subscription updated successfully.
-        You may need to refresh this page for changes to take effect.
-      </span>
-    </div>
-  </ng-template>
-</p-messages>
-
-<p-messages severity="error" *ngIf="status === 'failed'">
-  <ng-template pTemplate>
-    <div class="flex items-center">
-      <i class="pi pi-exclamation-triangle mr-2"></i>
-      <span>Failed to process payment, please try again or contact support.</span>
-    </div>
-  </ng-template>
-</p-messages>
-
-<div *ngIf="subscriptionData && (subscriptionData.status !== 'none' || subscriptionData.invoices.length)" class="mb-4 flex flex-col gap-2">
-
-  <h2 class="my-4">Subscription Details</h2>
-
-  <div *ngIf="subscriptionData.status !== 'none'" class="flex flex-col w-full p-3 mb-2 p-card">
-    <h3>Info</h3>
-    <ul class="list-none p-0 m-0">
-      <li>
-        <strong>Status:</strong> {{ subscriptionData.status | titlecase }}
-      </li>
-      <li>
-        <strong>Billing Start:</strong> {{ subscriptionData.current_period_start | date: 'mediumDate' }}
-      </li>
-      <li>
-        <strong>Billing End:</strong> {{ subscriptionData.current_period_end | date: 'mediumDate' }}
-      </li>
-      <li>
-        <strong>Plan:</strong> {{ subscriptionData.plan }}
-      </li>
-      <li>
-        <strong>Subscription ID: </strong> <code>{{ subscriptionData.subscription_id }}</code>
-      </li>
-    </ul>
-  </div>
-
-  <div *ngIf="subscriptionData.invoices?.length" class="flex flex-col w-full p-3 mb-2 p-card">
-    <h3>Invoices</h3>
-    <p-table [value]="subscriptionData.invoices" class="min-w-[600px] w-full">
-      <ng-template pTemplate="header">
-        <tr>
-          <th>Date</th>
-          <th>Amount</th>
-          <th>Number</th>
-          <th>Status</th>
-          <th>PDF</th>
-        </tr>
+  @if (status === 'success') {
+    <p-messages severity="success">
+      <ng-template pTemplate>
+        <div class="flex items-center">
+          <i class="pi pi-check-circle mr-2"></i>
+          <span>
+            Subscription updated successfully. You may need to refresh this page for
+            changes to take effect.
+          </span>
+        </div>
       </ng-template>
-      <ng-template pTemplate="body" let-invoice>
-        <tr>
-          <td>{{ invoice.date | date: 'mediumDate' }}</td>
-          <td>
-            {{ invoice.amount_paid / 100 | currency: invoice.currency.toUpperCase() }}
-          </td>
-          <td>
-            <a [href]="invoice.hosted_invoice_url" target="_blank" class="text-primary-500 underline">
-              {{ invoice.number }}
-            </a>
-          </td>
-          <td>
-            <span class="capitalize">{{ invoice.status }}</span>
-          </td>
-          <td>
-            <a [href]="invoice.invoice_pdf" target="_blank" *ngIf="invoice.invoice_pdf">
-              <p-button icon="pi pi-file-pdf" label="Download" severity="info" size="small"></p-button>
-            </a>
-          </td>
-        </tr>
+    </p-messages>
+  }
+
+  @if (status === 'failed') {
+    <p-messages severity="error">
+      <ng-template pTemplate>
+        <div class="flex items-center">
+          <i class="pi pi-exclamation-triangle mr-2"></i>
+          <span>Failed to process payment, please try again or contact support.</span>
+        </div>
       </ng-template>
-    </p-table>
-  </div>
+    </p-messages>
+  }
 
-  
-  <div *ngIf="subscriptionData.payment_method && subscriptionData.status !== 'none'" class="flex flex-col w-full p-3 mb-2 p-card">
-    <h3>Payment Method</h3>
-    <p *ngIf="subscriptionData.payment_method.brand" class="m-0">
-      Paid with {{ subscriptionData.payment_method.brand }} card ending in {{ subscriptionData.payment_method.last4 }},
-      expiring on {{ subscriptionData.payment_method.exp_month }}/{{ subscriptionData.payment_method.exp_year }}.
-    </p>
-  </div>
-
-  <div *ngIf="subscriptionData.discount" class="flex flex-col w-full p-3 mb-2 p-card">
-    <h3>Discount</h3>
-    <p class="m-0">
-      You are currently receiving a <strong>{{ subscriptionData.discount.percent_off }}%</strong> discount
-      with the coupon <strong>{{ subscriptionData.discount.name }}</strong>.
-      This discount is valid for <strong>{{ subscriptionData.discount.duration }}</strong>.
-    </p>
-  </div>
-
-  <div class="flex flex-col w-full p-3 mb-2 p-card" *ngIf="(currentPlan$ | async) !== 'free'">
-    <h3>Manage Plan</h3>
-    <div class="flex gap-3 justify-end">
-      <p-button
-        label="Contact Support"
-        severity="success"
-        icon="pi pi-headphones"
-        size="small"
-        routerLink="/about/support"
-      />
-      <p-button
-        label="Cancel Plan"
-        severity="danger"
-        icon="pi pi-times-circle"
-        size="small"
-        (click)="cancelSubscription()"
-      />
+  @if (
+    subscriptionData &&
+    (subscriptionData.status !== 'none' || subscriptionData.invoices.length)
+  ) {
+    <div class="mb-4 flex flex-col gap-2">
+      <h2 class="my-4">Subscription Details</h2>
+      @if (subscriptionData.status !== 'none') {
+        <div class="flex flex-col w-full p-3 mb-2 p-card">
+          <h3>Info</h3>
+          <ul class="list-none p-0 m-0">
+            <li><strong>Status:</strong> {{ subscriptionData.status | titlecase }}</li>
+            <li>
+              <strong>Billing Start:</strong>
+              {{ subscriptionData.current_period_start | date: 'mediumDate' }}
+            </li>
+            <li>
+              <strong>Billing End:</strong>
+              {{ subscriptionData.current_period_end | date: 'mediumDate' }}
+            </li>
+            <li><strong>Plan:</strong> {{ subscriptionData.plan }}</li>
+            <li>
+              <strong>Subscription ID: </strong>
+              <code>{{ subscriptionData.subscription_id }}</code>
+            </li>
+          </ul>
+        </div>
+      }
+      @if (subscriptionData.invoices?.length) {
+        <div class="flex flex-col w-full p-3 mb-2 p-card">
+          <h3>Invoices</h3>
+          <p-table [value]="subscriptionData.invoices" class="min-w-[600px] w-full">
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Date</th>
+                <th>Amount</th>
+                <th>Number</th>
+                <th>Status</th>
+                <th>PDF</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-invoice>
+              <tr>
+                <td>{{ invoice.date | date: 'mediumDate' }}</td>
+                <td>
+                  {{
+                    invoice.amount_paid / 100 | currency: invoice.currency.toUpperCase()
+                  }}
+                </td>
+                <td>
+                  <a
+                    [href]="invoice.hosted_invoice_url"
+                    target="_blank"
+                    class="text-primary-500 underline"
+                  >
+                    {{ invoice.number }}
+                  </a>
+                </td>
+                <td>
+                  <span class="capitalize">{{ invoice.status }}</span>
+                </td>
+                <td>
+                  @if (invoice.invoice_pdf) {
+                    <a [href]="invoice.invoice_pdf" target="_blank">
+                      <p-button
+                        icon="pi pi-file-pdf"
+                        label="Download"
+                        severity="info"
+                        size="small"
+                      ></p-button>
+                    </a>
+                  }
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+      }
+      @if (subscriptionData.payment_method && subscriptionData.status !== 'none') {
+        <div class="flex flex-col w-full p-3 mb-2 p-card">
+          <h3>Payment Method</h3>
+          @if (subscriptionData.payment_method.brand) {
+            <p class="m-0">
+              Paid with {{ subscriptionData.payment_method.brand }} card ending in
+              {{ subscriptionData.payment_method.last4 }}, expiring on
+              {{ subscriptionData.payment_method.exp_month }}/{{
+                subscriptionData.payment_method.exp_year
+              }}.
+            </p>
+          }
+        </div>
+      }
+      @if (subscriptionData.discount) {
+        <div class="flex flex-col w-full p-3 mb-2 p-card">
+          <h3>Discount</h3>
+          <p class="m-0">
+            You are currently receiving a
+            <strong>{{ subscriptionData.discount.percent_off }}%</strong> discount with
+            the coupon <strong>{{ subscriptionData.discount.name }}</strong
+            >. This discount is valid for
+            <strong>{{ subscriptionData.discount.duration }}</strong
+            >.
+          </p>
+        </div>
+      }
+      @if ((currentPlan$ | async) !== 'free') {
+        <div class="flex flex-col w-full p-3 mb-2 p-card">
+          <h3>Manage Plan</h3>
+          <div class="flex gap-3 justify-end">
+            <p-button
+              label="Contact Support"
+              severity="success"
+              icon="pi pi-headphones"
+              size="small"
+              routerLink="/about/support"
+            />
+            <p-button
+              label="Cancel Plan"
+              severity="danger"
+              icon="pi pi-times-circle"
+              size="small"
+              (click)="cancelSubscription()"
+            />
+          </div>
+        </div>
+      }
+      <p-divider class="my-2 flex" />
     </div>
-  </div>
+  }
 
-  <p-divider class="my-2 flex" />
-
-</div>
-
-<div class="flex justify-between items-center mb-2">
-  <h2>Upgrade</h2>
-  <!-- <a routerLink="/about/pricing">
+  <div class="flex justify-between items-center mb-2">
+    <h2>Upgrade</h2>
+    <!-- <a routerLink="/about/pricing">
     <p-button
       label="Compare Plans"
       severity="secondary"
       icon="pi pi-euro"
       class="min-w-48"
       styleClass="w-fit"
-    />
+      />
   </a> -->
-  <p-selectButton
-    [options]="billingCycleOptions"
-    [(ngModel)]="isAnnual"
-    optionLabel="label"
-    optionValue="value"
-  />
-</div>
+    <p-selectButton
+      [options]="billingCycleOptions"
+      [(ngModel)]="isAnnual"
+      optionLabel="label"
+      optionValue="value"
+    />
+  </div>
 
-
-<div class="w-full p-3 p-card">
-  <h3>Current Plan</h3>
-  <div class="flex justify-between items-center flex-wrap">
-    <div>
-    <p *ngIf="currentPlan$ | async as currentPlan; else loading" class="my-1">
-      You are currently on the <strong>{{ currentPlan | titlecase }}</strong> plan.
-    </p>
-    <ng-template #loading>
-      <p>Loading billing details...</p>
-    </ng-template>
-      <p *ngIf="billingInfo && billingInfo.next_payment_due" class="opacity-70 my-1 text-sm">
-        Renews on {{ billingInfo.next_payment_due | date: 'mediumDate' }}
-      </p>
-    </div>
-    <div class="flex gap-3 flex-wrap">
-      <p-button
-        *ngIf="(currentPlan$ | async) !== 'pro'"
-        label="Upgrade to Pro"
-        (click)="handleUpgrade('pro')"
-        severity="success"
-        icon="pi pi-star-fill"
-        size="small"
-      />
-      <a *ngIf="billingInfo && billingInfo?.meta?.invoice_pdf" [href]="billingInfo.meta.invoice_pdf">
-        <p-button
-          label="Download Invoice"
-          severity="info"
-          icon="pi pi-file-pdf"
-          size="small"
-        />
-      </a>
-      <p-button
-        *ngIf="(currentPlan$ | async) !== 'free'"
-        label="Cancel Plan"
-        severity="danger"
-        icon="pi pi-times-circle"
-        size="small"
-        (click)="cancelSubscription()"
-      />
+  <div class="w-full p-3 p-card">
+    <h3>Current Plan</h3>
+    <div class="flex justify-between items-center flex-wrap">
+      <div>
+        @if (currentPlan$ | async; as currentPlan) {
+          <p class="my-1">
+            You are currently on the <strong>{{ currentPlan | titlecase }}</strong> plan.
+          </p>
+        } @else {
+          <p>Loading billing details...</p>
+        }
+        @if (billingInfo && billingInfo.next_payment_due) {
+          <p class="opacity-70 my-1 text-sm">
+            Renews on {{ billingInfo.next_payment_due | date: 'mediumDate' }}
+          </p>
+        }
+      </div>
+      <div class="flex gap-3 flex-wrap">
+        @if ((currentPlan$ | async) !== 'pro') {
+          <p-button
+            label="Upgrade to Pro"
+            (click)="handleUpgrade('pro')"
+            severity="success"
+            icon="pi pi-star-fill"
+            size="small"
+          />
+        }
+        @if (billingInfo && billingInfo?.meta?.invoice_pdf) {
+          <a [href]="billingInfo.meta!.invoice_pdf">
+            <p-button
+              label="Download Invoice"
+              severity="info"
+              icon="pi pi-file-pdf"
+              size="small"
+            />
+          </a>
+        }
+        @if ((currentPlan$ | async) !== 'free') {
+          <p-button
+            label="Cancel Plan"
+            severity="danger"
+            icon="pi pi-times-circle"
+            size="small"
+            (click)="cancelSubscription()"
+          />
+        }
+      </div>
     </div>
   </div>
-</div>
 
-
-<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 mt-4">
-  <div *ngFor="let plan of availablePlans" class="p-card px-2 py-6 flex flex-col space-betweem gap-4 relative">
-    <div *ngIf="(currentPlan$ | async) === plan.planId"
-      class="absolute text-center bg-highlight text-highlight w-full top-0 rounded-t ml-[-0.5rem] font-semibold py-1">
-      Current Plan
-    </div>
-    <div *ngIf="plan.suggested && (currentPlan$ | async) !== plan.planId"
-      class="absolute text-center bg-green-400 w-full top-0 rounded-t ml-[-0.5rem] font-semibold py-1">
-      Recommended Plan
-    </div>
-    <div class="flex flex-col items-center h-full gap-2">
-      <h2 class="text-2xl font-bold m-0 mb-2">{{ plan.title }}</h2>
-      <p class="text-5xl font-semibold m-0 {{ plan.suggested ? 'text-green-500' : 'text-primary-500'}}">
-        ${{ getPrice(plan) }}<span class="text-lg font-medium text-gray-500">/mo</span>
-      </p>
-      <p class="text-gray-400 mb-4">{{ isAnnual ? 'Billed annually' : 'Billed monthly' }}</p>
-
-      <ul class="text-surface-500 space-y-2 list-none m-0 p-0">
-        <li *ngFor="let feature of plan.features">
-          <i class="pi pi-check-circle mr-2 text-green-500"></i>{{ feature }}
-        </li>
-      </ul>
-    </div>
-    <button pButton
-      *ngIf="(currentPlan$ | async) === 'free' && plan.planId !== 'free'"
-      routerLink="/settings/upgrade"
-      label="Upgrade"
-      [severity]="plan.suggested ? 'success' : 'secondary'"
-      (click)="handleUpgrade(plan.planId)"
-      class="mx-4 p-button-primary {{ plan.suggested ? '' : 'p-button-outlined' }}"></button>
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 mt-4">
+    @for (plan of availablePlans; track plan) {
+      <div class="p-card px-2 py-6 flex flex-col space-betweem gap-4 relative">
+        @if ((currentPlan$ | async) === plan.planId) {
+          <div
+            class="absolute text-center bg-highlight text-highlight w-full top-0 rounded-t ml-[-0.5rem] font-semibold py-1"
+          >
+            Current Plan
+          </div>
+        }
+        @if (plan.suggested && (currentPlan$ | async) !== plan.planId) {
+          <div
+            class="absolute text-center bg-green-400 w-full top-0 rounded-t ml-[-0.5rem] font-semibold py-1"
+          >
+            Recommended Plan
+          </div>
+        }
+        <div class="flex flex-col items-center h-full gap-2">
+          <h2 class="text-2xl font-bold m-0 mb-2">{{ plan.title }}</h2>
+          <p
+            class="text-5xl font-semibold m-0 {{
+              plan.suggested ? 'text-green-500' : 'text-primary-500'
+            }}"
+          >
+            ${{ getPrice(plan)
+            }}<span class="text-lg font-medium text-gray-500">/mo</span>
+          </p>
+          <p class="text-gray-400 mb-4">
+            {{ isAnnual ? 'Billed annually' : 'Billed monthly' }}
+          </p>
+          <ul class="text-surface-500 space-y-2 list-none m-0 p-0">
+            @for (feature of plan.features; track feature) {
+              <li><i class="pi pi-check-circle mr-2 text-green-500"></i>{{ feature }}</li>
+            }
+          </ul>
+        </div>
+        @if ((currentPlan$ | async) === 'free' && plan.planId !== 'free') {
+          <button
+            pButton
+            routerLink="/settings/upgrade"
+            label="Upgrade"
+            aria-label="Upgrade"
+            [severity]="plan.suggested ? 'success' : 'secondary'"
+            (click)="handleUpgrade(plan.planId)"
+            class="mx-4 p-button-primary {{ plan.suggested ? '' : 'p-button-outlined' }}"
+          ></button>
+        }
+      </div>
+    }
   </div>
-</div>
 }

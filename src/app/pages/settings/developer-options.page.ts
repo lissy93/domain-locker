@@ -1,17 +1,18 @@
 import { PrimeNgModule } from '~/app/prime-ng.module';
-import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+
+import { Component, inject } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { ReactiveFormsModule } from '@angular/forms';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, PrimeNgModule, ReactiveFormsModule],
+  selector: 'app-settings-developer-options-page',
+  imports: [PrimeNgModule, ReactiveFormsModule],
   templateUrl: './developer-options.page.html',
   styles: [``],
 })
 export default class DeveloperOptionsPageComponent {
-  constructor(private fb: FormBuilder) {}
+  private fb = inject(FormBuilder);
 
   form: FormGroup = this.fb.group({
     restApi: [false],

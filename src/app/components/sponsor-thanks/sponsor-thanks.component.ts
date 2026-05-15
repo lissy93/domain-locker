@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject } from '@angular/core';
+
 import { HttpClient } from '@angular/common/http';
 import { SupabaseService } from '~/app/services/supabase.service';
 import { ErrorHandlerService } from '~/app/services/error-handler.service';
@@ -10,23 +10,21 @@ import { Router } from '@angular/router';
 @Component({
   standalone: true,
   selector: 'app-sponsor-message',
-  imports: [CommonModule, PrimeNgModule],
+  imports: [PrimeNgModule],
   templateUrl: './sponsor-thanks.component.html',
   styles: [``],
 })
 export class SponsorMessageComponent implements OnInit {
-  githubUsername: string | null = null;
-  isSponsor: boolean = false;
-  isHidden: boolean = false;
-  inSelfHostingDocs: boolean = false;
+  private supabase = inject(SupabaseService);
+  private http = inject(HttpClient);
+  private errorHandler = inject(ErrorHandlerService);
+  private messageService = inject(GlobalMessageService);
+  private router = inject(Router);
 
-  constructor(
-    private supabase: SupabaseService,
-    private http: HttpClient,
-    private errorHandler: ErrorHandlerService,
-    private messageService: GlobalMessageService,
-    private router: Router,
-  ) {}
+  githubUsername: string | null = null;
+  isSponsor = false;
+  isHidden = false;
+  inSelfHostingDocs = false;
 
   async ngOnInit(): Promise<void> {
     try {
@@ -43,10 +41,15 @@ export class SponsorMessageComponent implements OnInit {
       // Get session data
       const sessionData = await this.supabase.getSessionData();
 
-      // Extract GitHub username
-      const identities = (sessionData as any)?.session?.user?.identities || [];
+      interface Identity {
+        provider: string;
+        identity_data?: Record<string, string>;
+      }
+      const identities: Identity[] =
+        (sessionData as { session?: { user?: { identities?: Identity[] } } })?.session
+          ?.user?.identities || [];
       const githubIdentity = identities.find(
-        (identity: any) => identity.provider === 'github'
+        (identity) => identity.provider === 'github',
       );
 
       this.githubUsername = githubIdentity?.identity_data?.['user_name'] || null;
@@ -54,11 +57,11 @@ export class SponsorMessageComponent implements OnInit {
       if (this.githubUsername) {
         // Check if user is a sponsor
         this.http
-          .get(`https://github-sponsors-api.as93.net/lissy93`)
+          .get<{ login: string }[]>(`https://github-sponsors-api.as93.net/lissy93`)
           .subscribe({
-            next: (sponsors: any) => {
+            next: (sponsors) => {
               this.isSponsor = sponsors.some(
-                (sponsor: any) => sponsor.login === this.githubUsername
+                (sponsor) => sponsor.login === this.githubUsername,
               );
             },
             error: (error) => this.errorHandler.handleError({ error }),
@@ -72,7 +75,10 @@ export class SponsorMessageComponent implements OnInit {
   hideSponsorThanks(): void {
     if (this.isBrowser()) {
       localStorage.setItem('hideSponsorThanks', 'true');
-      this.messageService.showInfo('Sponsor Section Deactivated', 'No problem! We won\'t mention this again!');
+      this.messageService.showInfo(
+        'Sponsor Section Deactivated',
+        "No problem! We won't mention this again!",
+      );
     }
     this.isHidden = true;
   }

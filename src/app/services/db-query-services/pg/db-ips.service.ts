@@ -1,17 +1,20 @@
-import { catchError,  map, Observable } from 'rxjs';
+import { catchError, map, Observable } from 'rxjs';
 import { PgApiUtilService } from '~/app/utils/pg-api.util';
 import { IpAddress } from '~/app/../types/Database';
 
 export class IpQueries {
   constructor(
     private pgApiUtil: PgApiUtilService,
-    private handleError: (error: any) => Observable<never>,
+    private handleError: (error: unknown) => Observable<never>,
   ) {}
 
-  async saveIpAddresses(domainId: string, ipAddresses: Omit<IpAddress, 'id' | 'domainId' | 'created_at' | 'updated_at'>[]): Promise<void> {
-    if (ipAddresses.length === 0) return;
+  async saveIpAddresses(
+    domainId: string,
+    ipAddresses?: Omit<IpAddress, 'id' | 'domainId' | 'created_at' | 'updated_at'>[],
+  ): Promise<void> {
+    if (!ipAddresses || ipAddresses.length === 0) return;
 
-    const dbIpAddresses = ipAddresses.map(ip => ({
+    const dbIpAddresses = ipAddresses.map((ip) => ({
       domain_id: domainId,
       ip_address: ip.ipAddress,
       is_ipv6: ip.isIpv6,
@@ -21,7 +24,11 @@ export class IpQueries {
       INSERT INTO ip_addresses (domain_id, ip_address, is_ipv6)
       VALUES ${dbIpAddresses.map((_, index) => `($${index * 3 + 1}, $${index * 3 + 2}, $${index * 3 + 3})`).join(', ')}
     `;
-    const params = dbIpAddresses.flatMap(ip => [ip.domain_id, ip.ip_address, ip.is_ipv6]);
+    const params = dbIpAddresses.flatMap((ip) => [
+      ip.domain_id,
+      ip.ip_address,
+      ip.is_ipv6,
+    ]);
 
     try {
       await this.pgApiUtil.postToPgExecutor(query, params).toPromise();
@@ -31,7 +38,9 @@ export class IpQueries {
     }
   }
 
-  getIpAddresses(isIpv6: boolean): Observable<{ ip_address: string; domains: string[] }[]> {
+  getIpAddresses(
+    isIpv6: boolean,
+  ): Observable<{ ip_address: string; domains: string[] }[]> {
     const query = `
       SELECT ip_addresses.ip_address, array_agg(domains.domain_name) AS domains
       FROM ip_addresses
@@ -41,9 +50,11 @@ export class IpQueries {
     `;
     const params = [isIpv6];
 
-    return this.pgApiUtil.postToPgExecutor<{ ip_address: string; domains: string[] }>(query, params).pipe(
-      map(response => response.data),
-      catchError(error => this.handleError(error))
-    );
+    return this.pgApiUtil
+      .postToPgExecutor<{ ip_address: string; domains: string[] }>(query, params)
+      .pipe(
+        map((response) => response.data),
+        catchError((error) => this.handleError(error)),
+      );
   }
 }

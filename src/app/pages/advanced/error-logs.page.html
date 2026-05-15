@@ -1,118 +1,170 @@
-
 <p-tabView styleClass="mt-4">
-    <p-tabPanel header="Client-Side Errors">
-      <h2 class="text-2xl">Client-Side Errors</h2>
-      <div class="p-card px-3 py-3 flex flex-col gap-2">
-        <div *ngFor="let error of errorLog; last as isLast" class="flex flex-col w-full">
+  <p-tabPanel header="Client-Side Errors">
+    <h2 class="text-2xl">Client-Side Errors</h2>
+    <div class="p-card px-3 py-3 flex flex-col gap-2">
+      @for (error of errorLog; track error; let isLast = $last) {
+        <div class="flex flex-col w-full">
           <div class="flex justify-between items-center w-full">
             <h3 class="m-0 text-lg">{{ error.message }}</h3>
-            <p class="m-0 text-sm text-gray-500 font-mono">{{ error.date | date: 'short' }}</p>
+            <p class="m-0 text-sm text-gray-500 font-mono">
+              {{ error.date | date: 'short' }}
+            </p>
           </div>
-          <p *ngIf="error.location" class="m-0 text-sm text-gray-500 font-mono">Occurred in {{error.location}}</p>
+          @if (error.location) {
+            <p class="m-0 text-sm text-gray-500 font-mono">
+              Occurred in {{ error.location }}
+            </p>
+          }
           <div>
-            <pre *ngIf="error.error && (error.error | json) !== '{}'"
-            class="p-2 rounded-md text-sm overflow-x-auto bg-surface-0 text-red-400">{{ error.error | json }}</pre>
+            @if (error.error && (error.error | json) !== '{}') {
+              <pre
+                class="p-2 rounded-md text-sm overflow-x-auto bg-surface-0 text-red-400"
+                >{{ error.error | json }}</pre
+              >
+            }
           </div>
-          <p-divider *ngIf="!isLast" />
+          @if (!isLast) {
+            <p-divider />
+          }
         </div>
-      </div>
-    </p-tabPanel>
-    <p-tabPanel header="Build Logs">
-      <h2>Build Logs</h2>
-      <div>
-        <div class="flex gap-2">
+      }
+    </div>
+  </p-tabPanel>
+  <p-tabPanel header="Build Logs">
+    <h2>Build Logs</h2>
+    <div>
+      <div class="flex gap-2">
+        @for (action of actionsList; track action) {
           <p-button
-            *ngFor="let action of actionsList"
             size="small"
             (click)="fetchBuildLogs(action)"
-            label="{{ action.file }}"></p-button>
-        </div>
-        <p class="mt-2 opacity-70 text-sm">Click on the buttons above to view job details and the most recent build logs.</p>
+            label="{{ action.file }}"
+          ></p-button>
+        }
+      </div>
+      <p class="mt-2 opacity-70 text-sm">
+        Click on the buttons above to view job details and the most recent build logs.
+      </p>
 
-        <p-divider class="flex my-2" />
+      <p-divider class="flex my-2" />
 
-        <div *ngIf="currentAction">
+      @if (currentAction) {
+        <div>
           <h3>{{ currentAction.name }}</h3>
           <p class="text-sm italic m-0 opacity-70">
             {{ currentAction.description }}
-            <br>
+            <br />
             <span class="font-bold">Links: </span>
-            <a href="https://github.com/Lissy93/domain-locker/actions/workflows/{{currentAction.file}}" target="_blank" rel="nofollow">View all Runs</a>
+            <a
+              href="https://github.com/Lissy93/domain-locker/actions/workflows/{{
+                currentAction.file
+              }}"
+              target="_blank"
+              rel="nofollow"
+              >View all Runs</a
+            >
             |
-            <a href="https://github.com/Lissy93/domain-locker/blob/main/.github/workflows/{{currentAction.file}}" target="_blank" rel="nofollow">View Source</a>
+            <a
+              href="https://github.com/Lissy93/domain-locker/blob/main/.github/workflows/{{
+                currentAction.file
+              }}"
+              target="_blank"
+              rel="nofollow"
+              >View Source</a
+            >
           </p>
-          <pre *ngIf="currentLogs" class="p-2 bg-bluegray-900 text-bluegray-100 rounded-sm text-xs overflow-x-hidden overflow-y-auto max-h-72">{{ currentLogs }}</pre>
+          @if (currentLogs) {
+            <pre
+              class="p-2 bg-bluegray-900 text-bluegray-100 rounded-sm text-xs overflow-x-hidden overflow-y-auto max-h-72"
+              >{{ currentLogs }}</pre
+            >
+          }
         </div>
+      }
+    </div>
+  </p-tabPanel>
+  <p-tabPanel header="Server Logs">
+    <div class="p-1">
+      <h2 class="text-2xl mb-3">Reading Runtime Logs</h2>
+
+      <div class="mb-3">
+        <h3 class="text-lg font-semibold flex items-center gap-2">
+          <span>🐳</span> Runtime Logs in Docker
+        </h3>
+        <ol class="list-decimal list-inside ml-4 mt-1">
+          <li>Open your terminal</li>
+          <li>
+            Run:
+            <pre class="bg-surface-0 p-2 rounded text-xs my-1">
+docker compose logs -f</pre
+            >
+          </li>
+          <li>
+            To target a specific service (e.g. <code>web</code>, <code>api</code>):
+            <pre class="bg-surface-0 p-2 rounded text-xs my-1">
+docker compose logs -f domain-locker</pre
+            >
+          </li>
+          <li>
+            To see only the last 100 lines:
+            <pre class="bg-surface-0 p-2 rounded text-xs my-1">
+docker compose logs --tail=100 domain-locker</pre
+            >
+          </li>
+        </ol>
       </div>
-    </p-tabPanel>
-    <p-tabPanel header="Server Logs">
-        <div class="p-1">
-          <h2 class="text-2xl mb-3">Reading Runtime Logs</h2>
 
-          <div class="mb-3">
-            <h3 class="text-lg font-semibold flex items-center gap-2">
-              <span>🐳</span> Runtime Logs in Docker
-            </h3>
-            <ol class="list-decimal list-inside ml-4 mt-1">
-              <li>Open your terminal</li>
-              <li>
-                Run:
-                <pre class="bg-surface-0 p-2 rounded text-xs my-1">docker compose logs -f</pre>
-              </li>
-              <li>
-                To target a specific service (e.g. <code>web</code>, <code>api</code>):
-                <pre class="bg-surface-0 p-2 rounded text-xs my-1">docker compose logs -f domain-locker</pre>
-              </li>
-              <li>
-                To see only the last 100 lines:
-                <pre class="bg-surface-0 p-2 rounded text-xs my-1">docker compose logs --tail=100 domain-locker</pre>
-              </li>
-            </ol>
-          </div>
+      <div class="mb-3">
+        <h3 class="text-lg font-semibold flex items-center gap-2">
+          <span>▲</span> Runtime Logs in Vercel
+        </h3>
+        <ol class="list-decimal list-inside ml-4 mt-1">
+          <li>
+            Go to your project at
+            <a href="https://vercel.com/dashboard" target="_blank" rel="noopener"
+              >vercel.com/dashboard</a
+            >
+          </li>
+          <li>Click the latest deployment</li>
+          <li>
+            Scroll down to the <strong>Logs</strong> section to see real-time output
+          </li>
+          <li>Errors, warnings, and console output will be shown here</li>
+        </ol>
+      </div>
 
-          <div class="mb-3">
-            <h3 class="text-lg font-semibold flex items-center gap-2">
-              <span>▲</span> Runtime Logs in Vercel
-            </h3>
-            <ol class="list-decimal list-inside ml-4 mt-1">
-              <li>
-                Go to your project at
-                <a href="https://vercel.com/dashboard" target="_blank" rel="noopener">vercel.com/dashboard</a>
-              </li>
-              <li>Click the latest deployment</li>
-              <li>Scroll down to the <strong>Logs</strong> section to see real-time output</li>
-              <li>Errors, warnings, and console output will be shown here</li>
-            </ol>
-          </div>
+      <div class="mb-3">
+        <h3 class="text-lg font-semibold flex items-center gap-2">
+          <span>💻</span> Runtime Logs from Source (Local Dev)
+        </h3>
+        <ol class="list-decimal list-inside ml-4 mt-1">
+          <li>
+            Start the dev server (<code>npm run dev</code> or <code>pnpm dev</code>)
+          </li>
+          <li>Logs will appear directly in your terminal</li>
+          <li>Look for errors, warnings, or stack traces</li>
+          <li>
+            Add <code>console.log()</code> or <code>console.error()</code> in code for
+            debugging
+          </li>
+        </ol>
+      </div>
 
-          <div class="mb-3">
-            <h3 class="text-lg font-semibold flex items-center gap-2">
-              <span>💻</span> Runtime Logs from Source (Local Dev)
-            </h3>
-            <ol class="list-decimal list-inside ml-4 mt-1">
-              <li>Start the dev server (<code>npm run dev</code> or <code>pnpm dev</code>)</li>
-              <li>Logs will appear directly in your terminal</li>
-              <li>Look for errors, warnings, or stack traces</li>
-              <li>Add <code>console.log()</code> or <code>console.error()</code> in code for debugging</li>
-            </ol>
-          </div>
-
-          <div class="mb-3">
-            <h3 class="text-lg font-semibold flex items-center gap-2">
-              <span>🐘</span> Runtime Logs (Supabase Functions)
-            </h3>
-            <ol class="list-decimal list-inside ml-4 mt-1">
-              <li>
-                Go to your project at
-                <a href="https://app.supabase.com" target="_blank" rel="noopener">app.supabase.com</a>
-              </li>
-              <li>Click <strong>Functions → Logs</strong></li>
-              <li>View real-time logs for each Edge Function execution</li>
-            </ol>
-          </div>
-        </div>
-    </p-tabPanel>
+      <div class="mb-3">
+        <h3 class="text-lg font-semibold flex items-center gap-2">
+          <span>🐘</span> Runtime Logs (Supabase Functions)
+        </h3>
+        <ol class="list-decimal list-inside ml-4 mt-1">
+          <li>
+            Go to your project at
+            <a href="https://app.supabase.com" target="_blank" rel="noopener"
+              >app.supabase.com</a
+            >
+          </li>
+          <li>Click <strong>Functions → Logs</strong></li>
+          <li>View real-time logs for each Edge Function execution</li>
+        </ol>
+      </div>
+    </div>
+  </p-tabPanel>
 </p-tabView>
-
-
-

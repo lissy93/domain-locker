@@ -1,27 +1,40 @@
-
 <!-- List of links to docs within this category -->
-<section *ngIf="links.length" class="p-card p-4 mx-auto my-4">
-  <h2>{{ linksTitle }}</h2>
-  <ul class="pl-4">
-    <li *ngFor="let link of links">
-      <a *ngIf="link.link" [routerLink]="link.link" class="text-primary font-semibold no-underline">
-        {{ link.title }}
-      </a>
-      <a *ngIf="link.href" [href]="link.href" class="text-primary font-semibold no-underline">
-        {{ link.title }}
-      </a>
-      @if (link.description) { - <span class="opacity-70 italic">{{ link.description }}</span> }
-    </li>
-  </ul>
-</section>
+@if (links.length) {
+  <section class="p-card p-4 mx-auto my-4">
+    <h2>{{ linksTitle }}</h2>
+    <ul class="pl-4">
+      @for (link of links; track link) {
+        <li>
+          @if (link.link) {
+            <a [routerLink]="link.link" class="text-primary font-semibold no-underline">
+              {{ link.title }}
+            </a>
+          }
+          @if (link.href) {
+            <a [href]="link.href" class="text-primary font-semibold no-underline">
+              {{ link.title }}
+            </a>
+          }
+          @if (link.description) {
+            - <span class="opacity-70 italic">{{ link.description }}</span>
+          }
+        </li>
+      }
+    </ul>
+  </section>
+}
 
 <!-- Single doc content -->
-<section *ngIf="!docsNotFound" class="p-card p-4 my-4 mx-auto min-h-96">
-  <h1 class="text-3xl">{{ doc?.attributes?.['title'] }}</h1>
-  <analog-markdown [content]="doc?.content"></analog-markdown>
-</section>
+@if (!docsNotFound) {
+  <section class="p-card p-4 my-4 mx-auto min-h-96">
+    <h1 class="text-3xl">{{ doc?.attributes?.['title'] }}</h1>
+    <analog-markdown [content]="doc?.content"></analog-markdown>
+  </section>
+}
 
 <!-- No doc, or links found -->
-<div *ngIf="docsNotFound && !links.length">
-  <app-not-found-page />
-</div>
+@if (docsNotFound && !links.length) {
+  <div>
+    <app-not-found-page />
+  </div>
+}

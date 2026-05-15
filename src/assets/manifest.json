@@ -8,7 +8,10 @@
   "orientation": "portrait",
   "start_url": "/",
   "scope": "/",
-  "scope_extensions": [ "https://demo.domain-locker.com/", "https://domain-locker.as93.net" ],
+  "scope_extensions": [
+    "https://demo.domain-locker.com/",
+    "https://domain-locker.as93.net"
+  ],
   "icons": [
     {
       "src": "/icons/android-chrome-192x192.png",
@@ -32,10 +35,7 @@
   "categories": ["utilities", "productivity", "business"],
   "lang": "en",
   "dir": "auto",
-  "permissions": [
-    "notifications",
-    "push"
-  ],
+  "permissions": ["notifications", "push"],
   "screenshots": [
     {
       "src": "/screenshots/homepage.png",
@@ -63,7 +63,7 @@
       "sizes": "1832x1231"
     }
   ],
-  "prefer_related_applications": false, 
+  "prefer_related_applications": false,
   "share_target": {
     "action": "/api/share-target",
     "method": "POST",

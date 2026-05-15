@@ -28,13 +28,15 @@ Domain Locker is intended to be run with Docker, so you will need to have Docker
 
 ## Deployment
 
-- ![🐳](https://favicon.im/docker.com) [With Docker](/about/self-hosting/deploying-with-docker-compose)
-- ![💠](https://favicon.im/kuberns.com) [With Kubernetes](/about/self-hosting/deploying-with-kubernetes-helm-charts)
-- ![🔶](https://favicon.im/proxmox.com) [On Proxmox VE](/about/self-hosting/proxmox-community-script)
-- ![☂️](https://favicon.im/umbrel.com) [On Umbrel](/about/self-hosting/umbrel-os-app)
-- ![](https://favicon.im/easypanel.io) [On easypanel](/about/self-hosting/deploying-on-easypanel-io)
-- ![🐙](https://favicon.im/github.com) [From Source](/about/self-hosting/deploying-from-source)
-- ![](https://favicon.im/supabase.com) [With Supabase](/about/self-hosting/self-hosting-supabase)
+- ![🐳](https://pixelflare.cc/alicia/icons/docker/w128) [With Docker](/about/self-hosting/deploying-with-docker-compose)
+- ![💠](https://pixelflare.cc/alicia/icons/kubernetes/w128) [With Kubernetes](/about/self-hosting/deploying-with-kubernetes-helm-charts)
+- ![🔶](https://pixelflare.cc/alicia/icons/proxmox/w128) [On Proxmox VE](/about/self-hosting/proxmox-community-script)
+- ![☂️](https://pixelflare.cc/alicia/icons/umbrel/w128) [On Umbrel](/about/self-hosting/umbrel-os-app)
+- ![🔹](https://pixelflare.cc/alicia/icons/easypanel/w128) [On easypanel](/about/self-hosting/deploying-on-easypanel-io)
+- ![🖥️](https://pixelflare.cc/alicia/icons/truenas/w128) [On TruNAS](/about/self-hosting/deploy-to-truenas)
+- ![💽](https://pixelflare.cc/alicia/icons/unraid/w128) [On Unraid](/about/self-hosting/deploying-on-unraid)
+- ![🐙](https://pixelflare.cc/alicia/icons/github/w128) [From Source](/about/self-hosting/deploying-from-source)
+- ![🗃️](https://pixelflare.cc/alicia/icons/supabase/w128) [With Supabase](/about/self-hosting/self-hosting-supabase)
 
 #### One-Liner
 

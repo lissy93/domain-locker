@@ -1,37 +1,109 @@
 import { callPgExecutor } from '../lib/pgExecutor';
 import { normalizeStr, toDateOnly } from '../lib/utils';
 import { recordDomainUpdate } from '../lib/recordUpdate';
+import type { DomainRow } from '../index';
+import type { FreshDomainInfo } from '../lib/fetchInfo';
+
+interface SslRow {
+  id: string;
+  issuer?: string;
+  issuer_country?: string;
+  subject?: string;
+  valid_from?: string;
+  valid_to?: string;
+  fingerprint?: string;
+  key_size?: number;
+  signature_algorithm?: string;
+  created_at?: string;
+}
 
 export async function updateSSL(
   pgExec: string,
-  domainRow: any,
-  freshInfo: any,
-  changes: string[]
+  domainRow: DomainRow,
+  freshInfo: FreshDomainInfo,
+  changes: string[],
 ): Promise<void> {
   const domainId = domainRow.id;
-  const fresh = freshInfo?.ssl;
+  const fresh = freshInfo?.ssl as Record<string, unknown> | undefined;
   if (!fresh) return;
 
-  const [existing] = await callPgExecutor<any>(
+  const [existing] = await callPgExecutor<SslRow>(
     pgExec,
     `SELECT * FROM ssl_certificates WHERE domain_id = $1 ORDER BY created_at DESC LIMIT 1`,
-    [domainId]
+    [domainId],
   );
 
   const fields = [
-    { label: 'Issuer', column: 'issuer', type: 'text', old: existing?.issuer ?? '', new: fresh.issuer ?? '', changeType: 'ssl_issuer' },
-    { label: 'Issuer Country', column: 'issuer_country', type: 'text', old: existing?.issuer_country ?? '', new: fresh.issuer_country ?? '', changeType: 'ssl_issuer_country' },
-    { label: 'Subject', column: 'subject', type: 'text', old: existing?.subject ?? '', new: fresh.subject ?? '', changeType: 'ssl_subject' },
-    { label: 'Valid From', column: 'valid_from', type: 'date', old: existing?.valid_from ?? '', new: toDateOnly(fresh.valid_from), changeType: 'ssl_valid_from' },
-    { label: 'Valid To', column: 'valid_to', type: 'date', old: existing?.valid_to ?? '', new: toDateOnly(fresh.valid_to), changeType: 'ssl_valid_to' },
-    { label: 'Fingerprint', column: 'fingerprint', type: 'text', old: existing?.fingerprint ?? '', new: fresh.fingerprint ?? '', changeType: 'ssl_fingerprint' },
-    { label: 'Key Size', column: 'key_size', type: 'int', old: existing?.key_size ?? '', new: fresh.key_size ?? '', changeType: 'ssl_key_size' },
-    { label: 'Signature Algorithm', column: 'signature_algorithm', type: 'text', old: existing?.signature_algorithm ?? '', new: fresh.signature_algorithm ?? '', changeType: 'ssl_signature_algorithm' },
+    {
+      label: 'Issuer',
+      column: 'issuer',
+      type: 'text',
+      old: existing?.issuer ?? '',
+      new: fresh['issuer'] ?? '',
+      changeType: 'ssl_issuer',
+    },
+    {
+      label: 'Issuer Country',
+      column: 'issuer_country',
+      type: 'text',
+      old: existing?.issuer_country ?? '',
+      new: fresh['issuer_country'] ?? '',
+      changeType: 'ssl_issuer_country',
+    },
+    {
+      label: 'Subject',
+      column: 'subject',
+      type: 'text',
+      old: existing?.subject ?? '',
+      new: fresh['subject'] ?? '',
+      changeType: 'ssl_subject',
+    },
+    {
+      label: 'Valid From',
+      column: 'valid_from',
+      type: 'date',
+      old: existing?.valid_from ?? '',
+      new: toDateOnly(fresh['valid_from'] as string | null | undefined),
+      changeType: 'ssl_valid_from',
+    },
+    {
+      label: 'Valid To',
+      column: 'valid_to',
+      type: 'date',
+      old: existing?.valid_to ?? '',
+      new: toDateOnly(fresh['valid_to'] as string | null | undefined),
+      changeType: 'ssl_valid_to',
+    },
+    {
+      label: 'Fingerprint',
+      column: 'fingerprint',
+      type: 'text',
+      old: existing?.fingerprint ?? '',
+      new: fresh['fingerprint'] ?? '',
+      changeType: 'ssl_fingerprint',
+    },
+    {
+      label: 'Key Size',
+      column: 'key_size',
+      type: 'int',
+      old: existing?.key_size ?? '',
+      new: fresh['key_size'] ?? '',
+      changeType: 'ssl_key_size',
+    },
+    {
+      label: 'Signature Algorithm',
+      column: 'signature_algorithm',
+      type: 'text',
+      old: existing?.signature_algorithm ?? '',
+      new: fresh['signature_algorithm'] ?? '',
+      changeType: 'ssl_signature_algorithm',
+    },
   ];
 
   // No previous SSL? Insert new row
   if (!existing) {
-    await callPgExecutor(pgExec,
+    await callPgExecutor(
+      pgExec,
       `INSERT INTO ssl_certificates (
          domain_id, issuer, issuer_country, subject,
          valid_from, valid_to, fingerprint,
@@ -43,25 +115,32 @@ export async function updateSSL(
        )`,
       [
         domainId,
-        fresh.issuer || null,
-        fresh.issuer_country || null,
-        fresh.subject || null,
-        toDateOnly(fresh.valid_from) || null,
-        toDateOnly(fresh.valid_to) || null,
-        fresh.fingerprint || null,
-        fresh.key_size || null,
-        fresh.signature_algorithm || null,
-      ]
+        fresh['issuer'] || null,
+        fresh['issuer_country'] || null,
+        fresh['subject'] || null,
+        toDateOnly(fresh['valid_from'] as string | null | undefined) || null,
+        toDateOnly(fresh['valid_to'] as string | null | undefined) || null,
+        fresh['fingerprint'] || null,
+        fresh['key_size'] || null,
+        fresh['signature_algorithm'] || null,
+      ],
     );
 
-    await recordDomainUpdate(pgExec, domainId, 'SSL certificate added', 'ssl_created', '', JSON.stringify(fresh));
+    await recordDomainUpdate(
+      pgExec,
+      domainId,
+      'SSL certificate added',
+      'ssl_created',
+      '',
+      JSON.stringify(fresh),
+    );
     changes.push('SSL created');
     return;
   }
 
   // Compare each field
   const updateSet: string[] = [];
-  const updateValues: any[] = [];
+  const updateValues: unknown[] = [];
 
   for (const field of fields) {
     let oldVal = String(field.old ?? '');
@@ -74,7 +153,6 @@ export async function updateSSL(
       newVal = normalizeStr(newVal);
     }
 
-    
     // Special date comparison, because timezones are stupid
     if (field.type === 'date') {
       const oldDate = new Date(oldVal);
@@ -86,24 +164,39 @@ export async function updateSSL(
       if (isNaN(diffInDays) || diffInDays > 1) {
         updateSet.push(`${field.column} = $${updateSet.length + 2}::date`);
         updateValues.push(toDateOnly(newVal));
-        await recordDomainUpdate(pgExec, domainId, `SSL ${field.label} changed`, field.changeType, toDateOnly(oldVal), toDateOnly(newVal));
+        await recordDomainUpdate(
+          pgExec,
+          domainId,
+          `SSL ${field.label} changed`,
+          field.changeType,
+          toDateOnly(oldVal),
+          toDateOnly(newVal),
+        );
         changes.push(`SSL ${field.label}`);
       }
     }
-    
+
     if (oldVal !== newVal && field.type != 'date') {
       updateSet.push(`${field.column} = $${updateSet.length + 2}::${field.type}`);
       updateValues.push(field.new ?? null);
 
-      await recordDomainUpdate(pgExec, domainId, `SSL ${field.label} changed`, field.changeType, String(field.old), String(field.new));
+      await recordDomainUpdate(
+        pgExec,
+        domainId,
+        `SSL ${field.label} changed`,
+        field.changeType,
+        String(field.old),
+        String(field.new),
+      );
       changes.push(`SSL ${field.label}`);
     }
   }
 
   if (updateSet.length > 0) {
-    await callPgExecutor(pgExec,
+    await callPgExecutor(
+      pgExec,
       `UPDATE ssl_certificates SET ${updateSet.join(', ')} WHERE id = $1`,
-      [existing.id, ...updateValues]
+      [existing.id, ...updateValues],
     );
   }
 }

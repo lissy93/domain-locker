@@ -45,9 +45,12 @@ const defaultWriteMethods = new Set([
   'updateDomainCostings',
 ]);
 
-const environmentType =  import.meta.env['DL_ENV_TYPE'];
+const environmentType = import.meta.env['DL_ENV_TYPE'];
 const disableWriteEnvVar = import.meta.env['DL_DISABLE_WRITE_METHODS'];
-const writeMethods = (environmentType === 'demo' || disableWriteEnvVar) ? defaultWriteMethods :  new Set<string>();
+const writeMethods =
+  environmentType === 'demo' || disableWriteEnvVar
+    ? defaultWriteMethods
+    : new Set<string>();
 
 export function createDbProxy<T extends object>(
   realService: T,
@@ -74,7 +77,7 @@ export function createDbProxy<T extends object>(
       // }
 
       // It's a "write" method => wrap it so we do the check before the actual DB call.
-      return function(...args: any[]): Observable<any> {
+      return function (...args: unknown[]): Observable<unknown> {
         return defer(() =>
           from(featureService.isFeatureEnabledPromise('writePermissions')).pipe(
             switchMap((canWrite) => {
@@ -82,7 +85,7 @@ export function createDbProxy<T extends object>(
               if (!canWrite) {
                 globalMsg.showWarn(
                   'Write Permissions Disabled',
-                  'It\'s not possible to perform write operations on the demo instance.'
+                  "It's not possible to perform write operations on the demo instance.",
                 );
                 return throwError(() => new Error('Write permissions disabled'));
               }
@@ -95,8 +98,8 @@ export function createDbProxy<T extends object>(
               } else {
                 return from([result]); // sync => wrap
               }
-            })
-          )
+            }),
+          ),
         );
       };
     },

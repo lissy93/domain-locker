@@ -1,70 +1,56 @@
-# Stage 1 - build: Compiles the frontend and API code
-FROM node:20.12.0-alpine AS builder
+# syntax=docker/dockerfile:1.7
 
-# Set working directory
+# Stage 1 - build: install all dependencies and compile the app
+FROM node:20-alpine AS builder
+
 WORKDIR /app
 
-# Copy package files and install dependencies
-COPY package.json package-lock.json ./
+# Copy manifests + npm config for reproducible installs
+COPY package.json package-lock.json .npmrc ./
 
-# Set NPM registry and config
-RUN npm config set registry https://registry.npmmirror.com && \
-    npm config set fetch-retries 5 && \
-    npm config set fetch-retry-mintimeout 2000 && \
-    npm config set fetch-retry-maxtimeout 60000
+# Install deps with a BuildKit cache mount so re-runs reuse the npm cache
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --no-audit --no-fund
 
-# Install dependencies, with retry
-RUN for i in 1 2 3; do npm ci --legacy-peer-deps && break || sleep 20; done
-
-# Copy application source code
+# Copy source and build the production bundle
 COPY . .
-
-# Build the app
 ENV NODE_OPTIONS="--max-old-space-size=8192"
 ENV DL_ENV_TYPE="selfHosted"
-RUN npm run build
+RUN npm run build && test -f dist/analog/server/index.mjs
 
-# Stage 2 - run: Alpine-based runtime to serve the app
-FROM node:20.12.0-alpine AS runner
+# Drop devDependencies in place so node_modules can be copied to runner as-is
+RUN --mount=type=cache,target=/root/.npm \
+    npm prune --omit=dev
 
-# Install PostgreSQL client to run pg_isready and psql, plus wget for healthchecks
+# Strip esbuild (it's build-time only, and there's a CVE)
+RUN find node_modules \( -type d -name '@esbuild' -o -type d -name 'esbuild' \) \
+        -prune -exec rm -rf {} + && \
+    find node_modules -type l -name esbuild -exec rm -f {} +
+
+# Stage 2 - runner: minimal image to serve the app
+FROM node:20-alpine AS runner
+
+# Postgres client for schema/init, whois for app lookups, wget for healthcheck
 RUN apk add --no-cache postgresql-client whois wget
 
-# Create non-root app user
+# Non-root app user
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-
-# Set working directory
 WORKDIR /app
 
-# Copy required build artifacts and scripts
-COPY --chown=appuser:appgroup --from=builder /app/dist ./dist
-COPY --chown=appuser:appgroup --from=builder /app/package.json ./package.json
+# Pull build output and pruned deps from builder
+COPY --chown=appuser:appgroup --from=builder /app/dist          ./dist
+COPY --chown=appuser:appgroup --from=builder /app/node_modules  ./node_modules
+COPY --chown=appuser:appgroup --from=builder /app/package.json  ./package.json
 COPY --chown=appuser:appgroup --from=builder /app/db/schema.sql ./schema.sql
-COPY --chown=appuser:appgroup --from=builder /app/start.sh ./start.sh
+COPY --chown=appuser:appgroup --from=builder /app/start.sh      ./start.sh
 
-# Install only production dependencies
-RUN npm config set registry https://registry.npmmirror.com && \
-    npm config set fetch-retries 5 && \
-    npm config set fetch-retry-mintimeout 2000 && \
-    npm config set fetch-retry-maxtimeout 60000 && \
-    for i in 1 2 3; do npm install --omit=dev --legacy-peer-deps && break || sleep 20; done
-
-
-# Switch to the app user
 USER appuser
-
-# Expose application port
 EXPOSE 3000
-
-# Set environment variables
 ENV DL_ENV_TYPE="selfHosted"
 
-# Healthcheck
 HEALTHCHECK --interval=15s --timeout=2s --start-period=5s --retries=5 \
   CMD wget --spider -q http://localhost:3000/api/health || exit 1
 
-# Run the start script to init the database and start the app server
+# start.sh waits for Postgres, applies schema, then starts the app server.
+# To skip init and start directly: node ./dist/analog/server/index.mjs
 CMD ["./start.sh"]
-
-# The app can actually just be started with: node ./dist/analog/server/index.mjs
-# However, we need the init script to wait for the DB and initialize the schema

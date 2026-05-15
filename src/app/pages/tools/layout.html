@@ -1,23 +1,30 @@
 <router-outlet></router-outlet>
 
-<ul class="p-0 my-4 list-none grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-  <li *ngFor="let tool of toolsLinks" class="w-full break-inside-avoid p-card">
-    <a class="py-2 px-3 w-full no-underline text-default flex flex-col gap-2" [routerLink]="tool.routerLink">
-      <h4 class="m-0 font-semmibold text-xl">{{ tool.label}}</h4>
-      <div class="flex gap-2 items-center">
-        <dl-icon
-          *ngIf="tool.svgIcon"
-          [icon]="tool.svgIcon"
-          [viewBox]="'0 0 512 512'"
-          class="min-w-[4.25rem] text-center h-14 rounded bg-surface-100 p-2"
-          classNames="h-full"
-          color="var(--primary-400)"
-        />
-        <p class="m-0 pl-1 min-h-18 opacity-85 italic">
-          {{ tool.description }}
-        </p>
-      </div>
-    </a>
-  </li>
+<ul
+  class="p-0 my-4 list-none grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3"
+>
+  @for (tool of toolsLinks; track tool) {
+    <li class="w-full break-inside-avoid p-card">
+      <a
+        class="py-2 px-3 w-full no-underline text-default flex flex-col gap-2"
+        [routerLink]="tool.routerLink"
+      >
+        <h4 class="m-0 font-semmibold text-xl">{{ tool.label }}</h4>
+        <div class="flex gap-2 items-center">
+          @if (tool.svgIcon) {
+            <app-dl-icon
+              [icon]="tool.svgIcon"
+              [viewBox]="'0 0 512 512'"
+              class="min-w-[4.25rem] text-center h-14 rounded bg-surface-100 p-2"
+              classNames="h-full"
+              color="var(--primary-400)"
+            />
+          }
+          <p class="m-0 pl-1 min-h-18 opacity-85 italic">
+            {{ tool.description }}
+          </p>
+        </div>
+      </a>
+    </li>
+  }
 </ul>
-

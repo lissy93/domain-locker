@@ -1,24 +1,38 @@
 <h1 class="mt-2 mb-4">Registrars</h1>
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-  
-  <ng-template ngFor let-registrar [ngForOf]="registrars">
-    <div *ngIf="registrar.domainCount > 0"
-         [attr.data-testid]="'registrar-card-' + registrar.name"
-         [attr.data-domain-count]="registrar.domainCount"
-         [attr.data-registrar-name]="registrar.name"
-    class="p-card bg-surface-card text-default p-4 mb-4 shadow-md border-radius-custom h-full flex flex-col gap-2 relative">
-    <a [routerLink]="'/assets/registrars/'+registrar.name" class="no-underline text-default hover:underline">
-      <h2 class="text-xl font-bold m-0">
-        <app-domain-favicon [domain]="registrar.url" [size]="24" class="mr-2"></app-domain-favicon>
-        {{ registrar.name }}
-      </h2>
-    </a>
-    <p class="m-0"><a [href]="registrar.url" target="_blank">{{ makePrettyUrl(registrar.url) }}</a></p>
-    <a [routerLink]="'/assets/registrars/'+registrar.name" class="no-underline text-default">
-      <p class="m-0 text-3xl italic text-surface-400">
-        {{ registrar.domainCount }} Domain{{ registrar.domainCount > 1 ? 's' : ''}}
-      </p>
-    </a>
-  </div>
-  </ng-template>
+  @for (registrar of registrars; track registrar) {
+    @if (registrar.domainCount > 0) {
+      <div
+        [attr.data-testid]="'registrar-card-' + registrar.name"
+        [attr.data-domain-count]="registrar.domainCount"
+        [attr.data-registrar-name]="registrar.name"
+        class="p-card bg-surface-card text-default p-4 mb-4 shadow-md border-radius-custom h-full flex flex-col gap-2 relative"
+      >
+        <a
+          [routerLink]="'/assets/registrars/' + registrar.name"
+          class="no-underline text-default hover:underline"
+        >
+          <h2 class="text-xl font-bold m-0">
+            <app-domain-favicon
+              [domain]="registrar.url"
+              [size]="24"
+              class="mr-2"
+            ></app-domain-favicon>
+            {{ registrar.name }}
+          </h2>
+        </a>
+        <p class="m-0">
+          <a [href]="registrar.url" target="_blank">{{ makePrettyUrl(registrar.url) }}</a>
+        </p>
+        <a
+          [routerLink]="'/assets/registrars/' + registrar.name"
+          class="no-underline text-default"
+        >
+          <p class="m-0 text-3xl italic text-surface-400">
+            {{ registrar.domainCount }} Domain{{ registrar.domainCount > 1 ? 's' : '' }}
+          </p>
+        </a>
+      </div>
+    }
+  }
 </div>

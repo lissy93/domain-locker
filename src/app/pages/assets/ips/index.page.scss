@@ -7,6 +7,7 @@
   margin-right: 0.5rem;
 }
 
-::ng-deep .p-tabview-panel, ::ng-deep .p-datatable-wrapper {
+::ng-deep .p-tabview-panel,
+::ng-deep .p-datatable-wrapper {
   border-radius: 0.5rem;
 }

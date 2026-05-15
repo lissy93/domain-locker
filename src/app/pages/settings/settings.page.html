@@ -1,20 +1,26 @@
-
-
-<ul class="grid md:hidden grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 list-none p-0 my-4">
-  <li *ngFor="let link of settingsLinks">
-    <a [routerLink]="link.routerLink"
-      class="p-card flex p-3 no-underline transition ease-in duration-300 border-transparent border-3 hover:border-primary-300 h-full">
-      <i [class]="link.icon + ' mr-3'"></i>
-      <h4 class="m-0">{{ link.label }}</h4>
-    </a>
-  </li>
+<ul
+  class="grid md:hidden grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 list-none p-0 my-4"
+>
+  @for (link of settingsLinks; track link) {
+    <li>
+      <a
+        [routerLink]="link.routerLink"
+        class="p-card flex p-3 no-underline transition ease-in duration-300 border-transparent border-3 hover:border-primary-300 h-full"
+      >
+        <i [class]="link.icon + ' mr-3'"></i>
+        <h4 class="m-0">{{ link.label }}</h4>
+      </a>
+    </li>
+  }
 </ul>
 
 <h3>Account Checkup</h3>
 <app-account-issues />
 
 <p-divider align="center" (click)="toggleAccountInfo()">
-  <div class="flex gap-2 items-center px-1 py-1 cursor-pointer text-sm opacity-70 hover:text-primary">
+  <div
+    class="flex gap-2 items-center px-1 py-1 cursor-pointer text-sm opacity-70 hover:text-primary"
+  >
     @if (!showAccountInfo) {
       <i class="pi pi-angle-double-down"></i>
       <span>Expand Account Info</span>
@@ -27,138 +33,203 @@
   </div>
 </p-divider>
 
-<p-progressSpinner *ngIf="isAccountInfoLoading" class="flex mx-auto my-4" />
+@if (isAccountInfoLoading) {
+  <p-progressSpinner class="flex mx-auto my-4" />
+}
 
 @if (showAccountInfo && !isAccountInfoLoading) {
+  <div class="w-full">
+    <h3>Current Plan</h3>
+    @if (currentPlan$ | async; as currentPlan) {
+      <p>
+        Current Plan:
+        <span class="opacity-70 italic">{{ currentPlan | titlecase }}</span>
+      </p>
+    } @else {
+      Loading billing details...
+    }
 
-<div class="w-full">
-  <h3>Current Plan</h3>
-  <p *ngIf="currentPlan$ | async as currentPlan; else loading">
-    Current Plan:
-    <span class="opacity-70 italic">{{ currentPlan | titlecase }}</span>
-  </p>
-  <ng-template #loading>
-    Loading billing details...
-  </ng-template>
-
-  <div class="flex justify-end w-full">
-    <p-button
-      label="Manage Plan"
-      icon="pi pi-shop"
-      severity="primary"
-      size="small"
-      [outlined]="true"
-    routerLink="/settings/upgrade"
-    />
+    <div class="flex justify-end w-full">
+      <p-button
+        label="Manage Plan"
+        icon="pi pi-shop"
+        severity="primary"
+        size="small"
+        [outlined]="true"
+        routerLink="/settings/upgrade"
+      />
+    </div>
   </div>
-</div>
 
-<p-divider />
+  <p-divider />
 
-<div class="w-full">
-  <h3>Profile</h3>
-  <div *ngIf="user$ | async as user; else loadingUser">
-    <p class="my-1">Name: <span class="opacity-70 italic">{{ user.user_metadata['name'] || 'Unset' }}</span></p>
-    <p class="my-1">Email: <span class="opacity-70 italic">{{ user.email }}</span></p>
-    <p class="my-1">Password: <span class="opacity-70 italic">{{ passwordInfo(user) }}</span></p>
-    <p class="my-1">MFA: <span class="opacity-70 italic">{{ mfaInfo(user) }}</span></p>
+  <div class="w-full">
+    <h3>Profile</h3>
+    @if (user$ | async; as user) {
+      <div>
+        <p class="my-1">
+          Name:
+          <span class="opacity-70 italic">{{
+            user.user_metadata['name'] || 'Unset'
+          }}</span>
+        </p>
+        <p class="my-1">
+          Email: <span class="opacity-70 italic">{{ user.email }}</span>
+        </p>
+        <p class="my-1">
+          Password: <span class="opacity-70 italic">{{ passwordInfo(user) }}</span>
+        </p>
+        <p class="my-1">
+          MFA: <span class="opacity-70 italic">{{ mfaInfo(user) }}</span>
+        </p>
+      </div>
+    } @else {
+      Loading user...
+    }
+    <div class="flex justify-end w-full">
+      <p-button
+        label="Edit Profile"
+        icon="pi pi-user-edit"
+        class="mr-2"
+        severity="primary"
+        size="small"
+        [outlined]="true"
+        routerLink="/settings/account"
+      />
+    </div>
   </div>
-  <ng-template #loadingUser>
-    Loading user...
-  </ng-template>
-  <div class="flex justify-end w-full">
-    <p-button
-      label="Edit Profile"
-      icon="pi pi-user-edit"
-      class="mr-2"
-      severity="primary"
-      size="small"
-      [outlined]="true"
-      routerLink="/settings/account"
-    />
-  </div>
-</div>
 
-<p-divider />
+  <p-divider />
 
-<div class="w-full">
-  <h3>Display</h3>
-  <div *ngIf="displayOptions">
-    <p class="my-1">Theme: <span class="opacity-70 italic">{{ displayOptions.theme }}</span></p>
-    <p class="my-1">Mode: <span class="opacity-70 italic">{{ displayOptions.darkMode ? 'Dark' : 'Light' }}</span></p>
-    <p class="my-1">Size: <span class="opacity-70 italic">{{ displayOptions.scale }}</span></p>
-    <p class="my-1">Font: <span class="opacity-70 italic">{{ displayOptions.font }}</span></p>
-    <p class="my-1">Language: <span class="opacity-70 italic">{{ language }}</span></p>
+  <div class="w-full">
+    <h3>Display</h3>
+    @if (displayOptions) {
+      <div>
+        <p class="my-1">
+          Theme: <span class="opacity-70 italic">{{ displayOptions.theme }}</span>
+        </p>
+        <p class="my-1">
+          Mode:
+          <span class="opacity-70 italic">{{
+            displayOptions.darkMode ? 'Dark' : 'Light'
+          }}</span>
+        </p>
+        <p class="my-1">
+          Size: <span class="opacity-70 italic">{{ displayOptions.scale }}</span>
+        </p>
+        <p class="my-1">
+          Font: <span class="opacity-70 italic">{{ displayOptions.font }}</span>
+        </p>
+        <p class="my-1">
+          Language: <span class="opacity-70 italic">{{ language }}</span>
+        </p>
+      </div>
+    }
+    <div class="flex justify-end w-full">
+      <p-button
+        label="Display Options"
+        icon="pi pi-palette"
+        class="mr-2"
+        severity="primary"
+        size="small"
+        [outlined]="true"
+        routerLink="/settings/display-options"
+      />
+    </div>
   </div>
-  <div class="flex justify-end w-full">
-    <p-button
-      label="Display Options"
-      icon="pi pi-palette"
-      class="mr-2"
-      severity="primary"
-      size="small"
-      [outlined]="true"
-      routerLink="/settings/display-options"
-    />
-  </div>
-</div>
 
-<p-divider />
+  <p-divider />
 
-<div class="w-full">
-  <h3>Notifications</h3>
-  <div *ngIf="notifications">
-    <p class="my-1">Email: <span class="opacity-70 italic">{{ notifications.email ? 'Enabled' : 'Disabled' }}</span></p>
-    <p class="my-1">Push Notifications: <span class="opacity-70 italic">{{ notifications.pushNotification ? 'Enabled' : 'Disabled' }}</span></p>
-    <p class="my-1">Web Hooks: <span class="opacity-70 italic">{{ notifications.webHook ? 'Enabled' : 'Disabled' }}</span></p>
-    <p class="my-1">Signal: <span class="opacity-70 italic">{{ notifications.signal ? 'Enabled' : 'Disabled' }}</span></p>
-    <p class="my-1">Telegram: <span class="opacity-70 italic">{{ notifications.telegram ? 'Enabled' : 'Disabled' }}</span></p>
-    <p class="my-1">Slack: <span class="opacity-70 italic">{{ notifications.slack ? 'Enabled' : 'Disabled' }}</span></p>
-    <p class="my-1">Matrix: <span class="opacity-70 italic">{{ notifications.matrix ? 'Enabled' : 'Disabled' }}</span></p>
+  <div class="w-full">
+    <h3>Notifications</h3>
+    @if (notifications) {
+      <div>
+        <p class="my-1">
+          Email:
+          <span class="opacity-70 italic">{{
+            notifications.email ? 'Enabled' : 'Disabled'
+          }}</span>
+        </p>
+        <p class="my-1">
+          Push Notifications:
+          <span class="opacity-70 italic">{{
+            notifications.pushNotification ? 'Enabled' : 'Disabled'
+          }}</span>
+        </p>
+        <p class="my-1">
+          Web Hooks:
+          <span class="opacity-70 italic">{{
+            notifications.webHook ? 'Enabled' : 'Disabled'
+          }}</span>
+        </p>
+        <p class="my-1">
+          Signal:
+          <span class="opacity-70 italic">{{
+            notifications.signal ? 'Enabled' : 'Disabled'
+          }}</span>
+        </p>
+        <p class="my-1">
+          Telegram:
+          <span class="opacity-70 italic">{{
+            notifications.telegram ? 'Enabled' : 'Disabled'
+          }}</span>
+        </p>
+        <p class="my-1">
+          Slack:
+          <span class="opacity-70 italic">{{
+            notifications.slack ? 'Enabled' : 'Disabled'
+          }}</span>
+        </p>
+        <p class="my-1">
+          Matrix:
+          <span class="opacity-70 italic">{{
+            notifications.matrix ? 'Enabled' : 'Disabled'
+          }}</span>
+        </p>
+      </div>
+    }
+    <div class="flex justify-end w-full">
+      <p-button
+        label="Notification Preferences"
+        icon="pi pi-bell"
+        class="mr-2"
+        severity="primary"
+        size="small"
+        [outlined]="true"
+        routerLink="/settings/notification-preferences"
+      />
+      <p-button
+        label="Notification Events"
+        icon="pi pi-bell"
+        class="mr-2"
+        severity="primary"
+        size="small"
+        [outlined]="true"
+        routerLink="/notifications/edit-events"
+      />
+    </div>
   </div>
-  <div class="flex justify-end w-full">
-    <p-button
-      label="Notification Preferences"
-      icon="pi pi-bell"
-      class="mr-2"
-      severity="primary"
-      size="small"
-      [outlined]="true"
-      routerLink="/settings/notification-preferences"
-    />
-    <p-button
-      label="Notification Events"
-      icon="pi pi-bell"
-      class="mr-2"
-      severity="primary"
-      size="small"
-      [outlined]="true"
-      routerLink="/notifications/edit-events"
-    />
-  </div>
-</div>
 
-<p-divider />
+  <p-divider />
 
-<div class="w-full">
-  <h3>Privacy</h3>
-  <div>
-    <p class="my-1">Hit Counting: <span class="opacity-70 italic">Disabled</span></p>
-    <p class="my-1">Error Tracking: <span class="opacity-70 italic">Disabled</span></p>
-    <p class="my-1">Cookies: <span class="opacity-70 italic">Disabled</span></p>
-    <p class="my-1">Local Storage: <span class="opacity-70 italic">Enabled</span></p>
+  <div class="w-full">
+    <h3>Privacy</h3>
+    <div>
+      <p class="my-1">Hit Counting: <span class="opacity-70 italic">Disabled</span></p>
+      <p class="my-1">Error Tracking: <span class="opacity-70 italic">Disabled</span></p>
+      <p class="my-1">Cookies: <span class="opacity-70 italic">Disabled</span></p>
+      <p class="my-1">Local Storage: <span class="opacity-70 italic">Enabled</span></p>
+    </div>
+    <div class="flex justify-end w-full">
+      <p-button
+        label="Privacy Settings"
+        icon="pi pi-eye-slash"
+        class="mr-2"
+        severity="primary"
+        size="small"
+        [outlined]="true"
+        routerLink="/settings/privacy-settings"
+      />
+    </div>
   </div>
-  <div class="flex justify-end w-full">
-    <p-button
-      label="Privacy Settings"
-      icon="pi pi-eye-slash"
-      class="mr-2"
-      severity="primary"
-      size="small"
-      [outlined]="true"
-      routerLink="/settings/privacy-settings"
-    />
-  </div>
-</div>
-
 }

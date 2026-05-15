@@ -1,12 +1,12 @@
-import { catchError,  map, Observable, of } from 'rxjs';
+import { catchError, map, Observable } from 'rxjs';
 import { DbDomain, Host } from '~/app/../types/Database';
 import { PgApiUtilService } from '~/app/utils/pg-api.util';
 
 export class HostsQueries {
   constructor(
     private pgApiUtil: PgApiUtilService,
-    private handleError: (error: any) => Observable<never>,
-    private formatDomainData: (domain: any) => DbDomain
+    private handleError: (error: unknown) => Observable<never>,
+    private formatDomainData: (domain: Record<string, unknown>) => DbDomain,
   ) {}
 
   getHosts(): Observable<Host[]> {
@@ -14,7 +14,7 @@ export class HostsQueries {
 
     return this.pgApiUtil.postToPgExecutor<Host>(query).pipe(
       map((response) => response.data),
-      catchError((error) => this.handleError(error))
+      catchError((error) => this.handleError(error)),
     );
   }
 
@@ -24,16 +24,18 @@ export class HostsQueries {
                    LEFT JOIN domain_hosts dh ON h.id = dh.host_id
                    GROUP BY h.isp;`;
 
-    return this.pgApiUtil.postToPgExecutor<{ isp: string; domain_count: number }>(query).pipe(
-      map((response) => {
-        const counts: Record<string, number> = {};
-        response.data.forEach((item) => {
-          counts[item.isp] = item.domain_count;
-        });
-        return counts;
-      }),
-      catchError((error) => this.handleError(error))
-    );
+    return this.pgApiUtil
+      .postToPgExecutor<{ isp: string; domain_count: number }>(query)
+      .pipe(
+        map((response) => {
+          const counts: Record<string, number> = {};
+          response.data.forEach((item) => {
+            counts[item.isp] = item.domain_count;
+          });
+          return counts;
+        }),
+        catchError((error) => this.handleError(error)),
+      );
   }
 
   getDomainsByHost(hostIsp: string): Observable<DbDomain[]> {
@@ -57,10 +59,12 @@ export class HostsQueries {
                    WHERE h.isp = $1
                    GROUP BY d.id, r.name, r.url;`;
 
-    return this.pgApiUtil.postToPgExecutor(query, [hostIsp]).pipe(
-      map((response) => response.data.map(this.formatDomainData)),
-      catchError((error) => this.handleError(error))
-    );
+    return this.pgApiUtil
+      .postToPgExecutor<Record<string, unknown>>(query, [hostIsp])
+      .pipe(
+        map((response) => response.data.map(this.formatDomainData)),
+        catchError((error) => this.handleError(error)),
+      );
   }
 
   getHostsWithDomainCounts(): Observable<(Host & { domain_count: number })[]> {
@@ -71,7 +75,7 @@ export class HostsQueries {
 
     return this.pgApiUtil.postToPgExecutor<Host & { domain_count: number }>(query).pipe(
       map((response) => response.data),
-      catchError((error) => this.handleError(error))
+      catchError((error) => this.handleError(error)),
     );
   }
 
@@ -80,7 +84,9 @@ export class HostsQueries {
 
     // Step 1: Check if the host already exists
     const selectQuery = `SELECT id FROM hosts WHERE isp = $1 LIMIT 1;`;
-    const selectResponse = await this.pgApiUtil.postToPgExecutor<{ id: string }>(selectQuery, [host.isp]).toPromise();
+    const selectResponse = await this.pgApiUtil
+      .postToPgExecutor<{ id: string }>(selectQuery, [host.isp])
+      .toPromise();
 
     let hostId: string;
 
@@ -90,17 +96,19 @@ export class HostsQueries {
       const updateQuery = `UPDATE hosts SET ip = $1, lat = $2, lon = $3, org = $4, as_number = $5, city = $6, region = $7, country = $8
                            WHERE id = $9;`;
 
-      await this.pgApiUtil.postToPgExecutor(updateQuery, [
-        host.query,
-        host.lat,
-        host.lon,
-        host.org,
-        host.asNumber,
-        host.city,
-        host.region,
-        host.country,
-        hostId,
-      ]).toPromise();
+      await this.pgApiUtil
+        .postToPgExecutor(updateQuery, [
+          host.query,
+          host.lat,
+          host.lon,
+          host.org,
+          host.asNumber,
+          host.city,
+          host.region,
+          host.country,
+          hostId,
+        ])
+        .toPromise();
     } else {
       // Step 3: If host does not exist, insert it
       const insertQuery = `INSERT INTO hosts (ip, lat, lon, isp, org, as_number, city, region, country)
@@ -108,7 +116,9 @@ export class HostsQueries {
                            RETURNING id;`;
 
       const insertResponse = await this.pgApiUtil
-        .postToPgExecutor<{ id: string }>(insertQuery, [
+        .postToPgExecutor<{
+          id: string;
+        }>(insertQuery, [
           host.query,
           host.lat,
           host.lon,

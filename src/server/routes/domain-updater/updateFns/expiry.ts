@@ -1,12 +1,14 @@
 import { callPgExecutor } from '../lib/pgExecutor';
 import { recordDomainUpdate } from '../lib/recordUpdate';
 import { toDateOnly, datesDifferBeyondThreshold } from '../lib/utils';
+import type { DomainRow } from '../index';
+import type { FreshDomainInfo } from '../lib/fetchInfo';
 
 export async function updateExpiryDate(
   pgExec: string,
-  domainRow: any,
-  freshInfo: any,
-  changes: string[]
+  domainRow: DomainRow,
+  freshInfo: FreshDomainInfo,
+  changes: string[],
 ): Promise<void> {
   const oldRaw = domainRow.expiry_date;
   const newRaw = freshInfo?.dates?.expiry_date;
@@ -23,12 +25,13 @@ export async function updateExpiryDate(
       'Expiry date changed',
       'expiry_domain',
       oldDateStr,
-      newDateStr
+      newDateStr,
     );
 
-    await callPgExecutor(pgExec,
+    await callPgExecutor(
+      pgExec,
       `UPDATE domains SET expiry_date = $1::date WHERE id = $2::uuid`,
-      [newDateStr, domainRow.id]
+      [newDateStr, domainRow.id],
     );
 
     changes.push('Expiry Date');

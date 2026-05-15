@@ -1,11 +1,15 @@
-import { Component, OnInit, Input, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, Input, ChangeDetectorRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PrimeNgModule } from '~/app/prime-ng.module';
 import { NgApexchartsModule } from 'ng-apexcharts';
 import DatabaseService from '~/app/services/database.service';
 import { ErrorHandlerService } from '~/app/services/error-handler.service';
 import { ApexOptions } from 'ng-apexcharts';
-import { getUptimeColor, getResponseCodeColor, getPerformanceColor } from '~/app/pages/monitor/monitor-helpers';
+import {
+  getUptimeColor,
+  getResponseCodeColor,
+  getPerformanceColor,
+} from '~/app/pages/monitor/monitor-helpers';
 
 interface UptimeData {
   checked_at: string;
@@ -15,10 +19,23 @@ interface UptimeData {
   dns_lookup_time_ms: number;
   ssl_handshake_time_ms: number;
 }
-interface ResponseCode { code: number; count: number, percentage: number };
-interface Series { x: string; y: number };
-interface MinMax { min: number; max: number };
-interface DateValue { date: string; value: number };
+interface ResponseCode {
+  code: number;
+  count: number;
+  percentage: number;
+}
+interface Series {
+  x: string;
+  y: number;
+}
+interface MinMax {
+  min: number;
+  max: number;
+}
+interface DateValue {
+  date: string;
+  value: number;
+}
 type ChartType = 'response' | 'ssl' | 'dns';
 type Timeframe = 'day' | 'week' | 'month' | 'year';
 
@@ -30,6 +47,9 @@ type Timeframe = 'day' | 'week' | 'month' | 'year';
   styleUrls: ['./sparklines.component.scss'],
 })
 export class DomainSparklineComponent implements OnInit {
+  private databaseService = inject(DatabaseService);
+  private errorHandler = inject(ErrorHandlerService);
+  private cdr = inject(ChangeDetectorRef);
 
   @Input() domainId!: string;
   @Input() userId!: string;
@@ -37,13 +57,13 @@ export class DomainSparklineComponent implements OnInit {
   timeframe: Timeframe = 'day';
   timeframeOptions: Timeframe[] = ['day', 'week', 'month', 'year'];
 
-  advancedMode: boolean = false;
+  advancedMode = false;
 
   uptimeData: UptimeData[] = [];
-  isUp: boolean = false;
+  isUp = false;
   uptimePercentage!: number;
   responseCodes: ResponseCode[] = [];
-  
+
   // Averages for each metric for the given time frame
   avgResponseTime!: number;
   avgDnsTime!: number;
@@ -60,41 +80,41 @@ export class DomainSparklineComponent implements OnInit {
   hoveredSslTime: DateValue | null = null;
 
   // Chart data
-  responseTimeChart: any;
-  dnsTimeChart: any;
-  sslTimeChart: any;
+  responseTimeChart: ApexOptions = {};
+  dnsTimeChart: ApexOptions = {};
+  sslTimeChart: ApexOptions = {};
 
   getUptimeColor = getUptimeColor;
   getResponseCodeColor = getResponseCodeColor;
   getPerformanceColor = getPerformanceColor;
-
-  constructor(
-    private databaseService: DatabaseService,
-    private errorHandler: ErrorHandlerService,
-    private cdr: ChangeDetectorRef,
-  ) {}
 
   ngOnInit(): void {
     this.fetchUptimeData();
   }
 
   fetchUptimeData(): void {
-    this.databaseService.instance.getDomainUptime(this.userId, this.domainId, this.timeframe).then((data: any) => {
-      if (!data.data && data.length) data.data = data; // Note to future me: I am sorry.
-      if (data.data) {
-        this.uptimeData = data.data;
-        this.processUptimeData();
-        this.processResponseCodes();
-      } else {
-        this.errorHandler.handleError({
-          error: data?.error,
-          message: 'Failed to load uptime data',
-          showToast: true,
-          location: 'Domain Uptime',
-        });
-      }
-    })
-    ;
+    this.databaseService.instance
+      .getDomainUptime(this.userId, this.domainId, this.timeframe)
+      .then((raw: unknown) => {
+        const data = raw as {
+          data?: UptimeData[];
+          length?: number;
+          error?: unknown;
+        } & UptimeData[];
+        if (!data.data && data.length) data.data = data; // Note to future me: I am sorry.
+        if (data.data) {
+          this.uptimeData = data.data;
+          this.processUptimeData();
+          this.processResponseCodes();
+        } else {
+          this.errorHandler.handleError({
+            error: data?.error,
+            message: 'Failed to load uptime data',
+            showToast: true,
+            location: 'Domain Uptime',
+          });
+        }
+      });
   }
 
   /* From the db response data, puts in format ready for charts */
@@ -144,12 +164,12 @@ export class DomainSparklineComponent implements OnInit {
       percentage: Math.round((count / this.uptimeData.length) * 100),
     }));
   }
-  
 
   calculateAverage(times: number[]): number {
     const filteredTimes = times.filter((t) => t != null);
     return (
-      filteredTimes.reduce((acc, time) => Number(acc) + Number(time), 0) / filteredTimes.length
+      filteredTimes.reduce((acc, time) => Number(acc) + Number(time), 0) /
+      filteredTimes.length
     );
   }
 
@@ -161,21 +181,32 @@ export class DomainSparklineComponent implements OnInit {
     };
   }
 
-  updateCharts(
-    responseTimes: Series[],
-    dnsTimes: Series[],
-    sslTimes: Series[]
-  ): void {
-    this.responseTimeChart = this.createSparklineChart('response', responseTimes, '--cyan-400', 'Response Time');
-    this.dnsTimeChart = this.createSparklineChart('dns', dnsTimes, '--indigo-400', 'DNS Time');
-    this.sslTimeChart = this.createSparklineChart('ssl', sslTimes, '--purple-400', 'SSL Time');
+  updateCharts(responseTimes: Series[], dnsTimes: Series[], sslTimes: Series[]): void {
+    this.responseTimeChart = this.createSparklineChart(
+      'response',
+      responseTimes,
+      '--cyan-400',
+      'Response Time',
+    );
+    this.dnsTimeChart = this.createSparklineChart(
+      'dns',
+      dnsTimes,
+      '--indigo-400',
+      'DNS Time',
+    );
+    this.sslTimeChart = this.createSparklineChart(
+      'ssl',
+      sslTimes,
+      '--purple-400',
+      'SSL Time',
+    );
   }
 
   createSparklineChart(
     id: ChartType,
     data: Series[],
     color = '--blue-400',
-    name: string
+    name: string,
   ): ApexOptions {
     return {
       chart: {
@@ -206,15 +237,17 @@ export class DomainSparklineComponent implements OnInit {
         enabled: this.timeframe === 'day' && this.advancedMode,
       },
       colors: [`var(${color}, #60a5fa)`],
-      fill: this.advancedMode ? {
-        type: 'gradient',
-        gradient: {
-          shadeIntensity: 1,
-          opacityFrom: 0.5,
-          opacityTo: 0,
-          stops: [0, 70, 100]
-        }
-      } : {},
+      fill: this.advancedMode
+        ? {
+            type: 'gradient',
+            gradient: {
+              shadeIntensity: 1,
+              opacityFrom: 0.5,
+              opacityTo: 0,
+              stops: [0, 70, 100],
+            },
+          }
+        : {},
       series: [
         {
           name,
@@ -224,7 +257,7 @@ export class DomainSparklineComponent implements OnInit {
       ],
       stroke: {
         curve: 'smooth',
-        width: this.advancedMode ? 3: 2,
+        width: this.advancedMode ? 3 : 2,
         colors: [`var(${color}, #60a5fa)`],
       },
       tooltip: {
@@ -234,7 +267,7 @@ export class DomainSparklineComponent implements OnInit {
           format: 'dd MMM HH:mm',
         },
         y: {
-          formatter: (value: number) => value ? `${value.toFixed(2)} ms` : 'N/A',
+          formatter: (value: number) => (value ? `${value.toFixed(2)} ms` : 'N/A'),
         },
       },
       xaxis: {
@@ -242,12 +275,18 @@ export class DomainSparklineComponent implements OnInit {
       },
     };
   }
-  
 
-  updateHoveredValue(hoveredNode: DateValue | null, chartType: ChartType | null = null): void {
+  updateHoveredValue(
+    hoveredNode: DateValue | null,
+    chartType: ChartType | null = null,
+  ): void {
     const { date, value } = hoveredNode || {};
     if (!value || !date || !chartType) {
-      const triggerChange = !!(this.hoveredResponseTime || this.hoveredDnsTime || this.hoveredSslTime);
+      const triggerChange = !!(
+        this.hoveredResponseTime ||
+        this.hoveredDnsTime ||
+        this.hoveredSslTime
+      );
       if (triggerChange) {
         this.hoveredResponseTime = null;
         this.hoveredDnsTime = null;
@@ -269,7 +308,6 @@ export class DomainSparklineComponent implements OnInit {
     }
     this.cdr.detectChanges();
   }
-  
 
   onTimeframeChange(timeframe: string): void {
     this.timeframe = timeframe as Timeframe;
@@ -290,11 +328,16 @@ export class DomainSparklineComponent implements OnInit {
 
   public mapTimeToSentence(timeframe: Timeframe): string {
     switch (timeframe) {
-      case 'day': return 'past 24 hours';
-      case 'week': return 'past 7 days';
-      case 'month': return 'past 30 days';
-      case 'year': return 'past 12 months';
-      default: return 'Unknown';
+      case 'day':
+        return 'past 24 hours';
+      case 'week':
+        return 'past 7 days';
+      case 'month':
+        return 'past 30 days';
+      case 'year':
+        return 'past 12 months';
+      default:
+        return 'Unknown';
     }
   }
 
@@ -309,5 +352,4 @@ export class DomainSparklineComponent implements OnInit {
     };
     return date.toLocaleString('en-US', options).replace(',', '');
   }
-  
 }

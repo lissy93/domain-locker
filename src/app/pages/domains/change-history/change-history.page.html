@@ -1,15 +1,15 @@
-
-<ng-container *ngIf="changeHistoryEnabled$ | async; else featureNotEnabled">
+@if (changeHistoryEnabled$ | async) {
   <div class="p-card p-4">
     <h2 class="mb-3">Domain Update History</h2>
     <app-domain-updates />
   </div>
-
   <div class="p-card p-4 mt-4">
     <h2 class="mb-3">Update Count Summary</h2>
     <app-change-history-chart />
   </div>
-</ng-container>
+} @else {
+  <app-feature-not-enabled #featureNotEnabled feature="changeHistory" />
+}
 <ng-template #featureNotEnabled>
   <app-feature-not-enabled #featureNotEnabled feature="changeHistory" />
 </ng-template>

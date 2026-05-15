@@ -1,13 +1,11 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
+import { RouterModule } from '@angular/router';
 import { PrimeNgModule } from '~/app/prime-ng.module';
 import { DbDomain, Link } from '~/app/../types/Database';
 import DatabaseService from '~/app/services/database.service';
 import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
-import { TagEditorComponent } from '~/app/components/forms/tag-editor/tag-editor.component';
 import { ErrorHandlerService } from '~/app/services/error-handler.service';
-import { DomainFaviconComponent } from '~/app/components/misc/favicon.component';
 import { LinkDialogComponent } from '~/app/components/misc/edit-link.component';
 import { ContextMenu } from 'primeng/contextmenu';
 import { DialogService } from 'primeng/dynamicdialog';
@@ -27,28 +25,27 @@ export interface LinkResponse {
   linksWithDomains?: ModifiedLink[];
 }
 
-interface CustomSections {
-  [key: string]: {
-    [key: string]: Omit<Link, 'id'>[];
-
-  };
-}
-
+type CustomSections = Record<string, Record<string, Omit<Link, 'id'>[]>>;
 
 @Component({
   standalone: true,
-  selector: 'app-tags-index',
-  imports: [CommonModule, RouterModule, PrimeNgModule, TagEditorComponent, DomainFaviconComponent, LinkDialogComponent, DomainLinkComponent],
+  selector: 'app-assets-links-page',
+  imports: [CommonModule, RouterModule, PrimeNgModule, DomainLinkComponent],
   templateUrl: './index.page.html',
   providers: [DialogService],
   // styleUrl: './tags.scss'
 })
 export default class LinksIndexPageComponent implements OnInit {
-  
-  links!: LinkResponse;
-  loading: boolean = true;
-  showAutoLinks: boolean = false;
-  fetchedExtraLinks: boolean = false;
+  private databaseService = inject(DatabaseService);
+  private messageService = inject(MessageService);
+  private errorHandlerService = inject(ErrorHandlerService);
+  private confirmationService = inject(ConfirmationService);
+  private dialogService = inject(DialogService);
+
+  links: LinkResponse | null = null;
+  loading = true;
+  showAutoLinks = false;
+  fetchedExtraLinks = false;
   customSections: CustomSections = {};
   domains: DbDomain[] = [];
 
@@ -63,21 +60,17 @@ export default class LinksIndexPageComponent implements OnInit {
   selectedLink: ModifiedLink | null = null;
   public contextMenuItems: MenuItem[] = [];
 
-  constructor(
-    private databaseService: DatabaseService,
-    private messageService: MessageService,
-    private errorHandlerService: ErrorHandlerService,
-    private confirmationService: ConfirmationService,
-    private dialogService: DialogService,
-  ) {}
-
   ngOnInit() {
     this.loadLinks();
 
     this.contextMenuItems = [
       { label: 'Open Link', icon: 'pi pi-external-link', command: () => this.openLink() },
       { label: 'Edit Link', icon: 'pi pi-pencil', command: () => this.showEditLink() },
-      { label: 'Linked Domains', icon: 'pi pi-check-square', command: () => this.showEditLink() },
+      {
+        label: 'Linked Domains',
+        icon: 'pi pi-check-square',
+        command: () => this.showEditLink(),
+      },
       { label: 'Delete Link', icon: 'pi pi-trash', command: () => this.confirmDelete() },
       { label: 'Add New Link', icon: 'pi pi-plus', command: () => this.addNewLink() },
     ];
@@ -91,7 +84,7 @@ export default class LinksIndexPageComponent implements OnInit {
 
   onShowAutoLinksChange(changedTo: boolean) {
     if (changedTo && !this.fetchedExtraLinks) {
-      this.autoLinksFromDomainData(this.domains)
+      this.autoLinksFromDomainData(this.domains);
       this.fetchedExtraLinks = true;
     }
   }
@@ -101,7 +94,7 @@ export default class LinksIndexPageComponent implements OnInit {
       window.open(this.selectedLink.link_url, '_blank');
     }
   }
-  
+
   showEditLink() {
     this.openLinkDialog(this.selectedLink);
   }
@@ -110,7 +103,7 @@ export default class LinksIndexPageComponent implements OnInit {
     this.openLinkDialog(null);
   }
 
-  objKeys(obj: any): string[] {
+  objKeys(obj: Record<string, unknown>): string[] {
     return Object.keys(obj);
   }
 
@@ -136,7 +129,7 @@ export default class LinksIndexPageComponent implements OnInit {
         });
       },
     });
-  }  
+  }
 
   loadLinks() {
     this.loading = true;
@@ -152,7 +145,7 @@ export default class LinksIndexPageComponent implements OnInit {
           location: 'Assets.Links.Index',
         });
         this.loading = false;
-      }
+      },
     });
   }
 
@@ -162,7 +155,7 @@ export default class LinksIndexPageComponent implements OnInit {
     this.databaseService.instance.listDomains().subscribe({
       next: (domains) => {
         this.domains = domains;
-        this.loading = false; 
+        this.loading = false;
       },
       error: (error) => {
         this.errorHandlerService.handleError({
@@ -171,20 +164,18 @@ export default class LinksIndexPageComponent implements OnInit {
           showToast: true,
           location: 'LinksIndexPageComponent.loadDomainData',
         });
-      }
+      },
     });
   }
 
   async autoLinksFromDomainData(domains: DbDomain[]) {
-    // If no user-added links, create an empty object before we begin
-    if (!this.links.groupedByDomain) {
-      this.links.groupedByDomain = {};
-    };
+    if (!this.links) this.links = {};
+    if (!this.links.groupedByDomain) this.links.groupedByDomain = {};
+    const groupedByDomain = this.links.groupedByDomain;
 
-    for (const eachDomain of domains) { 
-      // Add sections for domains without any user-added links
-      if (!this.links.groupedByDomain[eachDomain.domain_name]) {
-        this.links.groupedByDomain[eachDomain.domain_name] = [];
+    for (const eachDomain of domains) {
+      if (!groupedByDomain[eachDomain.domain_name]) {
+        groupedByDomain[eachDomain.domain_name] = [];
       }
 
       // Create object for domain, ready to add additional sections
@@ -201,13 +192,17 @@ export default class LinksIndexPageComponent implements OnInit {
       }
 
       // Providers
-      const cleanName = (name: string) => name.replace(/,|Inc|[^a-zA-Z0-9\s-]/g, '').trim(); 
-      let providers = [];
-      if (eachDomain.host?.isp) providers.push({ type: 'Host', name: eachDomain.host.isp });
-      if (eachDomain.registrar?.name) providers.push({ type: 'Registrar', name: eachDomain.registrar.name });
-      if (eachDomain.ssl?.issuer) providers.push({ type: 'SSL Issuer', name: eachDomain.ssl.issuer });
+      const cleanName = (name: string) =>
+        name.replace(/,|Inc|[^a-zA-Z0-9\s-]/g, '').trim();
+      const providers: { type: string; name: string }[] = [];
+      if (eachDomain.host?.isp)
+        providers.push({ type: 'Host', name: eachDomain.host.isp });
+      if (eachDomain.registrar?.name)
+        providers.push({ type: 'Registrar', name: eachDomain.registrar.name });
+      if (eachDomain.ssl?.issuer)
+        providers.push({ type: 'SSL Issuer', name: eachDomain.ssl.issuer });
 
-      const providerNames = providers.map(provider => cleanName(provider.name));
+      const providerNames = providers.map((provider) => cleanName(provider.name));
 
       if (providerNames.length) {
         try {
@@ -218,9 +213,10 @@ export default class LinksIndexPageComponent implements OnInit {
               .map((provider: { name: string; link: string }) => ({
                 link_name: provider.name,
                 link_url: provider.link,
-                link_description: providers.find(p => cleanName(p.name) === cleanName(provider.name))?.type || '',
-              })
-            );
+                link_description:
+                  providers.find((p) => cleanName(p.name) === cleanName(provider.name))
+                    ?.type || '',
+              }));
           }
         } catch (error) {
           this.errorHandlerService.handleError({
@@ -233,32 +229,38 @@ export default class LinksIndexPageComponent implements OnInit {
       }
 
       // Homepage
-      this.customSections[eachDomain.domain_name]['homepage'] = [{
-        link_name: 'Homepage',
-        link_url: `https://${eachDomain.domain_name}`,
-        link_description: eachDomain.domain_name,
-      }];
+      this.customSections[eachDomain.domain_name]['homepage'] = [
+        {
+          link_name: 'Homepage',
+          link_url: `https://${eachDomain.domain_name}`,
+          link_description: eachDomain.domain_name,
+        },
+      ];
 
       // Public IPs
       if (eachDomain.ip_addresses && eachDomain.ip_addresses.length) {
         this.customSections[eachDomain.domain_name]['public_ips'] =
-          eachDomain.ip_addresses.map((ip: { is_ipv6: boolean, ip_address: string }, ipIndex: number) => ({
-            link_name: `${ip.is_ipv6 ? 'IPv6' : 'IPv4'} Address ${ipIndex + 1}`,
-            link_url: `https://${ip.ip_address}`,
-            link_description: ip.ip_address,
-          })) || [];
+          eachDomain.ip_addresses.map(
+            (ip: { is_ipv6: boolean; ip_address: string }, ipIndex: number) => ({
+              link_name: `${ip.is_ipv6 ? 'IPv6' : 'IPv4'} Address ${ipIndex + 1}`,
+              link_url: `https://${ip.ip_address}`,
+              link_description: ip.ip_address,
+            }),
+          ) || [];
       }
     }
   }
 
-  async fetchProviders(providerNames: string[]): Promise<any[]> {
+  async fetchProviders(
+    providerNames: string[],
+  ): Promise<{ name: string; link: string }[]> {
     const response = await fetch(
       `https://find-company-domain.as93.workers.dev/?names=${providerNames.join(',')}`,
     );
     if (!response.ok) throw new Error('Failed to fetch provider links.');
     return await response.json();
   }
-  
+
   onRightClick(event: MouseEvent, link: ModifiedLink) {
     this.selectedLink = link;
     if (this.menu) {
@@ -267,7 +269,6 @@ export default class LinksIndexPageComponent implements OnInit {
     event.preventDefault();
   }
 
-  
   openLinkDialog(link: ModifiedLink | null = null): void {
     const ref = this.dialogService.open(LinkDialogComponent, {
       header: link ? 'Edit Link' : 'Add New Link',
@@ -275,7 +276,7 @@ export default class LinksIndexPageComponent implements OnInit {
       width: '50%',
       height: '36rem',
     });
-  
+
     ref.onClose.subscribe((result: ModifiedLink | null) => {
       if (result) {
         if (link && link.id) {
@@ -326,8 +327,7 @@ export default class LinksIndexPageComponent implements OnInit {
         });
       },
     });
-  }  
-
+  }
 
   private addLink(linkData: ModifiedLink): void {
     this.databaseService.instance.linkQueries.addLinkToDomains(linkData).subscribe({
@@ -349,5 +349,4 @@ export default class LinksIndexPageComponent implements OnInit {
       },
     });
   }
-  
 }

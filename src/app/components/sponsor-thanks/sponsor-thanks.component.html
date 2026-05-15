@@ -1,58 +1,64 @@
 @if ((githubUsername || inSelfHostingDocs) && !isHidden) {
   <div class="p-card my-4 p-4 flex flex-col pt-0">
-  @if (isSponsor) {
-    <small class="opacity-70 text-center sm:text-right mt-2">You're a sponsor! 🎉</small>
-    <p class="m-0 text-xl">
-      Thank you so much, {{ githubUsername }}!
-      Your support means the world to me ❤️
-    </p>
-    <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap mt-2">
-      <p class="m-0">
-        Your generous support helps me continue building and running these tools, while keeping them open source and independent.
-        You're truly amazing! 🌟
+    @if (isSponsor) {
+      <small class="opacity-70 text-center sm:text-right mt-2"
+        >You're a sponsor! 🎉</small
+      >
+      <p class="m-0 text-xl">
+        Thank you so much, {{ githubUsername }}! Your support means the world to me ❤️
       </p>
-      <div class="flex justify-center items-center">
-        <img
-          src="https://github.com/Lissy93.png"
-          alt="Lissy93"
-          width="42"
-          class="w-[42px] h-[42px] rounded-full bg-pink-200 text-pink-700 text-center text-sm flex justify-center items-center"
-        />
-        <i class="pi pi-heart-fill m-0 scale-150 text-pink-400 text-lg"></i>
-        <img
-          src="https://github.com/{{ githubUsername }}.png"
-          alt="{{ githubUsername }}"
-          width="42"
-          class="w-[42px] h-[42px] rounded-full bg-pink-200 text-pink-700 text-center text-sm flex justify-center items-center"
-        />
+      <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap mt-2">
+        <p class="m-0">
+          Your generous support helps me continue building and running these tools, while
+          keeping them open source and independent. You're truly amazing! 🌟
+        </p>
+        <div class="flex justify-center items-center">
+          <img
+            src="https://github.com/Lissy93.png"
+            alt="Lissy93"
+            width="42"
+            class="w-[42px] h-[42px] rounded-full bg-pink-200 text-pink-700 text-center text-sm flex justify-center items-center"
+          />
+          <i class="pi pi-heart-fill m-0 scale-150 text-pink-400 text-lg"></i>
+          <img
+            src="https://github.com/{{ githubUsername }}.png"
+            alt="{{ githubUsername }}"
+            width="42"
+            class="w-[42px] h-[42px] rounded-full bg-pink-200 text-pink-700 text-center text-sm flex justify-center items-center"
+          />
+        </div>
       </div>
-    </div>
-    <p class="m-0">
-      As a small thank you, we've upgraded your account to a <strong>Hobby</strong> plan 🙏
-    </p>
-  } @else {
-    <p class="mt-4 mb-2 text-xl">
-      @if (githubUsername) {
-        Hey {{ githubUsername }}! 👋
-      } @else {
-        Hey there! 👋
-      }
-    </p>
-    <p class="m-0">
-      I hope you're finding Domain Locker useful.
-      If you'd like to support my work, consider becoming a sponsor on GitHub Sponsors.
-      Every contribution however small is greatly appreciated and helps me keep these tools running and open source.
-      <br>
-      Either way, thanks for being here—you're awesome! 🚀
-    </p>
-    <a href="https://github.com/sponsors/Lissy93" target="_blank" class="mt-1 text-right">
-      <p-button
-        icon="pi pi-heart-fill"
-        label="Become a Sponsor"
-        styleClass="bg-pink-500 border-pink-600 hover:bg-pink-400 text-white px-3 py-2 w-52"
-      />
-    </a>
-  }
+      <p class="m-0">
+        As a small thank you, we've upgraded your account to a <strong>Hobby</strong> plan
+        🙏
+      </p>
+    } @else {
+      <p class="mt-4 mb-2 text-xl">
+        @if (githubUsername) {
+          Hey {{ githubUsername }}! 👋
+        } @else {
+          Hey there! 👋
+        }
+      </p>
+      <p class="m-0">
+        I hope you're finding Domain Locker useful. If you'd like to support my work,
+        consider becoming a sponsor on GitHub Sponsors. Every contribution however small
+        is greatly appreciated and helps me keep these tools running and open source.
+        <br />
+        Either way, thanks for being here—you're awesome! 🚀
+      </p>
+      <a
+        href="https://github.com/sponsors/Lissy93"
+        target="_blank"
+        class="mt-1 text-right"
+      >
+        <p-button
+          icon="pi pi-heart-fill"
+          label="Become a Sponsor"
+          styleClass="bg-pink-500 border-pink-600 hover:bg-pink-400 text-white px-3 py-2 w-52"
+        />
+      </a>
+    }
     <p-button
       icon="pi pi-times-circle"
       label="Hide this Message"

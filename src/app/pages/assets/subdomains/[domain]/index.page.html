@@ -27,31 +27,33 @@
 </div>
 
 <!-- Loading spinner -->
-<p-progressSpinner *ngIf="loading" class="flex mt-8" />
+@if (loading) {
+  <p-progressSpinner class="flex mt-8" />
+}
 
 <!-- Results -->
-<app-subdomain-list
-  *ngIf="!loading && subdomains.length"
-  [domain]="domain"
-  [subdomains]="subdomains"
-></app-subdomain-list>
+@if (!loading && subdomains.length) {
+  <app-subdomain-list [domain]="domain" [subdomains]="subdomains"></app-subdomain-list>
+}
 
 <!-- Not found message -->
-<app-not-found
-  *ngIf="!loading && !subdomains.length"
-  title="No Subdomains Found"
-  [name]="this.domain"
-  message="either doesn't exist or hasn't yet got any associated subdomains"
-  [actionLink]="false"
->
-  <p-button
-    *ngIf="validDomain"
-    label="Search for Subdomains"
-    icon="pi pi-search"
-    class="p-button-secondary mt-4"
-    (click)="searchForSubdomains()"
-  ></p-button>
-</app-not-found>
+@if (!loading && !subdomains.length) {
+  <app-not-found
+    title="No Subdomains Found"
+    [name]="this.domain"
+    message="either doesn't exist or hasn't yet got any associated subdomains"
+    [actionLink]="false"
+  >
+    @if (validDomain) {
+      <p-button
+        label="Search for Subdomains"
+        icon="pi pi-search"
+        class="p-button-secondary mt-4"
+        (click)="searchForSubdomains()"
+      ></p-button>
+    }
+  </app-not-found>
+}
 
 <!-- Add new subdomain dialog -->
 <app-add-subdomain-dialog #addSubdomainDialog [domain]="domain" />

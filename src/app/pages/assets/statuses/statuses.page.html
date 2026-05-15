@@ -1,60 +1,103 @@
 <h1 class="mt-2 mb-4">Statuses</h1>
 
 @if (loading) {
-  <loading loadingTitle="Loading" loadingDescription="Searching for domain statuses" />
+  <app-loading
+    loadingTitle="Loading"
+    loadingDescription="Searching for domain statuses"
+  />
 } @else {
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
     @for (status of detailedStatuses; track status) {
-      <div *ngIf="status.statusInfo && status.statusInfo.eppCode" class="p-card py-3 px-4 flex flex-col justify-between">
-        <div class="card-body">
-          <div class="card-title flex justify-between align-items-center w-full">
-            <h5 class="text-xl m-0">
-              <a [routerLink]="['/assets/statuses', status.statusInfo.eppCode]" class="text-primary no-underline">
-                {{ status.statusInfo.label }}
-              </a>
-            </h5>
-            @if (status.statusInfo.severity === 'good') {
-              <p-tag icon="pi pi-check-circle" severity="success" [pTooltip]="status.statusInfo.description" />
-            } @else if (status.statusInfo.severity === 'bad') {
-              <p-tag icon="pi pi-times-circle" severity="danger" [pTooltip]="status.statusInfo.description" />
-            } @else {
-              <p-tag icon="pi pi-info-circle" severity="info" [pTooltip]="status.statusInfo.description" />
+      @if (status.statusInfo && status.statusInfo.eppCode) {
+        <div class="p-card py-3 px-4 flex flex-col justify-between">
+          <div class="card-body">
+            <div class="card-title flex justify-between align-items-center w-full">
+              <h5 class="text-xl m-0">
+                <a
+                  [routerLink]="['/assets/statuses', status.statusInfo.eppCode]"
+                  class="text-primary no-underline"
+                >
+                  {{ status.statusInfo.label }}
+                </a>
+              </h5>
+              @if (status.statusInfo.severity === 'good') {
+                <p-tag
+                  icon="pi pi-check-circle"
+                  severity="success"
+                  [pTooltip]="status.statusInfo.description"
+                />
+              } @else if (status.statusInfo.severity === 'bad') {
+                <p-tag
+                  icon="pi pi-times-circle"
+                  severity="danger"
+                  [pTooltip]="status.statusInfo.description"
+                />
+              } @else {
+                <p-tag
+                  icon="pi pi-info-circle"
+                  severity="info"
+                  [pTooltip]="status.statusInfo.description"
+                />
+              }
+            </div>
+            <p class="my-2 italic text-surface-500">
+              {{ status.statusInfo.description }}
+            </p>
+            @if (status.statusInfo.actionToTake) {
+              <p class="my-2 text-red-400">{{ status.statusInfo.actionToTake }}</p>
             }
-          </div>         
-          <p class="my-2 italic text-surface-500">{{ status.statusInfo.description }}</p>
-          @if (status.statusInfo.actionToTake) {
-            <p class="my-2 text-red-400">{{ status.statusInfo.actionToTake }}</p>
-          }
+          </div>
+          <div class="flex gap-2 align-items-center">
+            <p class="my-2 font-bold">{{ status.statusCount }} Domains</p>
+            <a
+              [routerLink]="['/assets/statuses', status.statusInfo.eppCode]"
+              class="text-primary no-underline"
+              >(View)</a
+            >
+          </div>
         </div>
-        <div class="flex gap-2 align-items-center">
-          <p class="my-2 font-bold">{{ status.statusCount }} Domains</p>
-          <a [routerLink]="['/assets/statuses', status.statusInfo.eppCode]" class="text-primary no-underline">(View)</a>
-        </div>
-      </div>
+      }
     }
   </div>
 }
 
 <details class="mt-6">
-  <summary class="text-surface-400 cursor-pointer hover:underline opacity-80">View all Statuses</summary>
+  <summary class="text-surface-400 cursor-pointer hover:underline opacity-80">
+    View all Statuses
+  </summary>
   <div class="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
     @for (status of securityCategories; track status) {
       <div class="p-card py-3 px-4 flex flex-col justify-between">
         <div class="card-body">
           <div class="card-title flex justify-between align-items-center w-full">
             <h5 class="text-xl m-0">
-              <a [routerLink]="['/assets/statuses', status.eppCode]" class="text-primary no-underline">
+              <a
+                [routerLink]="['/assets/statuses', status.eppCode]"
+                class="text-primary no-underline"
+              >
                 {{ status.label }}
               </a>
             </h5>
             @if (status.severity === 'good') {
-              <p-tag icon="pi pi-check-circle" severity="success" [pTooltip]="status.description" />
+              <p-tag
+                icon="pi pi-check-circle"
+                severity="success"
+                [pTooltip]="status.description"
+              />
             } @else if (status.severity === 'bad') {
-              <p-tag icon="pi pi-times-circle" severity="danger" [pTooltip]="status.description" />
+              <p-tag
+                icon="pi pi-times-circle"
+                severity="danger"
+                [pTooltip]="status.description"
+              />
             } @else {
-              <p-tag icon="pi pi-info-circle" severity="info" [pTooltip]="status.description" />
+              <p-tag
+                icon="pi pi-info-circle"
+                severity="info"
+                [pTooltip]="status.description"
+              />
             }
-          </div>         
+          </div>
           <p class="my-2 italic text-surface-500">{{ status.description }}</p>
           @if (status.actionToTake && status.severity === 'bad') {
             <p class="my-2 text-red-400">{{ status.actionToTake }}</p>

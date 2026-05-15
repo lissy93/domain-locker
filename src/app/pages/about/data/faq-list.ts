@@ -1,4 +1,3 @@
-
 interface FaQ {
   question: string;
   answer: string;

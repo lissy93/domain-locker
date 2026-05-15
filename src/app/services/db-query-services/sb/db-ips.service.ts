@@ -1,45 +1,45 @@
 import { SupabaseClient, User } from '@supabase/supabase-js';
-import { catchError, forkJoin, from, map, Observable, of } from 'rxjs';
+import { catchError, from, map, Observable } from 'rxjs';
 import { IpAddress } from '~/app/../types/Database';
 
 export class IpQueries {
   constructor(
     private supabase: SupabaseClient,
-    private handleError: (error: any) => Observable<never>,
+    private handleError: (error: unknown) => Observable<never>,
     private getCurrentUser: () => Promise<User | null>,
   ) {}
 
-  
-  async saveIpAddresses(domainId: string, ipAddresses: Omit<IpAddress, 'id' | 'domainId' | 'created_at' | 'updated_at'>[]): Promise<void> {
-    if (ipAddresses.length === 0) return;
+  async saveIpAddresses(
+    domainId: string,
+    ipAddresses?: Omit<IpAddress, 'id' | 'domainId' | 'created_at' | 'updated_at'>[],
+  ): Promise<void> {
+    if (!ipAddresses || ipAddresses.length === 0) return;
 
-    const dbIpAddresses = ipAddresses.map(ip => ({
+    const dbIpAddresses = ipAddresses.map((ip) => ({
       domain_id: domainId,
       ip_address: ip.ipAddress,
-      is_ipv6: ip.isIpv6
+      is_ipv6: ip.isIpv6,
     }));
 
-    const { error } = await this.supabase
-      .from('ip_addresses')
-      .insert(dbIpAddresses);
+    const { error } = await this.supabase.from('ip_addresses').insert(dbIpAddresses);
 
     if (error) throw error;
   }
 
-  
-  getIpAddresses(isIpv6: boolean): Observable<{ ip_address: string; domains: string[] }[]> {
-    return from(this.supabase
-      .rpc('get_ip_addresses_with_domains', { p_is_ipv6: isIpv6 })
+  getIpAddresses(
+    isIpv6: boolean,
+  ): Observable<{ ip_address: string; domains: string[] }[]> {
+    return from(
+      this.supabase.rpc('get_ip_addresses_with_domains', { p_is_ipv6: isIpv6 }),
     ).pipe(
       map(({ data, error }) => {
         if (error) throw error;
         return data as { ip_address: string; domains: string[] }[];
       }),
-      catchError(error => this.handleError(error))
+      catchError((error) => this.handleError(error)),
     );
   }
 
-  
   // addIpAddress(ipAddress: Omit<IpAddress, 'id' | 'created_at' | 'updated_at'>): Observable<IpAddress> {
   //   return from(this.supabase
   //     .from('ip_addresses')
@@ -54,7 +54,6 @@ export class IpQueries {
   //     catchError(error => this.handleError(error))
   //   );
   // }
-
 
   // updateIpAddress(id: string, ipAddress: Partial<IpAddress>): Observable<IpAddress> {
   //   return from(this.supabase
@@ -84,5 +83,4 @@ export class IpQueries {
   //     catchError(error => this.handleError(error))
   //   );
   // }
-
 }

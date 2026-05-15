@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 
 @Component({
   standalone: true,
+  selector: 'app-thing-page',
   template: `
     <h2>Hello Analog</h2>
 

@@ -1,41 +1,59 @@
-
-  <form [formGroup]="linkForm">
-    <div class="field">
-      <label for="link_name">Link Name</label>
-      <input id="link_name" pInputText formControlName="link_name" class="w-full" />
-      <small *ngIf="linkForm.get('link_name')?.invalid && linkForm.get('link_name')?.touched" class="p-error">
-        Link name is required.
-      </small>
-    </div>
-
-    <div class="field">
-      <label for="link_url">Link URL</label>
-      <input id="link_url" pInputText formControlName="link_url" class="w-full" />
-      <small *ngIf="linkForm.get('link_url')?.invalid && linkForm.get('link_url')?.touched" class="p-error">
-        Please enter a valid URL (must include http/https).
-      </small>
-    </div>
-
-    <div class="field">
-      <label for="link_description">Description</label>
-      <textarea id="link_description" pInputTextarea formControlName="link_description" rows="3" class="w-full"></textarea>
-    </div>
-
-    <div class="field flex flex-col w-full">
-      <label for="domains">Associated Domains</label>
-      <p-multiSelect
-        id="domains"
-        formControlName="domains"
-        [options]="(domainOptions$ | async) || []"
-        placeholder="Select Domains"
-        class="w-full"
-        styleClass="w-full"
-      ></p-multiSelect>
-    </div>
-  </form>
-
-  <div class="flex justify-between items-center gap-2 flex-wrap">
-    <button pButton label="Cancel" icon="pi pi-times" class="p-button-text" (click)="onCancel()"></button>
-    <button pButton label="Save" icon="pi pi-check" [disabled]="linkForm.invalid" (click)="onSave()"></button>
+<form [formGroup]="linkForm">
+  <div class="field">
+    <label for="link_name">Link Name</label>
+    <input id="link_name" pInputText formControlName="link_name" class="w-full" />
+    @if (linkForm.get('link_name')?.invalid && linkForm.get('link_name')?.touched) {
+      <small class="p-error"> Link name is required. </small>
+    }
   </div>
 
+  <div class="field">
+    <label for="link_url">Link URL</label>
+    <input id="link_url" pInputText formControlName="link_url" class="w-full" />
+    @if (linkForm.get('link_url')?.invalid && linkForm.get('link_url')?.touched) {
+      <small class="p-error"> Please enter a valid URL (must include http/https). </small>
+    }
+  </div>
+
+  <div class="field">
+    <label for="link_description">Description</label>
+    <textarea
+      id="link_description"
+      pInputTextarea
+      formControlName="link_description"
+      rows="3"
+      class="w-full"
+    ></textarea>
+  </div>
+
+  <div class="field flex flex-col w-full">
+    <label for="domains">Associated Domains</label>
+    <p-multiSelect
+      id="domains"
+      formControlName="domains"
+      [options]="(domainOptions$ | async) || []"
+      placeholder="Select Domains"
+      class="w-full"
+      styleClass="w-full"
+    ></p-multiSelect>
+  </div>
+</form>
+
+<div class="flex justify-between items-center gap-2 flex-wrap">
+  <button
+    pButton
+    label="Cancel"
+    aria-label="Cancel"
+    icon="pi pi-times"
+    class="p-button-text"
+    (click)="onCancel()"
+  ></button>
+  <button
+    pButton
+    label="Save"
+    aria-label="Save"
+    icon="pi pi-check"
+    [disabled]="linkForm.invalid"
+    (click)="onSave()"
+  ></button>
+</div>

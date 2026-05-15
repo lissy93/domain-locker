@@ -9,27 +9,37 @@ export async function notifyUser(
   domainId: string,
   userId: string,
   changeType: string,
-  message?: string
+  message?: string,
 ): Promise<void> {
   try {
-    const prefs = await callPgExecutor<any>(
+    const prefs = await callPgExecutor<{ notification_type: string }>(
       pgExec,
       `SELECT notification_type FROM notification_preferences WHERE domain_id = $1 AND is_enabled = true`,
-      [domainId]
+      [domainId],
     );
 
     if (!prefs || prefs.length === 0) return;
 
-    const enabledTypes = prefs.map((p: any) => p.notification_type);
+    const enabledTypes = prefs.map((p) => p.notification_type);
 
     const isEnabled = enabledTypes.some((prefix: string) =>
-      changeType.startsWith(prefix)
+      changeType.startsWith(prefix),
     );
 
     if (!isEnabled) {
-      console.info(`Skipping notification for ${changeType}, because not enabled for this domain`);
+      console.info(
+        `Skipping notification for ${changeType}, because not enabled for this domain`,
+      );
       return;
     }
+
+    // Get domain name from domain ID, to include in notification
+    const domainResult = await callPgExecutor<{ domain_name: string }>(
+      pgExec,
+      `SELECT domain_name FROM domains WHERE id = $1`,
+      [domainId],
+    );
+    const domainName = domainResult?.[0]?.domain_name ?? 'unknown domain';
 
     // Insert notification
     await callPgExecutor(
@@ -38,17 +48,17 @@ export async function notifyUser(
       INSERT INTO notifications (user_id, domain_id, change_type, message)
       VALUES ($1, $2, $3, $4)
       `,
-      [userId, domainId, changeType, message || null]
+      [userId, domainId, changeType, message || null],
     );
 
     // Send webhook notification
     await sendWebhookNotification(
-      message || `Change detected: ${changeType}`,
+      message || `Change detected in ${domainName}: ${changeType}`,
       'Domain Locker Update',
-      [changeType]
+      [changeType],
     );
-
-  } catch (err: any) {
-    console.error(`Failed to insert notification for ${changeType}: ${err.message}`);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`Failed to insert notification for ${changeType}: ${msg}`);
   }
 }

@@ -1,43 +1,48 @@
-import { ErrorHandler, Injectable, isDevMode, PLATFORM_ID, Inject } from '@angular/core';
+import { ErrorHandler, Injectable, isDevMode, PLATFORM_ID, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import * as Sentry from '@sentry/angular';
 import { EnvService } from '~/app/services/environment.service';
 
 import { GlobalMessageService } from '~/app/services/messaging.service';
 
-// @ts-ignore
 declare const __APP_VERSION__: string;
 
 @Injectable()
 export class GlobalErrorHandler implements ErrorHandler {
   private printToConsole = printToConsole;
-  handleError(error: any): void {
+  handleError(error: unknown): void {
     this.printToConsole('Something unexpected happened', 'the core app', error);
     Sentry.captureException(error);
   }
 }
 
 /* Logs an error to the console (when in dev or debug mode) */
-const printToConsole = (message?: string, location?: string, error?: any): void => {
+const printToConsole = (message?: string, location?: string, error?: unknown): void => {
   console.groupCollapsed(
     `%cError: ${message} in ${location || 'unknown location'}`,
-    'background:#f93939;color:#fff;padding:0.1rem 0.25rem;border-radius:4px'
+    'background:#f93939;color:#fff;padding:0.1rem 0.25rem;border-radius:4px',
   );
   console.error(error);
   const d = new Date();
   const date = `at ${d.getHours()}:${d.getMinutes()}:${d.getSeconds()} on ${d.toDateString()}`;
   console.log(
-    `%cThis occurred ${date}, in ${location || 'an unknown location'}\n`
-    + 'Please reference the debugging documentation for next steps: '
-    + 'http://domain-locker.com/about/developing/debugging',
+    `%cThis occurred ${date}, in ${location || 'an unknown location'}\n` +
+      'Please reference the debugging documentation for next steps: ' +
+      'http://domain-locker.com/about/developing/debugging',
     'font-size:10px; color:#f9a939;',
   );
   console.groupEnd();
 };
 
+export interface ErrorLogEntry {
+  date: string;
+  message: string;
+  location: string;
+  error: unknown;
+}
 
 interface ErrorParams {
-  error?: Error | any, // Should be error, but might be funny error type
+  error?: Error | unknown; // Should be error, but might be funny error type
   message?: string; // Friendly message to show to user (if needed)
   location?: string; // Location in code where error occurred
   showToast?: boolean; // Whether to show a toast to the user
@@ -52,21 +57,17 @@ interface ErrorParams {
  * If user-triggered, shows a toast message to the user.
  */
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ErrorHandlerService {
+  private platformId = inject<object>(PLATFORM_ID);
+  private globalMessageService = inject(GlobalMessageService);
+  private envService = inject(EnvService);
 
   private glitchTipEnabled = false; // Don't log errors, unless enabled
 
   private lsKey = 'PRIVACY_disable-error-tracking';
   private printToConsole = printToConsole;
-
-  constructor(
-    @Inject(PLATFORM_ID) private platformId: Object,
-    private globalMessageService: GlobalMessageService,
-    private envService: EnvService,
-  ) {}
-
 
   /* Shows a popup toast message to the user (if user-triggered) */
   private showToast(title: string, message: string): void {
@@ -74,7 +75,7 @@ export class ErrorHandlerService {
       severity: 'error',
       summary: title,
       detail: message,
-    })
+    });
   }
 
   /* Determines whether to enable GlitchTip (if enabled at server-level, and not disabled by user) */
@@ -84,18 +85,18 @@ export class ErrorHandlerService {
     const disabledByUser = localStorage.getItem(this.lsKey) !== null; // Check if user disabled error tracking
     const isLocal = isDevMode(); // Check if we are running in development mode
     // Return false if no DSN, disabled by user, or running locally
-    return (!glitchTipDsn || disabledByUser || isLocal) ? false : true;
+    return !glitchTipDsn || disabledByUser || isLocal ? false : true;
   }
 
   /* Initializes GlitchTip error tracking (if not disabled by user or admin) */
   public initializeGlitchTip(): void {
     this.glitchTipEnabled = this.shouldEnableGlitchTip();
     if (!this.glitchTipEnabled) return;
-    const glitchTipDsn = this.envService.getGlitchTipDsn();
+    const glitchTipDsn = this.envService.getGlitchTipDsn() || undefined;
     try {
       Sentry.init({
         dsn: glitchTipDsn,
-        integrations: [ Sentry.browserTracingIntegration() ],
+        integrations: [Sentry.browserTracingIntegration()],
         tracesSampleRate: 1.0,
         release: __APP_VERSION__,
         environment: this.envService.getEnvironmentType(),
@@ -104,7 +105,8 @@ export class ErrorHandlerService {
     } catch (e) {
       this.handleError({
         error: e,
-        message: 'Unable to initialize GlitchTip. Possibly due to adblock, invalid DSN, or user\'s privacy preferences',
+        message:
+          "Unable to initialize GlitchTip. Possibly due to adblock, invalid DSN, or user's privacy preferences",
         location: 'ErrorHandlerService.initializeGlitchTip',
         showToast: false,
       });
@@ -127,17 +129,17 @@ export class ErrorHandlerService {
   }
 
   /* Logs an error to GlitchTip with user context */
-  private logToGlitchTip(message: string, location: string, error: any): void {
+  private logToGlitchTip(message: string, location: string, error: unknown): void {
     if (!this.glitchTipEnabled) return;
     const userId = this.getUserId();
-      Sentry.setUser( userId ? { id: userId } : null);
-      Sentry.withScope((scope) => {
-        scope.setContext('context', { message, location });
-        Sentry.captureException(error);
-      });
+    Sentry.setUser(userId ? { id: userId } : null);
+    Sentry.withScope((scope) => {
+      scope.setContext('context', { message, location });
+      Sentry.captureException(error);
+    });
   }
 
-  private saveToLocalStorage(message: string, location: string, error: any): void {
+  private saveToLocalStorage(message: string, location: string, error: unknown): void {
     if (!isPlatformBrowser(this.platformId) || !localStorage) return;
     const key = 'DL_error_log';
     const lsErrorLog = JSON.parse(localStorage.getItem(key) || '[]');
@@ -156,8 +158,9 @@ export class ErrorHandlerService {
 
     // Show error toast if showError is true
     if (showToast && message && error) {
-      if (error.message) {
-        this.showToast(message, error.message);
+      const errMessage = (error as { message?: string })?.message;
+      if (errMessage) {
+        this.showToast(message, errMessage);
       } else {
         this.showToast('Error', message);
       }
@@ -172,7 +175,7 @@ export class ErrorHandlerService {
     this.saveToLocalStorage(message || 'mystery error', location || '-', error);
   }
 
-  public getRecentErrorLog(): any[] {
+  public getRecentErrorLog(): ErrorLogEntry[] {
     if (!isPlatformBrowser(this.platformId) || !(typeof window !== 'undefined')) {
       return [];
     }
@@ -199,46 +202,49 @@ export class ErrorHandlerService {
         });
       };
     }
-    
   }
 
   public printInitialDetails(): void {
     if (!isPlatformBrowser(this.platformId)) return;
     const environment = this.envService.getEnvironmentType();
     const appVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.0.0';
-    const enabledDb = this.envService.isSupabaseEnabled() ? 'Supabase' :  this.envService.isPostgresEnabled() ? 'Postgres' : 'None';
+    const enabledDb = this.envService.isSupabaseEnabled()
+      ? 'Supabase'
+      : this.envService.isPostgresEnabled()
+        ? 'Postgres'
+        : 'None';
 
     console.log(
-      `\n%c🔐 Domain Locker V${appVersion}`
-      + '%c\nLicensed under MIT, © Alicia Sykes 2025.\nSource: github.com/lissy93/domain-locker\n',
-      'color:#a78bfa; background:#0b1021; font-size:1.5rem; padding:0.15rem 0.25rem; '
-      + 'margin: 1rem auto 0.5rem auto; font-family: Helvetica; border: 2px solid #a78bfa; '
-      + 'border-radius: 4px;font-weight: bold; text-shadow: 1px 1px 1px #a78bfabf;',
-      'color: #a78bfa; font-size:10px; font-family: Helvetica; margin: 0;'
+      `\n%c🔐 Domain Locker V${appVersion}` +
+        '%c\nLicensed under MIT, © Alicia Sykes 2025.\nSource: github.com/lissy93/domain-locker\n',
+      'color:#a78bfa; background:#0b1021; font-size:1.5rem; padding:0.15rem 0.25rem; ' +
+        'margin: 1rem auto 0.5rem auto; font-family: Helvetica; border: 2px solid #a78bfa; ' +
+        'border-radius: 4px;font-weight: bold; text-shadow: 1px 1px 1px #a78bfabf;',
+      'color: #a78bfa; font-size:10px; font-family: Helvetica; margin: 0;',
     );
     const s = 'color:#1fe3f1; font-weight: bold;';
     console.group('🐛 %cDebug Info', 'color:#a78bfa;');
-      console.groupCollapsed('🏗️ %cEnvironment', 'color:#dc8bfa;');
-        console.log('%cType', s, environment);
-        console.log('%cApp Version', s, appVersion);
-        console.log('%cDatabase', s, enabledDb);
-      console.groupEnd();
-      console.groupCollapsed('🌍 %cOrigin','color:#dc8bfa;');
-        console.log('%cProtocol', s, window.location.protocol);
-        console.log('%cHost', s, window.origin);
-        console.log('%cPath', s, window.location.pathname);
-      console.groupEnd();
-      console.groupCollapsed('📱 %cDevice','color:#dc8bfa;');
-        console.log('%cDate Fetched', s, new Date().getTime());
-        console.log('%cOS', s, navigator['platform']);
-        console.log('%cBrowser', s, navigator['appCodeName']);
-        console.log('%cLanguage', s, navigator['language']);
-      console.groupEnd();
-      console.groupCollapsed('🔗 %cHelp Links','color:#dc8bfa;');
-        console.log('%cDebug Tools', s, `${window.origin}/advanced`);  
-        console.log('%cSupport Docs', s, `${window.origin}/about/support`);  
-        console.log('%cGitHub', s, `https://github.com/lissy93/domain-locker`);
-      console.groupEnd();
+    console.groupCollapsed('🏗️ %cEnvironment', 'color:#dc8bfa;');
+    console.log('%cType', s, environment);
+    console.log('%cApp Version', s, appVersion);
+    console.log('%cDatabase', s, enabledDb);
+    console.groupEnd();
+    console.groupCollapsed('🌍 %cOrigin', 'color:#dc8bfa;');
+    console.log('%cProtocol', s, window.location.protocol);
+    console.log('%cHost', s, window.origin);
+    console.log('%cPath', s, window.location.pathname);
+    console.groupEnd();
+    console.groupCollapsed('📱 %cDevice', 'color:#dc8bfa;');
+    console.log('%cDate Fetched', s, new Date().getTime());
+    console.log('%cOS', s, navigator['platform']);
+    console.log('%cBrowser', s, navigator['appCodeName']);
+    console.log('%cLanguage', s, navigator['language']);
+    console.groupEnd();
+    console.groupCollapsed('🔗 %cHelp Links', 'color:#dc8bfa;');
+    console.log('%cDebug Tools', s, `${window.origin}/advanced`);
+    console.log('%cSupport Docs', s, `${window.origin}/about/support`);
+    console.log('%cGitHub', s, `https://github.com/lissy93/domain-locker`);
+    console.groupEnd();
     console.groupEnd();
   }
 }

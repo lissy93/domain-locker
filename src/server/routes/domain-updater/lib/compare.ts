@@ -5,11 +5,24 @@ import { updateSSL } from './../updateFns/ssl';
 import { updateWhois } from './../updateFns/whois';
 import { updateDNS } from './../updateFns/dns';
 import { updateHost } from './../updateFns/hosts';
+import type { DomainRow } from '../index';
+import type { FreshDomainInfo } from './fetchInfo';
 
-export async function compareAndUpdateDomain(pgExec: string, domainRow: any, freshInfo: any) {
+type UpdateFn = (
+  pgExec: string,
+  domainRow: DomainRow,
+  freshInfo: FreshDomainInfo,
+  changes: string[],
+) => Promise<void>;
+
+export async function compareAndUpdateDomain(
+  pgExec: string,
+  domainRow: DomainRow,
+  freshInfo: FreshDomainInfo,
+) {
   const changes: string[] = [];
 
-  const fns: any = [
+  const fns: UpdateFn[] = [
     updateExpiryDate,
     updateRegistrar,
     updateDomainStatuses,
@@ -22,8 +35,9 @@ export async function compareAndUpdateDomain(pgExec: string, domainRow: any, fre
   for (const fn of fns) {
     try {
       await fn(pgExec, domainRow, freshInfo, changes);
-    } catch (err: any) {
-      changes.push(`(⚠️ Error in ${fn.name}: ${err.message})`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      changes.push(`(⚠️ Error in ${fn.name}: ${msg})`);
     }
   }
 

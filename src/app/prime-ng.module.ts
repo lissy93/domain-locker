@@ -130,6 +130,6 @@ import { TableModule } from 'primeng/table';
     ToggleButtonModule,
     ToastModule,
     TooltipModule,
-  ]
+  ],
 })
-export class PrimeNgModule { }
+export class PrimeNgModule {}

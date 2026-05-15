@@ -8,7 +8,8 @@
   flex-direction: column;
   align-items: center;
 
-  a, button {
+  a,
+  button {
     width: 100%;
     margin: 0.25rem 0;
     display: flex;
@@ -24,7 +25,6 @@
     flex: 1;
   }
 }
-
 
 ::ng-deep .language-select {
   &.gappy-select .p-selectbutton.p-buttonset {

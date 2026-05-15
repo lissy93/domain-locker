@@ -1,12 +1,13 @@
 <div class="domain-uptime">
-  
   <div class="flex justify-between mb-3 items-end gap-3 items-center">
     <div class="flex gap-3 flex-wrap">
       <div class="flex flex-col p-card p-3 w-40 gap-3">
         <strong class="font-semibold">Average Uptime</strong>
-        <span *ngIf="uptimePercentage" class="text-{{ getUptimeColor(uptimePercentage, '') }}">
-          {{ uptimePercentage.toFixed(2) }}%
-        </span>
+        @if (uptimePercentage) {
+          <span class="text-{{ getUptimeColor(uptimePercentage, '') }}">
+            {{ uptimePercentage.toFixed(2) }}%
+          </span>
+        }
       </div>
       <div class="flex flex-col p-card p-3 w-40 gap-3">
         <strong class="font-semibold">Current Status</strong>
@@ -17,11 +18,17 @@
       <div class="flex flex-col p-card p-3 w-80 gap-3">
         <strong class="font-semibold">Response Codes</strong>
         <ul class="list-none p-0 m-0 flex gap-1 flex-wrap">
-          <li *ngFor="let code of responseCodes; last as isLast">
-            <span [style]="'color:'+getResponseCodeColor(code.code) ">{{ code.code }}</span>
-            <span class="opacity-70"> ({{ code.percentage }}%)</span>
-            <span *ngIf="!isLast">, </span>
-          </li>
+          @for (code of responseCodes; track code; let isLast = $last) {
+            <li>
+              <span [style]="'color:' + getResponseCodeColor(code.code)">{{
+                code.code
+              }}</span>
+              <span class="opacity-70"> ({{ code.percentage }}%)</span>
+              @if (!isLast) {
+                <span>, </span>
+              }
+            </li>
+          }
         </ul>
       </div>
     </div>
@@ -33,17 +40,16 @@
         inputId="advanced-mode-switch"
       />
     </div>
-    <p-selectButton 
-      [options]="timeframeOptions" 
+    <p-selectButton
+      [options]="timeframeOptions"
       [(ngModel)]="timeframe"
       (onChange)="onTimeframeChange($event.value)"
-      >
-        <ng-template let-item pTemplate>
-          <span class="capitalize font-semibold">{{ item }}</span>
-        </ng-template>
+    >
+      <ng-template let-item pTemplate>
+        <span class="capitalize font-semibold">{{ item }}</span>
+      </ng-template>
     </p-selectButton>
   </div>
-
 
   <div class="flex gap-3 w-full">
     <!-- Timing cards -->
@@ -65,9 +71,13 @@
           @if (minMaxResponseTime) {
             <p class="text-xs m-0 opacity-70">
               From
-              <span [class]="getPerformanceColor(minMaxResponseTime.max, 'response')" >{{ round(minMaxResponseTime.max) }} ms</span>
+              <span [class]="getPerformanceColor(minMaxResponseTime.max, 'response')"
+                >{{ round(minMaxResponseTime.max) }} ms</span
+              >
               to
-              <span [class]="getPerformanceColor(minMaxResponseTime.min, 'response')">{{ round(minMaxResponseTime.min) }} ms</span>
+              <span [class]="getPerformanceColor(minMaxResponseTime.min, 'response')"
+                >{{ round(minMaxResponseTime.min) }} ms</span
+              >
             </p>
           }
         }
@@ -88,9 +98,13 @@
           @if (minMaxDnsTime) {
             <p class="text-xs m-0 opacity-70">
               From
-              <span [class]="getPerformanceColor(minMaxDnsTime.max, 'dns')" >{{ round(minMaxDnsTime.max) }} ms</span>
+              <span [class]="getPerformanceColor(minMaxDnsTime.max, 'dns')"
+                >{{ round(minMaxDnsTime.max) }} ms</span
+              >
               to
-              <span [class]="getPerformanceColor(minMaxDnsTime.min, 'dns')">{{ round(minMaxDnsTime.min) }} ms</span>
+              <span [class]="getPerformanceColor(minMaxDnsTime.min, 'dns')"
+                >{{ round(minMaxDnsTime.min) }} ms</span
+              >
             </p>
           }
         }
@@ -111,9 +125,13 @@
           @if (minMaxSslTime) {
             <p class="text-xs m-0 opacity-70">
               From
-              <span [class]="getPerformanceColor(minMaxSslTime.max, 'ssl')" >{{ round(minMaxSslTime.max) }} ms</span>
+              <span [class]="getPerformanceColor(minMaxSslTime.max, 'ssl')"
+                >{{ round(minMaxSslTime.max) }} ms</span
+              >
               to
-              <span [class]="getPerformanceColor(minMaxSslTime.min, 'ssl')">{{ round(minMaxSslTime.min) }} ms</span>
+              <span [class]="getPerformanceColor(minMaxSslTime.min, 'ssl')"
+                >{{ round(minMaxSslTime.min) }} ms</span
+              >
             </p>
           }
         }
@@ -123,42 +141,44 @@
     <!-- Charts -->
     <div class="p-card p-3 flex-1 flex flex-col gap-3">
       <div class="flex-1 flex flex-col justify-between">
-        <apx-chart
-          *ngIf="responseTimeChart"
-          [series]="responseTimeChart.series"
-          [chart]="responseTimeChart.chart"
-          [stroke]="responseTimeChart.stroke"
-          [xaxis]="responseTimeChart.xaxis"
-          [tooltip]="responseTimeChart.tooltip"
-          [ngClass]="{'advanced-mode': advancedMode}"
-        />
+        @if (responseTimeChart) {
+          <apx-chart
+            [series]="responseTimeChart.series!"
+            [chart]="responseTimeChart.chart!"
+            [stroke]="responseTimeChart.stroke!"
+            [xaxis]="responseTimeChart.xaxis!"
+            [tooltip]="responseTimeChart.tooltip!"
+            [ngClass]="{ 'advanced-mode': advancedMode }"
+          />
+        }
         <span class="text-center text-xs opacity-70">
-          Response Time (ms)
-          for the {{mapTimeToSentence(timeframe)}}
+          Response Time (ms) for the {{ mapTimeToSentence(timeframe) }}
         </span>
-        </div>
+      </div>
       <div class="flex-1 flex flex-col justify-between">
-        <apx-chart
-          *ngIf="dnsTimeChart"
-          [series]="dnsTimeChart.series"
-          [chart]="dnsTimeChart.chart"
-          [stroke]="dnsTimeChart.stroke"
-          [xaxis]="dnsTimeChart.xaxis"
-          [tooltip]="dnsTimeChart.tooltip"
-          [ngClass]="{'advanced-mode': advancedMode}"
-        ></apx-chart>
+        @if (dnsTimeChart) {
+          <apx-chart
+            [series]="dnsTimeChart.series!"
+            [chart]="dnsTimeChart.chart!"
+            [stroke]="dnsTimeChart.stroke!"
+            [xaxis]="dnsTimeChart.xaxis!"
+            [tooltip]="dnsTimeChart.tooltip!"
+            [ngClass]="{ 'advanced-mode': advancedMode }"
+          ></apx-chart>
+        }
         <span class="text-center text-xs opacity-70">DNS Resolution Time (ms)</span>
       </div>
       <div class="flex-1 flex flex-col justify-between">
-        <apx-chart
-          *ngIf="sslTimeChart"
-          [series]="sslTimeChart.series"
-          [chart]="sslTimeChart.chart"
-          [stroke]="sslTimeChart.stroke"
-          [xaxis]="sslTimeChart.xaxis"
-          [tooltip]="sslTimeChart.tooltip"
-          [ngClass]="{'advanced-mode': advancedMode}"
-        ></apx-chart>
+        @if (sslTimeChart) {
+          <apx-chart
+            [series]="sslTimeChart.series!"
+            [chart]="sslTimeChart.chart!"
+            [stroke]="sslTimeChart.stroke!"
+            [xaxis]="sslTimeChart.xaxis!"
+            [tooltip]="sslTimeChart.tooltip!"
+            [ngClass]="{ 'advanced-mode': advancedMode }"
+          ></apx-chart>
+        }
         <span class="text-center text-xs opacity-70">SSL Handshake Time (ms)</span>
       </div>
     </div>

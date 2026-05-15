@@ -1,4 +1,3 @@
-
 <h2 class="text-2xl font-semibold my-2">Privacy Settings</h2>
 <p class="italic text-lg opacity-70 m-0">
   With Domain Locker, you are in control of your data, and how it's used.
@@ -16,15 +15,16 @@
         [onIcon]="'pi pi-check-circle'"
         [offIcon]="'pi pi-minus-circle'"
       ></p-toggleButton>
-      </div>
-      <p class="opacity-85 m-0 mt-2">
-        This enables us to see approximate number of active sessions on Domain Locker,
-        and helps us ensure we're provisioning enough resources to provide a smooth experience to everyone.
-      </p>
-      <p class="opacity-85 m-0 mt-2">
-        We use a self-hosted instance of Plausible.
-        <b>No user data or PII is collected or stored.</b>
-      </p>
+    </div>
+    <p class="opacity-85 m-0 mt-2">
+      This enables us to see approximate number of active sessions on Domain Locker, and
+      helps us ensure we're provisioning enough resources to provide a smooth experience
+      to everyone.
+    </p>
+    <p class="opacity-85 m-0 mt-2">
+      We use a self-hosted instance of Plausible.
+      <b>No user data or PII is collected or stored.</b>
+    </p>
   </div>
 
   <!-- Error Tracking -->
@@ -39,14 +39,14 @@
         [onIcon]="'pi pi-check-circle'"
         [offIcon]="'pi pi-minus-circle'"
       ></p-toggleButton>
-      </div>
-      <p class="opacity-85 m-0 mt-2">
-        This sends us a stack trace when an error occurs, to help us identify and fix bugs.
-      </p>
-      <p class="opacity-85 m-0 mt-2">
-        We use a self-hosted instance of GlitchTip.
-        <b>No sensitive data should be collected or stored</b>
-      </p>
+    </div>
+    <p class="opacity-85 m-0 mt-2">
+      This sends us a stack trace when an error occurs, to help us identify and fix bugs.
+    </p>
+    <p class="opacity-85 m-0 mt-2">
+      We use a self-hosted instance of GlitchTip.
+      <b>No sensitive data should be collected or stored</b>
+    </p>
   </div>
 
   <!-- Performance Monitoring -->
@@ -61,15 +61,16 @@
         [onIcon]="'pi pi-check-circle'"
         [offIcon]="'pi pi-minus-circle'"
       ></p-toggleButton>
-      </div>
-      <p class="opacity-85 m-0 mt-2">
-        Recoding of key performance metrics, such as page load times and resource usage.
-        This helps us identify and fix performance bottlenecks, in order to help us develop a better user experience.
-      </p>
-      <p class="opacity-85 m-0 mt-2">
-        We use a self-hosted instance of Uptrace.
-        <b>No PII is collected or stored</b>
-      </p>
+    </div>
+    <p class="opacity-85 m-0 mt-2">
+      Recoding of key performance metrics, such as page load times and resource usage.
+      This helps us identify and fix performance bottlenecks, in order to help us develop
+      a better user experience.
+    </p>
+    <p class="opacity-85 m-0 mt-2">
+      We use a self-hosted instance of Uptrace.
+      <b>No PII is collected or stored</b>
+    </p>
   </div>
 
   <!-- Cookies -->
@@ -85,9 +86,9 @@
         [offIcon]="'pi pi-minus-circle'"
       ></p-toggleButton>
     </div>
-      <p class="opacity-85 m-0 mt-2">
-        We don't use any 1st or 3rd-party cookies to track or store any of your data.
-      </p>
+    <p class="opacity-85 m-0 mt-2">
+      We don't use any 1st or 3rd-party cookies to track or store any of your data.
+    </p>
   </div>
 
   <!-- Local Storage -->
@@ -104,17 +105,20 @@
       ></p-toggleButton>
     </div>
     <p class="opacity-85 m-0 mt-2">
-      We use local storage to store your local preferences and settings, as well as managing session timeout.
+      We use local storage to store your local preferences and settings, as well as
+      managing session timeout.
     </p>
     <p class="opacity-85 m-0 mt-2">
-      It's not possible to disable this, as it's required for the app to function. But you can clear this data at any time.
+      It's not possible to disable this, as it's required for the app to function. But you
+      can clear this data at any time.
     </p>
     <p-button
       label="Clear Local Storage"
       severity="warning"
       icon="pi pi-trash"
       styleClass="mt-4"
-      (click)="clearLocalStorage()"></p-button>
+      (click)="clearLocalStorage()"
+    ></p-button>
   </div>
 
   <!-- Account -->
@@ -123,15 +127,15 @@
       <h3 class="font-semibold text-lg m-0">Account</h3>
     </div>
     <p class="opacity-85 m-0 mt-2">
-      View our <a routerLink="/about/legal/privacy-policy">Privacy page</a> for more information
-      on what data is collected, how it's stored and what it's used for.
-      You can <a routerLink="/domains/export">export your data</a>
-      and/or <a routerLink="/settings/delete-account">delete your account</a>
+      View our <a routerLink="/about/legal/privacy-policy">Privacy page</a> for more
+      information on what data is collected, how it's stored and what it's used for. You
+      can <a routerLink="/domains/export">export your data</a> and/or
+      <a routerLink="/settings/delete-account">delete your account</a>
       (and all associated data) at any time.
     </p>
     <details>
       <summary class="text-sm text-gray-500 mt-2 cursor-pointer">Data Options</summary>
-    
+
       <div class="flex gap-2">
         <a routerLink="/about/legal/privacy-policy">
           <p-button
@@ -158,7 +162,6 @@
           />
         </a>
       </div>
-
     </details>
   </div>
 </div>

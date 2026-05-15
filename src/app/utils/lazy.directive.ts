@@ -1,19 +1,26 @@
-import { Directive, ElementRef, EventEmitter, Output, Inject, PLATFORM_ID } from '@angular/core';
+import {
+  Directive,
+  ElementRef,
+  EventEmitter,
+  Output,
+  PLATFORM_ID,
+  inject,
+  AfterViewInit,
+  OnDestroy,
+} from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
 @Directive({
   selector: '[appLazyLoad]',
   standalone: true,
 })
-export class LazyLoadDirective {
+export class LazyLoadDirective implements AfterViewInit, OnDestroy {
+  private el = inject(ElementRef);
+  private platformId = inject(PLATFORM_ID);
+
   @Output() visible = new EventEmitter<void>();
 
   private observer?: IntersectionObserver;
-
-  constructor(
-    private el: ElementRef,
-    @Inject(PLATFORM_ID) private platformId: any
-  ) {}
 
   ngAfterViewInit(): void {
     if (!isPlatformBrowser(this.platformId)) {
@@ -29,7 +36,7 @@ export class LazyLoadDirective {
           }
         });
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
 
     this.observer.observe(this.el.nativeElement);

@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { RouterModule } from '@angular/router';
 import { PrimeNgModule } from '~/app/prime-ng.module';
 import { TranslateModule } from '@ngx-translate/core';
@@ -7,9 +7,9 @@ import { TranslateModule } from '@ngx-translate/core';
 @Component({
   selector: 'app-hero',
   standalone: true,
-  imports: [CommonModule, RouterModule, PrimeNgModule, TranslateModule],
+  imports: [RouterModule, PrimeNgModule, TranslateModule],
   templateUrl: './hero.component.html',
-  styles: []
+  styles: [],
 })
 export class HeroComponent {
   features = [

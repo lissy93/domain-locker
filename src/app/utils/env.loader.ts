@@ -41,19 +41,24 @@ export class EnvLoaderService {
 
       if (!response || response.error) {
         this.errorHandler.handleError({
-          error: response?.error, message: 'Failed to load environment variables', location: 'EnvLoader',
+          error: response?.error,
+          message: 'Failed to load environment variables',
+          location: 'EnvLoader',
         });
         return;
       }
       if (!response.env) {
         this.errorHandler.handleError({
-          error: response?.error, message: '/api/env did not return "env" object', location: 'EnvLoader',
+          error: response?.error,
+          message: '/api/env did not return "env" object',
+          location: 'EnvLoader',
         });
         return;
       }
 
       const envVars = response.env;
-      const windowEnv = (window as any).__env ?? {};
+      const windowWithEnv = window as unknown as { __env?: Record<string, string> };
+      const windowEnv = windowWithEnv.__env ?? {};
 
       // Set each variable which isn't already set
       for (const [key, value] of Object.entries(envVars)) {
@@ -65,9 +70,8 @@ export class EnvLoaderService {
       }
 
       // Then update the window.__env object, and mark as loaded
-      (window as any).__env = windowEnv;
+      windowWithEnv.__env = windowEnv;
       this.isLoaded = true;
-
     } catch (error) {
       this.errorHandler.handleError({
         error,

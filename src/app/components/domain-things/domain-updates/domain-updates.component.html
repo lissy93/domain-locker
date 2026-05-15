@@ -1,41 +1,61 @@
-<div *ngIf="loading" class="p-progressSpinner"></div>
-<div *ngIf="!loading && (updates$ | async) as updates" class="relative">
-
-  @if (showFilters) {
-    <div class="flex flex-wrap gap-2 mb-4 flex-row">
-      <p-dropdown
-        [options]="changeCategories"
-        [(ngModel)]="selectedCategory"
-        placeholder="Select Category"
-        styleClass="w-full md:w-2/6 flex-1"
-      ></p-dropdown>
-
-      <ng-container *ngIf="!domainName">
-        <input pInputText type="text" placeholder="Domain" [(ngModel)]="filterDomain" styleClass="w-full md:w-2/6 flex-1" />
-      </ng-container>
-
-      <p-selectButton
-        [options]="changeTypes"
-        [(ngModel)]="selectedChangeType"
-        styleClass="w-full md:w-2/6 flex-none"
-      ></p-selectButton>
-
-      <button pButton label="Apply Filters" (click)="applyFilters()" icon="pi pi-check-circle"></button>
-      <button pButton pTooltip="Clear Filters" (click)="clearFilters()" icon="pi pi-times-circle" severity="secondary"></button>
-    </div>
-  }
-
-  <button pButton
-  *ngIf="updates.length > 0 || showFilters"
-    [label]="(showFilters ? 'Hide' : 'Show') + 'Filters'"
-    (click)="toggleFilters()"
-    size="small"
-    [class]="(showFilters ? 'mb-4' : 'float-right my-4 filter-button')"
-    icon="pi pi-sliders-h"></button>
-
-  <div class="flex flex-col gap-1">
-    @for (update of updates; track update.id) {
-      <div class="flex flex-row gap-2">
+@if (loading) {
+  <div class="p-progressSpinner"></div>
+}
+@if (!loading && (updates$ | async); as updates) {
+  <div class="relative">
+    @if (showFilters) {
+      <div class="flex flex-wrap gap-2 mb-4 flex-row">
+        <p-dropdown
+          [options]="changeCategories"
+          [(ngModel)]="selectedCategory"
+          placeholder="Select Category"
+          styleClass="w-full md:w-2/6 flex-1"
+        ></p-dropdown>
+        @if (!domainName) {
+          <input
+            pInputText
+            type="text"
+            placeholder="Domain"
+            [(ngModel)]="filterDomain"
+            styleClass="w-full md:w-2/6 flex-1"
+          />
+        }
+        <p-selectButton
+          [options]="changeTypes"
+          [(ngModel)]="selectedChangeType"
+          styleClass="w-full md:w-2/6 flex-none"
+        ></p-selectButton>
+        <button
+          pButton
+          label="Apply Filters"
+          (click)="applyFilters()"
+          icon="pi pi-check-circle"
+          aria-label="Apply filters"
+        ></button>
+        <button
+          pButton
+          pTooltip="Clear Filters"
+          aria-label="Clear filters"
+          (click)="clearFilters()"
+          icon="pi pi-times-circle"
+          severity="secondary"
+        ></button>
+      </div>
+    }
+    @if (updates.length > 0 || showFilters) {
+      <button
+        pButton
+        [label]="(showFilters ? 'Hide' : 'Show') + 'Filters'"
+        [attr.aria-label]="(showFilters ? 'Hide' : 'Show') + ' filters'"
+        (click)="toggleFilters()"
+        size="small"
+        [class]="showFilters ? 'mb-4' : 'float-right my-4 filter-button'"
+        icon="pi pi-sliders-h"
+      ></button>
+    }
+    <div class="flex flex-col gap-1">
+      @for (update of updates; track update.id) {
+        <div class="flex flex-row gap-2">
           <p class="m-0">
             @if (update.change_type === 'added') {
               <i pTooltip="Addition" class="pi pi-plus text-green-700 mx-2"></i>
@@ -45,12 +65,21 @@
               <i pTooltip="Update" class="pi pi-pencil text-blue-700 mx-2"></i>
             }
           </p>
-          <p class="m-0">{{ formatDate(update.date) }}</p> -
+          <p class="m-0">{{ formatDate(update.date) }}</p>
+          -
           @if (!domainName) {
             @if (update.domains) {
-              <a class="m-0 text-default" [routerLink]="'/domains/'+update.domains.domain_name">{{ update.domains.domain_name }}</a>
+              <a
+                class="m-0 text-default"
+                [routerLink]="'/domains/' + update.domains.domain_name"
+                >{{ update.domains.domain_name }}</a
+              >
             } @else {
-              <a class="m-0 text-default" [routerLink]="'/domains/'+update.domain_name">{{ update.domain_name }}</a>
+              <a
+                class="m-0 text-default"
+                [routerLink]="'/domains/' + update.domain_name"
+                >{{ update.domain_name }}</a
+              >
             }
             -
           }
@@ -73,25 +102,35 @@
               <span class="font-mono">{{ update.old_value || 'N/A' }}</span>
             </p>
           }
+        </div>
+      }
+    </div>
+    @if (updates.length === 0) {
+      <div class="text-center">
+        <p class="my-4 text-2xl text-center italic text-surface-400">
+          <i class="pi pi-info-circle text-2xl mr-2"></i>
+          No updates recorded yet
+        </p>
+        @if (this.selectedCategory || this.selectedChangeType || this.filterDomain) {
+          <button
+            pButton
+            label="Clear Filters"
+            aria-label="Clear filters"
+            (click)="clearFilters()"
+            class="mx-auto"
+          ></button>
+        }
       </div>
     }
   </div>
-  <div *ngIf="updates.length === 0" class="text-center">
-    <p class="my-4 text-2xl text-center italic text-surface-400">
-      <i class="pi pi-info-circle text-2xl mr-2"></i>
-      No updates recorded yet
-    </p>
-    @if (this.selectedCategory || this.selectedChangeType || this.filterDomain) {
-      <button pButton label="Clear Filters" (click)="clearFilters()" class="mx-auto"></button>
-    }
-  </div>
-</div>
+}
 
-<p-paginator
-  *ngIf="totalRecords > 25"
-  styleClass="mt-4 border-0"
-  [rows]="25"
-  [totalRecords]="totalRecords"
-  [rowsPerPageOptions]="[25, 50, 100]"
-  (onPageChange)="onPageChange($event)"
-></p-paginator>
+@if (totalRecords > 25) {
+  <p-paginator
+    styleClass="mt-4 border-0"
+    [rows]="25"
+    [totalRecords]="totalRecords"
+    [rowsPerPageOptions]="[25, 50, 100]"
+    (onPageChange)="onPageChange($event)"
+  ></p-paginator>
+}

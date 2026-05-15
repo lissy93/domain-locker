@@ -1,4 +1,5 @@
-<p-table [value]="domains"
+<p-table
+  [value]="domains"
   [columns]="visibleColumns"
   [scrollable]="true"
   [loading]="loading"
@@ -6,83 +7,171 @@
   [sortMode]="'multiple'"
   [rows]="10"
   [showCurrentPageReport]="true"
-  [rowsPerPageOptions]="[10,25,50]"
+  [rowsPerPageOptions]="[10, 25, 50]"
 >
   <ng-template pTemplate="header" let-columns>
     <tr>
-      <th *ngFor="let col of columns" [pSortableColumn]="col.field" [style.width.px]="col.width">
-        {{ col.header | translate }}
-        <p-sortIcon [field]="col.field"></p-sortIcon>
-      </th>
+      @for (col of columns; track col) {
+        <th [pSortableColumn]="col.field" [style.width.px]="col.width">
+          {{ col.header | translate }}
+          <p-sortIcon [field]="col.field"></p-sortIcon>
+        </th>
+      }
     </tr>
   </ng-template>
   <ng-template pTemplate="body" let-domain let-columns="columns">
     <tr>
-      <td *ngFor="let col of columns">
-        <ng-container [ngSwitch]="col.field">
-          <span *ngSwitchCase="'domain_name'">
-            <a [routerLink]="'/domains/'+domain.domain_name" class="font-bold no-underline text-default hover:underline">
-              <app-domain-favicon [domain]="domain.domain_name" [size]="18" class="mr-2"></app-domain-favicon>
-              {{domain.domain_name}}
-            </a>
-          </span>
-          <span *ngSwitchCase="'registrar'">{{domain.registrar?.name}}</span>
-          <span *ngSwitchCase="'expiry_date'">
-            {{domain.expiry_date | date:'mediumDate'}}
-            <p-tag 
-              [value]="domainUtils.getRemainingDaysText(domain.expiry_date)"
-              [severity]="domainUtils.getExpirySeverity(domain.expiry_date)"
-              styleClass="ml-2 w-20"
-            ></p-tag>
-          </span>
-          <span *ngSwitchCase="'tags'">
-            <a *ngFor="let tag of domain.tags" [routerLink]="'/assets/tags/'+tag">
-              <p-tag [value]="tag" styleClass="bg-highlight rounded-2xl text-highlight px-2 py-1 mr-1"></p-tag>
-            </a>
-          </span>
-          <ng-container *ngSwitchCase="'notes'">
-            <span [pTooltip]="domain.notes">{{domainUtils.truncateNotes(domain.notes)}}</span>
-          </ng-container>
-          <div *ngSwitchCase="'statuses'" class="max-w-72 flex flex-wrap gap-1">
-            <a *ngFor="let status of domain.statuses" [routerLink]="'/assets/statuses/'+status.eppCode">
-              @if (status.severity === 'good') {
-                <p-tag [value]="status.label" styleClass="mr-1" icon="pi pi-check-circle" severity="success" [pTooltip]="status.description" />
-              } @else if (status.severity === 'bad') {
-                <p-tag [value]="status.label" styleClass="mr-1" icon="pi pi-times-circle" severity="danger" [pTooltip]="status.description" />
-              } @else {
-                <p-tag [value]="status.label" styleClass="mr-1" icon="pi pi-info-circle" severity="info" [pTooltip]="status.description" />
-              }
-            </a>
-          </div>
-          <span *ngSwitchCase="'ip_addresses'">
-            <ng-container *ngFor="let ip of domain.ip_addresses">
-              {{ip.ip_address}} ({{ ip.is_ipv6 ? ('DOMAINS.DOMAIN_COLLECTION.LIST.IPV6' | translate) : ('DOMAINS.DOMAIN_COLLECTION.LIST.IPV4' | translate) }})<br>
-            </ng-container>
-          </span>
-          <span *ngSwitchCase="'sub_domains'">
-            <ng-container *ngFor="let subdomain of domain.sub_domains">
-              {{subdomain.name}}.{{domain.domain_name}}<br>
-            </ng-container>
-          </span>
-          <span *ngSwitchCase="'renewal_cost'">
-            <p>${{ domain.domain_costings?.renewal_cost }}</p>
-          </span>
-          <span *ngSwitchCase="'ssl'">
-            <a [routerLink]="'/assets/certs/' + domain.ssl?.issuer" class="text-primary">{{domain.ssl?.issuer}}</a><br>
-            {{ 'DOMAINS.DOMAIN_COLLECTION.LIST.VALID_UNTIL' | translate }} {{domain.ssl?.valid_to | date:'shortDate'}}
-          </span>
-          <span *ngSwitchCase="'whois'">{{domain.whois?.name}}</span>
-          <span *ngSwitchCase="'host'" [pTooltip]="domain.host?.org + '\n' + domain.host?.city + ', ' + domain.host?.region + ', ' + domain.host?.country">
-            <a class="text-primary" [routerLink]="'/assets/hosts/'+domain.host?.isp">{{domain.host?.isp}}</a>
-          </span>
-          <span *ngSwitchCase="'dns'">
-            <ng-container *ngIf="domain.dns?.nameServers">
-              {{ 'DOMAINS.DOMAIN_COLLECTION.LIST.NS_LABEL' | translate }} {{domain.dns.nameServers[0]}}
-            </ng-container>
-          </span>
-          <span *ngSwitchDefault>{{domain[col.field]}}</span>
-        </ng-container>
-      </td>
+      @for (col of columns; track col) {
+        <td>
+          @switch (col.field) {
+            @case ('domain_name') {
+              <span>
+                <a
+                  [routerLink]="'/domains/' + domain.domain_name"
+                  class="font-bold no-underline text-default hover:underline"
+                >
+                  <app-domain-favicon
+                    [domain]="domain.domain_name"
+                    [size]="18"
+                    class="mr-2"
+                  ></app-domain-favicon>
+                  {{ domain.domain_name }}
+                </a>
+              </span>
+            }
+            @case ('registrar') {
+              <span>{{ domain.registrar?.name }}</span>
+            }
+            @case ('expiry_date') {
+              <span>
+                {{ domain.expiry_date | date: 'mediumDate' }}
+                <p-tag
+                  [value]="domainUtils.getRemainingDaysText(domain.expiry_date)"
+                  [severity]="domainUtils.getExpirySeverity(domain.expiry_date)"
+                  styleClass="ml-2 w-20"
+                ></p-tag>
+              </span>
+            }
+            @case ('tags') {
+              <span>
+                @for (tag of domain.tags; track tag) {
+                  <a [routerLink]="'/assets/tags/' + tag">
+                    <p-tag
+                      [value]="tag"
+                      styleClass="bg-highlight rounded-2xl text-highlight px-2 py-1 mr-1"
+                    ></p-tag>
+                  </a>
+                }
+              </span>
+            }
+            @case ('notes') {
+              <span [pTooltip]="domain.notes">{{
+                domainUtils.truncateNotes(domain.notes)
+              }}</span>
+            }
+            @case ('statuses') {
+              <div class="max-w-72 flex flex-wrap gap-1">
+                @for (status of domain.statuses; track status) {
+                  <a [routerLink]="'/assets/statuses/' + status.eppCode">
+                    @if (status.severity === 'good') {
+                      <p-tag
+                        [value]="status.label"
+                        styleClass="mr-1"
+                        icon="pi pi-check-circle"
+                        severity="success"
+                        [pTooltip]="status.description"
+                      />
+                    } @else if (status.severity === 'bad') {
+                      <p-tag
+                        [value]="status.label"
+                        styleClass="mr-1"
+                        icon="pi pi-times-circle"
+                        severity="danger"
+                        [pTooltip]="status.description"
+                      />
+                    } @else {
+                      <p-tag
+                        [value]="status.label"
+                        styleClass="mr-1"
+                        icon="pi pi-info-circle"
+                        severity="info"
+                        [pTooltip]="status.description"
+                      />
+                    }
+                  </a>
+                }
+              </div>
+            }
+            @case ('ip_addresses') {
+              <span>
+                @for (ip of domain.ip_addresses; track ip) {
+                  {{ ip.ip_address }} ({{
+                    ip.is_ipv6
+                      ? ('DOMAINS.DOMAIN_COLLECTION.LIST.IPV6' | translate)
+                      : ('DOMAINS.DOMAIN_COLLECTION.LIST.IPV4' | translate)
+                  }})<br />
+                }
+              </span>
+            }
+            @case ('sub_domains') {
+              <span>
+                @for (subdomain of domain.sub_domains; track subdomain) {
+                  {{ subdomain.name }}.{{ domain.domain_name }}<br />
+                }
+              </span>
+            }
+            @case ('renewal_cost') {
+              <span>
+                <p>${{ domain.domain_costings?.renewal_cost }}</p>
+              </span>
+            }
+            @case ('ssl') {
+              <span>
+                <a
+                  [routerLink]="'/assets/certs/' + domain.ssl?.issuer"
+                  class="text-primary"
+                  >{{ domain.ssl?.issuer }}</a
+                ><br />
+                {{ 'DOMAINS.DOMAIN_COLLECTION.LIST.VALID_UNTIL' | translate }}
+                {{ domain.ssl?.valid_to | date: 'shortDate' }}
+              </span>
+            }
+            @case ('whois') {
+              <span>{{ domain.whois?.name }}</span>
+            }
+            @case ('host') {
+              <span
+                [pTooltip]="
+                  domain.host?.org +
+                  '\n' +
+                  domain.host?.city +
+                  ', ' +
+                  domain.host?.region +
+                  ', ' +
+                  domain.host?.country
+                "
+              >
+                <a
+                  class="text-primary"
+                  [routerLink]="'/assets/hosts/' + domain.host?.isp"
+                  >{{ domain.host?.isp }}</a
+                >
+              </span>
+            }
+            @case ('dns') {
+              <span>
+                @if (domain.dns?.nameServers) {
+                  {{ 'DOMAINS.DOMAIN_COLLECTION.LIST.NS_LABEL' | translate }}
+                  {{ domain.dns.nameServers[0] }}
+                }
+              </span>
+            }
+            @default {
+              <span>{{ domain[col.field] }}</span>
+            }
+          }
+        </td>
+      }
     </tr>
   </ng-template>
 </p-table>

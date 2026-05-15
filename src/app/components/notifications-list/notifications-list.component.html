@@ -1,9 +1,8 @@
-
 @if (!isInModal) {
   <div class="flex justify-between items-center mb-2 flex-wrap">
     <h2 class="mb-3">
       Notifications
-      {{unreadNotificationsCount ? '('+unreadNotificationsCount+')' : ''}}
+      {{ unreadNotificationsCount ? '(' + unreadNotificationsCount + ')' : '' }}
     </h2>
     <div class="flex gap-2 flex-wrap">
       <p-button
@@ -20,21 +19,24 @@
         routerLink="/settings/notification-preferences"
         styleClass="min-w-72"
       />
-      <p-button
-        *ngIf="!isInModal"
-        label="View Full Change History"
-        icon="pi pi-history"
-        routerLink="/domains/change-history"
-        severity="success"
-        styleClass="min-w-72"
-      />
+      @if (!isInModal) {
+        <p-button
+          label="View Full Change History"
+          icon="pi pi-history"
+          routerLink="/domains/change-history"
+          severity="success"
+          styleClass="min-w-72"
+        />
+      }
       @if (unreadNotificationsCount && !isInModal) {
         <p-button
           label="Mark All as Read"
           icon="pi pi-check"
           (click)="markAllAsRead()"
           severity="info"
-          [badge]="unreadNotificationsCount < 10 ? unreadNotificationsCount.toString() : '10+'"
+          [badge]="
+            unreadNotificationsCount < 10 ? unreadNotificationsCount.toString() : '10+'
+          "
           styleClass="min-w-72"
         />
       } @else if (notifications.length && !isInModal) {
@@ -51,51 +53,80 @@
   </div>
 }
 
-<div *ngIf="notifications.length; else noNotifications" [class]="isInModal ? 'max-w-80 max-h-[36rem] overflow-y-scroll overflow-x-hidden' : ''">
-  <div *ngFor="let notification of notifications"
-       class="notification-row {{ notification.read ? '' : 'unread' }} p-2 flex justify-between items-center border-b-2 border-surface-400"
-       >
-    <div>
-      <h4 class="flex items-center gap-2">
-        <app-domain-favicon [domain]="notification.domain_name" [size]="20"></app-domain-favicon>
-        <a [routerLink]="'/domains/' + notification.domain_name" class="text-primary no-underline">
-          {{ notification.domain_name }}
-        </a>
-        <span class="opacity-70 font-normal">{{ notification.change_type }}</span>
-      </h4>
-      <p class="mx-0 my-1">{{ notification.message }}</p>
-      <small class="text-xs opacity-70">{{ notification.created_at | date:'short' }}</small>
-    </div>
-    <div>
-      <p-button *ngIf="!notification.read" [text]="true" icon="pi pi-eye" (click)="markAsRead(notification.id)" pTooltip="Mark as read"></p-button>
-      <p-button *ngIf="notification.read" [text]="true" icon="pi pi-eye-slash" (click)="markAsUnread(notification.id)" pTooltip="Mark as unread"></p-button>
-    </div>
+@if (notifications.length) {
+  <div
+    [class]="
+      isInModal ? 'max-w-80 max-h-[36rem] overflow-y-scroll overflow-x-hidden' : ''
+    "
+  >
+    @for (notification of notifications; track notification) {
+      <div
+        class="notification-row {{
+          notification.read ? '' : 'unread'
+        }} p-2 flex justify-between items-center border-b-2 border-surface-400"
+      >
+        <div>
+          <h4 class="flex items-center gap-2">
+            <app-domain-favicon
+              [domain]="notification.domain_name"
+              [size]="20"
+            ></app-domain-favicon>
+            <a
+              [routerLink]="'/domains/' + notification.domain_name"
+              class="text-primary no-underline"
+            >
+              {{ notification.domain_name }}
+            </a>
+            <span class="opacity-70 font-normal">{{ notification.change_type }}</span>
+          </h4>
+          <p class="mx-0 my-1">{{ notification.message }}</p>
+          <small class="text-xs opacity-70">{{
+            notification.created_at | date: 'short'
+          }}</small>
+        </div>
+        <div>
+          @if (!notification.read) {
+            <p-button
+              [text]="true"
+              icon="pi pi-eye"
+              (click)="markAsRead(notification.id)"
+              pTooltip="Mark as read"
+            ></p-button>
+          }
+          @if (notification.read) {
+            <p-button
+              [text]="true"
+              icon="pi pi-eye-slash"
+              (click)="markAsUnread(notification.id)"
+              pTooltip="Mark as unread"
+            ></p-button>
+          }
+        </div>
+      </div>
+    }
+    <!-- View All Button in Modal -->
+    @if (isInModal) {
+      <div class="text-center mt-2">
+        <p-button
+          label="View All"
+          icon="pi pi-arrow-up-right"
+          routerLink="/notifications"
+          [text]="true"
+          size="small"
+          styleClass="py-2 px-4 my-2"
+        />
+      </div>
+    }
+    <!-- Pagination in Full Page -->
+    @if (!isInModal) {
+      <p-paginator
+        [rows]="rowsPerPage"
+        [totalRecords]="totalNotifications"
+        (onPageChange)="loadNotifications($event.page)"
+        styleClass="mt-4"
+      />
+    }
   </div>
-
-  <!-- View All Button in Modal -->
-  <div *ngIf="isInModal" class="text-center mt-2">
-    <p-button
-      label="View All"
-      icon="pi pi-arrow-up-right"
-      routerLink="/notifications"
-      [text]="true"
-      size="small"
-      styleClass="py-2 px-4 my-2"
-    />
-  </div>
-
-  <!-- Pagination in Full Page -->
-  @if (!isInModal) {
-    <p-paginator
-      [rows]="rowsPerPage"
-      [totalRecords]="totalNotifications"
-      (onPageChange)="loadNotifications($event.page)"
-      styleClass="mt-4"
-    />
-  }
-
-</div>
-
-<ng-template #noNotifications>
+} @else {
   <p class="text-center mt-4 opacity-70">You have no notifications.</p>
-</ng-template>
+}

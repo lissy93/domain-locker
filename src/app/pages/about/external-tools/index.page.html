@@ -1,42 +1,69 @@
 <section class="p-card p-3 mt-4">
   <h1 class="text-3xl font-bold">Directory of External Tools and Resources</h1>
   <p class="text-lg italic opacity-70">
-    We've hand-picked the most valuable and useful domain tools.
-    And have compiled a list of everything you could ever need when it comes to domain research, security, registration and management.
+    We've hand-picked the most valuable and useful domain tools. And have compiled a list
+    of everything you could ever need when it comes to domain research, security,
+    registration and management.
   </p>
   <ul>
-    <li *ngFor="let section of sections;">
-      <a [routerLink]="[]" [fragment]="makeId(section.title)" class="text-primary font-semibold no-underline">
-        {{ section.title }}
-      </a>
-    </li>
+    @for (section of sections; track section) {
+      <li>
+        <a
+          [routerLink]="[]"
+          [fragment]="makeId(section.title)"
+          class="text-primary font-semibold no-underline"
+        >
+          {{ section.title }}
+        </a>
+      </li>
+    }
   </ul>
 </section>
 
 <p-divider styleClass="my-3" />
 
-<section *ngFor="let section of sections; last as isLast" class="mt-4">
-  <div class="p-card p-3 flex flex-col gap-3 my-3">
-    <h2 class="m-0" [id]="makeId(section.title)">{{ section.title }}</h2>
-    <p *ngIf="section.description" class="m-0" [innerHTML]="section.description"></p>
-  </div>
-  <ul class="p-0 list-none grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-    <li *ngFor="let link of section.links" class="p-card mx-auto w-full">
-      <a [href]="link.link" target="_blank" class="flex flex-col p-3 gap-2 no-underline text-default">
-        <h3 class="m-0">
-          @if (link.title.includes('/') && link.link.includes('github')) {
-           {{ link.title.split('/')[1] }}<br>
-           <span class="opacity-60 italic font-normal text-sm">By &#64;{{ link.title.split('/')[0] }}</span>
-          } @else {
-            {{ link.title }}
-          }
-        </h3>
-        <div class="flex flex-row items-center gap-3 items-between">
-          <img [src]="link.icon" alt="{{ link.title }}" class="h-12 mx-auto w-fit max-w-[48px] rounded" />  
-          <p class="m-0 flex-1">{{ link.description }}</p>
-        </div>
-      </a>
-    </li>
-  </ul>
-  <p-divider *ngIf="!isLast" styleClass="my-3" />
-</section>
+@for (section of sections; track section; let isLast = $last) {
+  <section class="mt-4">
+    <div class="p-card p-3 flex flex-col gap-3 my-3">
+      <h2 class="m-0" [id]="makeId(section.title)">{{ section.title }}</h2>
+      @if (section.description) {
+        <p class="m-0" [innerHTML]="section.description"></p>
+      }
+    </div>
+    <ul
+      class="p-0 list-none grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3"
+    >
+      @for (link of section.links; track link) {
+        <li class="p-card mx-auto w-full">
+          <a
+            [href]="link.link"
+            target="_blank"
+            class="flex flex-col p-3 gap-2 no-underline text-default"
+          >
+            <h3 class="m-0">
+              @if (link.title.includes('/') && link.link.includes('github')) {
+                {{ link.title.split('/')[1] }}<br />
+                <span class="opacity-60 italic font-normal text-sm"
+                  >By &#64;{{ link.title.split('/')[0] }}</span
+                >
+              } @else {
+                {{ link.title }}
+              }
+            </h3>
+            <div class="flex flex-row items-center gap-3 items-between">
+              <img
+                [src]="link.icon"
+                alt="{{ link.title }}"
+                class="h-12 mx-auto w-fit max-w-[48px] rounded"
+              />
+              <p class="m-0 flex-1">{{ link.description }}</p>
+            </div>
+          </a>
+        </li>
+      }
+    </ul>
+    @if (!isLast) {
+      <p-divider styleClass="my-3" />
+    }
+  </section>
+}

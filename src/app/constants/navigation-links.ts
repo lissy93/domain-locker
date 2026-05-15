@@ -32,7 +32,8 @@ export const statsLinks: ExtendedMenuItem = [
     label: 'Security Profile',
     icon: 'pi pi-unlock',
     routerLink: '/stats/security-profile',
-    description: 'Proportion of which domains have valid domain security features enabled',
+    description:
+      'Proportion of which domains have valid domain security features enabled',
     color: 'cyan',
   },
   {
@@ -60,7 +61,8 @@ export const statsLinks: ExtendedMenuItem = [
     label: 'Response Times',
     icon: 'pi pi-wave-pulse',
     routerLink: '/stats/uptime',
-    description: 'Heatmap of average historical response times and status codes for each site',
+    description:
+      'Heatmap of average historical response times and status codes for each site',
     color: 'orange',
   },
   {
@@ -105,13 +107,15 @@ export const toolsLinks = [
     label: 'Registrar Price Comparison',
     svgIcon: 'priceComparison',
     routerLink: '',
-    description: 'Find the lowest cost registrar for purchasing, renewing and transferring domains',
+    description:
+      'Find the lowest cost registrar for purchasing, renewing and transferring domains',
   },
   {
     label: 'Web Analysis',
     svgIcon: 'webAnalysis',
     routerLink: '',
-    description: 'Get a detailed report on the security, configuration and architecture of a website',
+    description:
+      'Get a detailed report on the security, configuration and architecture of a website',
   },
   {
     label: 'Domain Name Valuation',
@@ -123,18 +127,39 @@ export const toolsLinks = [
     label: 'Smart Domain Finder',
     svgIcon: 'domainFinder',
     routerLink: '',
-    description: 'AI-powered smart search, to help you discover new domains based on your criteria',
+    description:
+      'AI-powered smart search, to help you discover new domains based on your criteria',
   },
 ];
 
 export const settingsLinks = [
   { label: 'Account Settings', icon: 'pi pi-user-edit', routerLink: '/settings/account' },
-  { label: 'Notification Preferences', icon: 'pi pi-bell', routerLink: '/settings/notification-preferences' },
-  { label: 'Display Options', icon: 'pi pi-palette', routerLink: '/settings/display-options' },
-  { label: 'Privacy and Data', icon: 'pi pi-eye-slash', routerLink: '/settings/privacy-settings' },
+  {
+    label: 'Notification Preferences',
+    icon: 'pi pi-bell',
+    routerLink: '/settings/notification-preferences',
+  },
+  {
+    label: 'Display Options',
+    icon: 'pi pi-palette',
+    routerLink: '/settings/display-options',
+  },
+  {
+    label: 'Privacy and Data',
+    icon: 'pi pi-eye-slash',
+    routerLink: '/settings/privacy-settings',
+  },
   { label: 'Manage Plan', icon: 'pi pi-shop', routerLink: '/settings/upgrade' },
-  { label: 'Developer Options', icon: 'pi pi-code', routerLink: '/settings/developer-options' },
-  { label: 'Danger Zone', icon: 'pi pi-exclamation-triangle', routerLink: '/settings/delete-account' },
+  {
+    label: 'Developer Options',
+    icon: 'pi pi-code',
+    routerLink: '/settings/developer-options',
+  },
+  {
+    label: 'Danger Zone',
+    icon: 'pi pi-exclamation-triangle',
+    routerLink: '/settings/delete-account',
+  },
 ];
 
 export const aboutLinks = [
@@ -181,17 +206,17 @@ export const authenticatedNavLinks = [
           {
             label: 'Add Domain',
             icon: 'pi pi-fw pi-plus',
-            routerLink: '/domains/add'
+            routerLink: '/domains/add',
           },
           {
             label: 'Quick Add',
             icon: 'pi pi-fw pi-plus-circle',
-            routerLink: '/domains/add/quick-add'
+            routerLink: '/domains/add/quick-add',
           },
           {
             label: 'Bulk Import',
             icon: 'pi pi-fw pi-upload',
-            routerLink: '/domains/add/bulk-add'
+            routerLink: '/domains/add/bulk-add',
           },
           {
             label: 'Bulk Export',
@@ -318,21 +343,21 @@ export const unauthenticatedNavLinks = [
   {
     label: 'Features',
     icon: 'pi pi-fw pi-star',
-    routerLink: '/about/features'
+    routerLink: '/about/features',
   },
   {
     label: 'Pricing',
     icon: 'pi pi-fw pi-money-bill',
-    routerLink: '/about/pricing'
+    routerLink: '/about/pricing',
   },
   {
     label: 'GitHub',
     icon: 'pi pi-fw pi-github',
-    url: 'https://github.com/lissy93/domain-locker'
+    url: 'https://github.com/lissy93/domain-locker',
   },
   {
     label: 'Login',
     icon: 'pi pi-fw pi-sign-in',
-    routerLink: '/login'
-  }
+    routerLink: '/login',
+  },
 ];

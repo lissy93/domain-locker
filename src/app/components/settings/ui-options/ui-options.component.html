@@ -1,12 +1,21 @@
-<div class="p-4 surface-card border-round shadow-2 ui-settings-wrap {{ standAlone ? 'stand-alone' : '' }}">
+<div
+  class="p-4 surface-card border-round shadow-2 ui-settings-wrap {{
+    standAlone ? 'stand-alone' : ''
+  }}"
+>
   <!-- Light/Dark Mode Section -->
   <div class="mb-4 ui-settings-section {{ standAlone ? 'p-card' : '' }}">
     <h3 class="text-sm font-semibold mb-2">
       <i class="pi pi-sun mr-2"></i>Light/Dark Mode
     </h3>
-    <p-selectButton [options]="darkModeOptions" [(ngModel)]="isDarkTheme"
-        (onChange)="onDarkModeChange()" optionLabel="label"
-        optionValue="value" styleClass="text-sm flex justify-center">
+    <p-selectButton
+      [options]="darkModeOptions"
+      [(ngModel)]="isDarkTheme"
+      (onChange)="onDarkModeChange()"
+      optionLabel="label"
+      optionValue="value"
+      styleClass="text-sm flex justify-center"
+    >
       <ng-template let-option pTemplate>
         <i [class]="option.icon"></i>
       </ng-template>
@@ -14,14 +23,18 @@
   </div>
   <!-- Theme Section -->
   <div class="mb-4 ui-settings-section {{ standAlone ? 'p-card' : '' }}">
-    <h3 class="text-sm font-semibold mb-2">
-      <i class="pi pi-palette mr-2"></i>Theme
-    </h3>
+    <h3 class="text-sm font-semibold mb-2"><i class="pi pi-palette mr-2"></i>Theme</h3>
     <div class="flex flex-column">
-      <p-radioButton *ngFor="let theme of themes" [value]="theme"
-                     [(ngModel)]="selectedTheme" (onClick)="onThemeChange(theme)"
-                     [label]="theme.name" styleClass="mb-2">
-      </p-radioButton>
+      @for (theme of themes; track theme) {
+        <p-radioButton
+          [value]="theme"
+          [(ngModel)]="selectedTheme"
+          (onClick)="onThemeChange(theme)"
+          [label]="theme.name"
+          styleClass="mb-2"
+        >
+        </p-radioButton>
+      }
     </div>
   </div>
   <!-- Scale (size) options -->
@@ -29,9 +42,14 @@
     <h3 class="text-sm font-semibold mb-2">
       <i class="pi pi-arrow-up-right-and-arrow-down-left-from-center mr-2"></i>UI Scale
     </h3>
-    <p-selectButton [options]="scaleOptions" [(ngModel)]="scale"
-        (onChange)="onScaleChange()" optionLabel="label"
-        optionValue="value" styleClass="text-sm flex justify-center">
+    <p-selectButton
+      [options]="scaleOptions"
+      [(ngModel)]="scale"
+      (onChange)="onScaleChange()"
+      optionLabel="label"
+      optionValue="value"
+      styleClass="text-sm flex justify-center"
+    >
       <ng-template let-option pTemplate>
         <i [class]="option.icon"></i>
       </ng-template>
@@ -52,20 +70,23 @@
       styleClass="justify-center"
     >
       <ng-template let-option pTemplate="item">
-        <span
-          [pTooltip]="option.name"
-          class="text-xl px-1"
-          >{{ option.flag }}</span>
-          <span *ngIf="standAlone" class="ml-2">{{ option.name }}</span>
+        <span [pTooltip]="option.name" class="text-xl px-1">{{ option.flag }}</span>
+        @if (standAlone) {
+          <span class="ml-2">{{ option.name }}</span>
+        }
       </ng-template>
     </p-selectButton>
   </div>
   <!-- Font Section -->
   <div class="mb-4 ui-settings-section {{ standAlone ? 'p-card' : '' }}">
-    <h3 class="text-sm font-semibold mb-2">
-      <i class="pi pi-asterisk mr-2"></i>Font
-    </h3>
-    <p-dropdown [options]="fonts" [(ngModel)]="selectedFont" optionLabel="name" (onChange)="onFontChange($event.value)" styleClass="w-full">
+    <h3 class="text-sm font-semibold mb-2"><i class="pi pi-asterisk mr-2"></i>Font</h3>
+    <p-dropdown
+      [options]="fonts"
+      [(ngModel)]="selectedFont"
+      optionLabel="name"
+      (onChange)="onFontChange($event.value)"
+      styleClass="w-full"
+    >
       <ng-template let-font pTemplate="selectedItem">
         <span [style.font-family]="font.bodyFont">{{ font.name }}</span>
       </ng-template>
@@ -76,32 +97,36 @@
   </div>
 
   <!-- Accessibility Links (only visible in dialog) -->
-  <div *ngIf="!standAlone" class="ui-settings-section">
-    <h3 class="text-sm font-semibold mb-2">
-      <i class="pi pi-eye-slash mr-2"></i>Accessibility
-    </h3>
-    <a routerLink="/settings/display-options"
-      class="p-button px-2 py-1 text-center flex justify-center w-fit mx-auto no-underline p-button-outlined p-button-secondary">
-      Accessibility Settings
-    </a>
-  </div>
+  @if (!standAlone) {
+    <div class="ui-settings-section">
+      <h3 class="text-sm font-semibold mb-2">
+        <i class="pi pi-eye-slash mr-2"></i>Accessibility
+      </h3>
+      <a
+        routerLink="/settings/display-options"
+        class="p-button px-2 py-1 text-center flex justify-center w-fit mx-auto no-underline p-button-outlined p-button-secondary"
+      >
+        Accessibility Settings
+      </a>
+    </div>
+  }
 
   <!-- Accessibility Settings (only visible in settings page) -->
-  <div *ngIf="standAlone" class="mb-4 ui-settings-section {{ standAlone ? 'p-card' : '' }}">
-    <h3 class="text-sm font-semibold mb-2">
-      <i class="pi pi-eye-slash mr-2"></i>Accessibility
-    </h3>
-    <div
-      *ngFor="let item of accessibilityFields"
-      class="flex justify-between items-center"
-    >
-      <label [for]="item.key" class="opacity-90">{{ item.label }}</label>
-      <p-inputSwitch
-        [(ngModel)]="accessibility[item.key]"
-        [inputId]="item.key"
-        (onChange)="updateAccessibilityOptions(item.key)"
-      />
+  @if (standAlone) {
+    <div class="mb-4 ui-settings-section {{ standAlone ? 'p-card' : '' }}">
+      <h3 class="text-sm font-semibold mb-2">
+        <i class="pi pi-eye-slash mr-2"></i>Accessibility
+      </h3>
+      @for (item of accessibilityFields; track item) {
+        <div class="flex justify-between items-center">
+          <label [for]="item.key" class="opacity-90">{{ item.label }}</label>
+          <p-inputSwitch
+            [(ngModel)]="accessibility[item.key]"
+            [inputId]="item.key"
+            (onChange)="updateAccessibilityOptions(item.key)"
+          />
+        </div>
+      }
     </div>
-  </div>
+  }
 </div>
-

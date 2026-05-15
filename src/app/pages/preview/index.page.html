@@ -1,42 +1,50 @@
-
 <div class="flex flex-col gap-1">
-
-  <form *ngIf="(enablePreviewDomain$ | async)" class="p-card p-4 mt-2" name="preview" (ngSubmit)="showResults()" #previewForm="ngForm">
-    <div class="flex flex-col gap-2 items-center max-w-3xl mx-auto">
-      <label class="text-xl w-full text-center" for="domain">
-        <h2 class="mb-2 mt-0 mx-0">Take Domain Locker for a test drive</h2>
-      </label>
-      <p class="m-0 w-full">
-        See what Domain Locker can do for you, just enter your domain below, and we'll show you all it's details!
-      </p>
-      <div class="w-full flex gap-2 items-center justify-between flex-wrap sm:flex-nowrap">
-        <input pInputText
-          class="p-2 text-xl w-full"
-          id="domain"
-          name="domain"
-          size="large"
-          placeholder="Example: google.com"
-          [(ngModel)]="domain"
-        />
-        <p-button
-          class="flex-1"
-          styleClass="min-w-[180px]"
-          label="Check Domain"
-          icon="pi pi-sparkles"
-          severity="primary"
-          type="submit"
-        ></p-button>
+  @if (enablePreviewDomain$ | async) {
+    <form
+      class="p-card p-4 mt-2"
+      name="preview"
+      (ngSubmit)="showResults()"
+      #previewForm="ngForm"
+    >
+      <div class="flex flex-col gap-2 items-center max-w-3xl mx-auto">
+        <label class="text-xl w-full text-center" for="domain">
+          <h2 class="mb-2 mt-0 mx-0">Take Domain Locker for a test drive</h2>
+        </label>
+        <p class="m-0 w-full">
+          See what Domain Locker can do for you, just enter your domain below, and we'll
+          show you all it's details!
+        </p>
+        <div
+          class="w-full flex gap-2 items-center justify-between flex-wrap sm:flex-nowrap"
+        >
+          <input
+            pInputText
+            class="p-2 text-xl w-full"
+            id="domain"
+            name="domain"
+            size="large"
+            placeholder="Example: google.com"
+            [(ngModel)]="domain"
+          />
+          <p-button
+            class="flex-1"
+            styleClass="min-w-[180px]"
+            label="Check Domain"
+            icon="pi pi-sparkles"
+            severity="primary"
+            type="submit"
+          ></p-button>
+        </div>
+        <p class="m-0 opacity-70 w-full">
+          No login required, nothing is stored, and you can try any domain you like.
+        </p>
       </div>
-      <p class="m-0 opacity-70 w-full">
-        No login required, nothing is stored, and you can try any domain you like.
-      </p>
-    </div>
-  </form>
+    </form>
+  }
 
   @if (environmentType === 'managed') {
     <app-cta [businessVersion]="true" />
-    <business-features />
+    <app-business-features />
     <app-cta [hideGhLink]="true" />
   }
-
 </div>

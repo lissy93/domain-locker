@@ -1,4 +1,12 @@
-import { Component, OnInit, ChangeDetectorRef, ViewChild, AfterViewInit, PLATFORM_ID, Inject } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  ChangeDetectorRef,
+  ViewChild,
+  AfterViewInit,
+  PLATFORM_ID,
+  inject,
+} from '@angular/core';
 import { MenuItem } from 'primeng/api';
 import { RouterModule } from '@angular/router';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
@@ -9,14 +17,18 @@ import { SelectButtonModule } from 'primeng/selectbutton';
 import { RadioButtonModule } from 'primeng/radiobutton';
 import { OverlayModule } from 'primeng/overlay';
 import { Subscription } from 'rxjs';
-import { authenticatedNavLinks, unauthenticatedNavLinks, settingsLinks } from '~/app/constants/navigation-links';
+import {
+  authenticatedNavLinks,
+  unauthenticatedNavLinks,
+  settingsLinks,
+} from '~/app/constants/navigation-links';
 import { UiSettingsComponent } from '~/app/components/settings/ui-options/ui-options.component';
 import { NotificationsListComponent } from '~/app/components/notifications-list/notifications-list.component';
 import { OverlayPanel } from 'primeng/overlaypanel';
 import DatabaseService from '~/app/services/database.service';
 import { BillingService, UserType } from '~/app/services/billing.service';
 import { EnvironmentType, EnvService } from '~/app/services/environment.service';
-import { LogoComponent} from '~/app/components/home-things/logo/logo.component';
+import { LogoComponent } from '~/app/components/home-things/logo/logo.component';
 import { FeatureService } from '~/app/services/features.service';
 
 @Component({
@@ -38,33 +50,31 @@ import { FeatureService } from '~/app/services/features.service';
   styleUrls: ['./navbar.component.scss'],
 })
 export class NavbarComponent implements OnInit, AfterViewInit {
+  supabaseService = inject(SupabaseService);
+  private databaseService = inject(DatabaseService);
+  private billingService = inject(BillingService);
+  private environmentService = inject(EnvService);
+  private cdr = inject(ChangeDetectorRef);
+  private featureService = inject(FeatureService);
+  private platformId = inject<object>(PLATFORM_ID);
+
   @ViewChild('notificationsOverlay') notificationsOverlay!: OverlayPanel;
-  notificationsVisible: boolean = false;
+  notificationsVisible = false;
   items: MenuItem[] = [];
   itemsWithSettings: MenuItem[] = [];
-  sidebarVisible: boolean = false;
-  settingsVisible: boolean = false;
-  isAuthenticated: boolean = false;
-  unreadNotificationsCount: number = 0;
+  sidebarVisible = false;
+  settingsVisible = false;
+  isAuthenticated = false;
+  unreadNotificationsCount = 0;
   userPlan: EnvironmentType | UserType | null = null;
   userPlanName = '';
-  planColor: string = 'primary';
+  planColor = 'primary';
 
   settingsEnabled$ = this.featureService.isFeatureEnabled('accountSettings');
   enableSignUp = false;
   private subscriptions: Subscription = new Subscription();
 
   public isSupabaseEnabled = this.databaseService.serviceType === 'supabase';
-
-  constructor(
-    public supabaseService: SupabaseService,
-    private databaseService: DatabaseService,
-    private billingService: BillingService,
-    private environmentService: EnvService,
-    private cdr: ChangeDetectorRef,
-    private featureService: FeatureService,
-    @Inject(PLATFORM_ID) private platformId: Object,
-  ) {}
 
   ngOnInit() {
     // Set contents of menubar items
@@ -77,7 +87,7 @@ export class NavbarComponent implements OnInit, AfterViewInit {
     this.billingService.fetchUserPlan();
 
     // If enableSignup is enabled, then show the Signup button (if not logged in)
-    this.featureService.isFeatureEnabled('enableSignUp').subscribe(enabled => {
+    this.featureService.isFeatureEnabled('enableSignUp').subscribe((enabled) => {
       this.enableSignUp = enabled;
       if (this.isAuthenticated) {
         this.enableSignUp = false;
@@ -143,9 +153,9 @@ export class NavbarComponent implements OnInit, AfterViewInit {
   loadUnreadNotificationCount() {
     if (!isPlatformBrowser(this.platformId) || !this.isAuthenticated) return;
 
-    this.databaseService.instance?.notificationQueries?.getUnreadNotificationCount()?.subscribe(
-      (count: number) => this.unreadNotificationsCount = count,
-    );
+    this.databaseService.instance?.notificationQueries
+      ?.getUnreadNotificationCount()
+      ?.subscribe((count: number) => (this.unreadNotificationsCount = count));
   }
 
   async setAuthState() {
@@ -155,10 +165,10 @@ export class NavbarComponent implements OnInit, AfterViewInit {
     }
     this.isAuthenticated = await this.supabaseService.isAuthenticated();
     this.subscriptions.add(
-      this.supabaseService.authState$.subscribe(isAuthenticated => {
+      this.supabaseService.authState$.subscribe((isAuthenticated) => {
         this.initializeMenuItems();
         this.isAuthenticated = isAuthenticated;
-      })
+      }),
     );
   }
 
@@ -167,12 +177,20 @@ export class NavbarComponent implements OnInit, AfterViewInit {
     if (!isPlatformBrowser(this.platformId)) {
       return;
     }
-    if (this.isAuthenticated || this.environmentService.getEnvironmentType() === 'selfHosted') {
+    if (
+      this.isAuthenticated ||
+      this.environmentService.getEnvironmentType() === 'selfHosted'
+    ) {
       // User is logged in, show authenticated nav links
       this.items = authenticatedNavLinks as MenuItem[];
       this.itemsWithSettings = [
         ...(authenticatedNavLinks as MenuItem[]),
-        { label: 'Settings', routerLink: '/settings', icon: 'pi pi-cog',  items: settingsLinks as MenuItem[] },
+        {
+          label: 'Settings',
+          routerLink: '/settings',
+          icon: 'pi pi-cog',
+          items: settingsLinks as MenuItem[],
+        },
       ];
     } else {
       // User is not logged in, show docs links

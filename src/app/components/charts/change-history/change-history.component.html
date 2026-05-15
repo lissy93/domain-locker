@@ -1,14 +1,18 @@
-<div *ngIf="loading" class="p-progressSpinner"></div>
-<div *ngIf="!loading && chartOptions">
-  <apx-chart
-    [series]="chartOptions.series"
-    [chart]="chartOptions.chart"
-    [xaxis]="chartOptions.xaxis"
-    [yaxis]="chartOptions.yaxis"
-    [plotOptions]="chartOptions.plotOptions"
-    [dataLabels]="chartOptions.dataLabels"
-    [tooltip]="chartOptions.tooltip"
-    [fill]="chartOptions.fill"
-    [stroke]="chartOptions.stroke"
-  ></apx-chart>
-</div>
+@if (loading) {
+  <div class="p-progressSpinner"></div>
+}
+@if (!loading && chartOptions) {
+  <div>
+    <apx-chart
+      [series]="chartOptions.series!"
+      [chart]="chartOptions.chart!"
+      [xaxis]="chartOptions.xaxis!"
+      [yaxis]="chartOptions.yaxis!"
+      [plotOptions]="chartOptions.plotOptions!"
+      [dataLabels]="chartOptions.dataLabels!"
+      [tooltip]="chartOptions.tooltip!"
+      [fill]="chartOptions.fill!"
+      [stroke]="chartOptions.stroke!"
+    ></apx-chart>
+  </div>
+}

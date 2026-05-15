@@ -10,16 +10,15 @@ interface SupportInfo {
   }[];
 }
 
-
 export const hostedSupport: SupportInfo = {
   title: 'Domain-Locker.com Support',
   intro: [
-  'We offer support to all users on the Pro plan or above.'
-  + 'As well as some assistance with issues, data requests and security'
-  + 'queries to all other users.',
-  'Where possible, we aim to resolve issues within a few hours, depending on'
-  + 'severity and complexity.'
-  + 'You will receive a (human!) response within 2 working days of submitting any a ticket.',
+    'We offer support to all users on the Pro plan or above.' +
+      'As well as some assistance with issues, data requests and security' +
+      'queries to all other users.',
+    'Where possible, we aim to resolve issues within a few hours, depending on' +
+      'severity and complexity.' +
+      'You will receive a (human!) response within 2 working days of submitting any a ticket.',
   ],
   links: [
     {
@@ -37,22 +36,23 @@ export const hostedSupport: SupportInfo = {
     {
       title: 'Guides',
       routerLink: '/about/guides',
-      description: 'Tutorials on getting started with Domain Locker, and what everything means',
+      description:
+        'Tutorials on getting started with Domain Locker, and what everything means',
       icon: '',
-    }
+    },
   ],
 };
 
 export const selfHostedSupport: SupportInfo = {
   title: 'Support for Self-Hosted Instances',
   intro: [
-    'Please note, that we are unable to guarantee support for those running a self-hosted '
-    + 'instance of Domain Locker on their own infrastructure at this time. '
-    + 'But we have got comprehensive docs and resources which should cover '
-    + 'any issues you might be facing. ',
-    'If that fails, enable debug mode to determine where and why the issue occurs. '
-    + 'You will then be able to locate the source of the problem in the code, '
-    + 'and apply any fixes or mitigations to resolve your bug.' ,
+    'Please note, that we are unable to guarantee support for those running a self-hosted ' +
+      'instance of Domain Locker on their own infrastructure at this time. ' +
+      'But we have got comprehensive docs and resources which should cover ' +
+      'any issues you might be facing. ',
+    'If that fails, enable debug mode to determine where and why the issue occurs. ' +
+      'You will then be able to locate the source of the problem in the code, ' +
+      'and apply any fixes or mitigations to resolve your bug.',
   ],
   links: [
     {
@@ -70,7 +70,8 @@ export const selfHostedSupport: SupportInfo = {
     {
       title: 'Source Code',
       href: 'https://github.com/lissy93/domain-locker',
-      description: 'All you need is the code, and you can fix anything, View it on GitHub',
+      description:
+        'All you need is the code, and you can fix anything, View it on GitHub',
       icon: '',
     },
     {
@@ -82,4 +83,4 @@ export const selfHostedSupport: SupportInfo = {
   ],
 };
 
-export const supportContent: SupportInfo[] = [ hostedSupport, selfHostedSupport ];
+export const supportContent: SupportInfo[] = [hostedSupport, selfHostedSupport];

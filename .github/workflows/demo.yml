@@ -15,10 +15,10 @@ jobs:
 
     steps:
       - name: Set TAG environment variable
-        run: echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+        run: echo "TAG=${GITHUB_REF#refs/tags/}" >> "$GITHUB_ENV"
 
       - name: Checkout demo branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           token: ${{ secrets.BOT_TOKEN }}
           fetch-depth: 0
@@ -36,17 +36,18 @@ jobs:
           # If there's a merge conflict, the job will fail unless you handle it
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.BOT_TOKEN }}
           base: demo
           branch: "bot/update-demo"
+          author: "liss-bot <alicia-gh-bot@mail.as93.net>"
+          committer: "liss-bot <alicia-gh-bot@mail.as93.net>"
           title: "Update Demo Branch from Main"
-          body: >
+          body: |
             A new version of Domain Locker has been released (**${{ env.TAG }}**)!
 
-            🤖 This PR will merge **`main`** → **`demo`**,
-            updating the demo environment to version ${{ env.TAG }}.
+            🤖 This PR will merge **`main`** → **`demo`**, updating the demo environment to version ${{ env.TAG }}.
             [Click here](https://github.com/${{ github.repository }}/compare/demo...main) to view changes.
 
             <details>

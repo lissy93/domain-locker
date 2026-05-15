@@ -1,18 +1,26 @@
-# Pushes the contents of the repo to the Codeberg mirror
+# Weekly sync of source GitHub repo over to our Codeberg mirror
+
 name: 🪞 Mirror to Codeberg
 on:
   workflow_dispatch:
   schedule:
-    - cron: '30 0 * * 0'
-  push:
-    tags: [ 'v*' ]
+    - cron: '30 2 * * 0'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mirror-codeberg
+  cancel-in-progress: false
+
 jobs:
   codeberg:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
-      - uses: pixta-dev/repository-mirroring-action@v1
+      - uses: lissy93/repo-mirror-action@v1.5.0
         with:
-          target_repo_url: git@codeberg.org:alicia/domain-locker.git
-          ssh_private_key: ${{ secrets.CODEBERG_SSH }}
+          ssh_key: ${{ secrets.CODEBERG_SSH }}
+          host: git@codeberg.org
+          user: alicia
+          repo: domain-locker
+          force_push: true

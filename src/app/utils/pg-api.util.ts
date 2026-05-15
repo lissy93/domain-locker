@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
+import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { Observable } from 'rxjs';
 import { EnvService } from '~/app/services/environment.service';
@@ -16,22 +16,22 @@ interface PgCredentials {
   providedIn: 'root',
 })
 export class PgApiUtilService {
+  private http = inject(HttpClient);
+  private envService = inject(EnvService);
+  private platformId = inject<object>(PLATFORM_ID);
+
   private baseUrl: string; // e.g. 'http://localhost:5173/api/pg-executer/'
 
-  constructor(
-    private http: HttpClient,
-    private envService: EnvService,
-    @Inject(PLATFORM_ID) private platformId: Object
-  ) {
+  constructor() {
     // Build the base URL from your environment or fallback
-    this.baseUrl = this.envService.getPostgresApiUrl(); 
+    this.baseUrl = this.envService.getPostgresApiUrl();
   }
 
   /**
    * Posts a query to the Postgres executor API, passing user credentials from local storage if found.
    * If no local credentials found, server will rely on environment variables.
    */
-  postToPgExecutor<T>(query: string, params?: any[]): Observable<{ data: T[] }> {
+  postToPgExecutor<T>(query: string, params?: unknown[]): Observable<{ data: T[] }> {
     let creds: PgCredentials | undefined = undefined;
 
     if (isPlatformBrowser(this.platformId)) {

@@ -1,80 +1,103 @@
-
 <div class="mt-2 mb-4 mx-auto text-center">
-  <p class="m-0 text-lg font-bold text-primary opacity-90 flex items-center gap-2 justify-center">
-    <img width="24" src="/icons/favicon-32x32.png" />
+  <p
+    class="m-0 text-lg font-bold text-primary opacity-90 flex items-center gap-2 justify-center"
+  >
+    <img width="24" src="/icons/favicon-32x32.png" alt="" />
     Domain Locker
   </p>
   <h1 class="m-0">Documentation</h1>
 </div>
 
 <div class="p-card p-4 mb-4 relative">
-  <dl-icon
+  <app-dl-icon
     icon="docs"
     class="flex w-[4rem] absolute right-2 top-2"
     classNames="w-full h-full"
     color="var(--surface-200)"
   />
   <ul class="p-0 m-0 list-none">
-    <li *ngFor="let section of sections" class="">
-      <a [routerLink]="makeId(section.title)" class="flex flex-wrap gap-2 items-center no-underline text-default">
-      <dl-icon *ngIf="section.svgIcon"
-        [icon]="section.svgIcon"
-        class="flex w-[1.25rem]"
-        classNames="w-full h-full"
-        color="var(--primary-color)"
-      />
-      <span class="text-lg font-semibold text-primary hover:underline">
-        {{section.title}}
-      </span>
-      <span class="opacity-70 italic cursor-default">
-        {{section.description}}
-      </span>
-    </a>
-    </li>
+    @for (section of sections; track section) {
+      <li class="">
+        <a
+          [routerLink]="makeId(section.title)"
+          class="flex flex-wrap gap-2 items-center no-underline text-default"
+        >
+          @if (section.svgIcon) {
+            <app-dl-icon
+              [icon]="section.svgIcon"
+              class="flex w-[1.25rem]"
+              classNames="w-full h-full"
+              color="var(--primary-color)"
+            />
+          }
+          <span class="text-lg font-semibold text-primary hover:underline">
+            {{ section.title }}
+          </span>
+          <span class="opacity-70 italic cursor-default">
+            {{ section.description }}
+          </span>
+        </a>
+      </li>
+    }
   </ul>
 </div>
 
-<div class="masonry sm:masonry-sm md:masonry-sm lg:masonry-md xl:masonry-md 2xl:masonry-lg">
+<div
+  class="masonry sm:masonry-sm md:masonry-sm lg:masonry-md xl:masonry-md 2xl:masonry-lg"
+>
   <!-- Each section of docs links -->
-  <section *ngFor="let section of sections" class="p-card p-4 break-inside-avoid mb-4 relative">
-    <!-- Section icon -->
-    <dl-icon *ngIf="section.svgIcon"
-      [icon]="section.svgIcon"
-      class="flex w-[4rem] absolute right-2 top-2"
-      classNames="w-full h-full"
-      color="var(--surface-200)"
-    />
-    <!-- Section title -->
-    <a [routerLink]="makeId(section.title)" class="text-default no-underline">
-      <h2 [id]="makeId(section.title)">{{ section.title }}</h2>
-    </a>
-    
-    <ul class="pl-0">
-      <!-- Auto links, based on the *.md files in a given directory -->
-      @if (section.dirSlug && autoLinks[section.dirSlug]) {
-        <li *ngFor="let file of autoLinks[section.dirSlug]" class="flex flex-col mb-2">
-          <a [routerLink]="['/about', section.dirSlug, file.slug]"
-            class="text-primary font-semibold no-underline">
-            {{ file.attributes.title }}
-          </a>
-          <span *ngIf="file.attributes.description" class="opacity-70 italic">{{ file.attributes.description }}</span>
-        </li>
+  @for (section of sections; track section) {
+    <section class="p-card p-4 break-inside-avoid mb-4 relative">
+      <!-- Section icon -->
+      @if (section.svgIcon) {
+        <app-dl-icon
+          [icon]="section.svgIcon"
+          class="flex w-[4rem] absolute right-2 top-2"
+          classNames="w-full h-full"
+          color="var(--surface-200)"
+        />
       }
-
-      <!-- Links defined in about-page-links.ts -->
-      <li *ngFor="let link of section.links" class="flex flex-col mb-2">
-        <a *ngIf="link.href; else routerLinkTemplate" [href]="link.href" class="text-primary font-semibold no-underline">
-          {{ link.title }}
-        </a>
-        <ng-template #routerLinkTemplate>
-          <a [routerLink]="link.link" class="text-primary font-semibold no-underline">
-            {{ link.title }}
-          </a>
-        </ng-template>
-        <span *ngIf="link.description" class="opacity-70 italic">{{ link.description }}</span>
-      </li>
-    </ul>
-  </section>
+      <!-- Section title -->
+      <a [routerLink]="makeId(section.title)" class="text-default no-underline">
+        <h2 [id]="makeId(section.title)">{{ section.title }}</h2>
+      </a>
+      <ul class="pl-0">
+        <!-- Auto links, based on the *.md files in a given directory -->
+        @if (section.dirSlug && autoLinks[section.dirSlug]) {
+          @for (file of autoLinks[section.dirSlug]; track file) {
+            <li class="flex flex-col mb-2">
+              <a
+                [routerLink]="['/about', section.dirSlug, file.slug]"
+                class="text-primary font-semibold no-underline"
+              >
+                {{ file.attributes.title }}
+              </a>
+              @if (file.attributes.description) {
+                <span class="opacity-70 italic">{{ file.attributes.description }}</span>
+              }
+            </li>
+          }
+        }
+        <!-- Links defined in about-page-links.ts -->
+        @for (link of section.links; track link) {
+          <li class="flex flex-col mb-2">
+            @if (link.href) {
+              <a [href]="link.href" class="text-primary font-semibold no-underline">
+                {{ link.title }}
+              </a>
+            } @else {
+              <a [routerLink]="link.link" class="text-primary font-semibold no-underline">
+                {{ link.title }}
+              </a>
+            }
+            @if (link.description) {
+              <span class="opacity-70 italic">{{ link.description }}</span>
+            }
+          </li>
+        }
+      </ul>
+    </section>
+  }
 </div>
 
 <app-cta />

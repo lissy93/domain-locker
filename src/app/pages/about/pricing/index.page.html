@@ -8,14 +8,16 @@
 
   <!-- Discount -->
   <div class="p-card px-2 py-6 mt-4">
-    <div  class="max-w-[60rem] mx-auto my-2">
+    <div class="max-w-[60rem] mx-auto my-2">
       <h2>Billing FAQ</h2>
       <p-accordion [activeIndex]="0">
-        <p-accordionTab [header]="tab.question" *ngFor="let tab of billingFaq">
+        @for (tab of billingFaq; track tab) {
+          <p-accordionTab [header]="tab.question">
             <p class="m-0">
-                {{ tab.answer }}
+              {{ tab.answer }}
             </p>
-        </p-accordionTab>
+          </p-accordionTab>
+        }
       </p-accordion>
     </div>
   </div>

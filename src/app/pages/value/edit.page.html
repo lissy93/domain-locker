@@ -1,16 +1,20 @@
-
 <div class="w-full flex justify-between flex-wrap">
   <h1>Domain Valuation: Edit</h1>
   @if (!loading) {
-    <button pButton label="Save" icon="pi pi-check" (click)="saveChanges()"></button>
+    <button
+      pButton
+      label="Save"
+      aria-label="Save"
+      icon="pi pi-check"
+      (click)="saveChanges()"
+    ></button>
   }
 </div>
 
 <p class="text-surface-400">
-  Add or update the costings for each domain here.
-  The purchase price is the one-off fee you paid for the domain, the current
-  value is the estimated value of the domain now, the annual renewal cost is
-  the cost to renew the domain each year.
+  Add or update the costings for each domain here. The purchase price is the one-off fee
+  you paid for the domain, the current value is the estimated value of the domain now, the
+  annual renewal cost is the cost to renew the domain each year.
 </p>
 
 <p-table
@@ -37,7 +41,7 @@
           inputId="purchase-price"
           [currency]="currency"
           [locale]="locale"
-          [showButtons]="true" 
+          [showButtons]="true"
           [(ngModel)]="domain.purchase_price"
         />
       </td>
@@ -47,7 +51,7 @@
           inputId="sell-price"
           [currency]="currency"
           [locale]="locale"
-          [showButtons]="true" 
+          [showButtons]="true"
           [(ngModel)]="domain.current_value"
         />
       </td>
@@ -57,7 +61,7 @@
           inputId="renewal-price"
           [currency]="currency"
           [locale]="locale"
-          [showButtons]="true" 
+          [showButtons]="true"
           [(ngModel)]="domain.renewal_cost"
         />
       </td>
@@ -69,5 +73,12 @@
 </p-table>
 
 <div class="w-full flex justify-end">
-  <button pButton label="Save" icon="pi pi-check" (click)="saveChanges()" class="mt-4"></button>
+  <button
+    pButton
+    label="Save"
+    aria-label="Save"
+    icon="pi pi-check"
+    (click)="saveChanges()"
+    class="mt-4"
+  ></button>
 </div>

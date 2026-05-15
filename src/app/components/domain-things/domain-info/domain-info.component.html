@@ -1,350 +1,591 @@
-
-<div *ngIf="domain" class="masonry sm:masonry-sm md:masonry-md lg:masonry-lg xl:masonry-lg 2xl:masonry-xl">
-
-  <!-- Registrar -->
-  <p-card *ngIf="domain.registrar && domain.registrar.name">
-    <ng-template pTemplate="header">
-      <h4 class="text-surface-600 text-2xl font-bold m-0 block z-1 relative">Registrar</h4>
-      <div class="absolute top-4 right-4 h-16 w-16 opacity-70 mr-2">
-        <dl-icon icon="registrar" viewBox="0 0 640 512" classNames="w-full h-full" color= "var(--surface-200)"></dl-icon>
-      </div>
-    </ng-template>
-
-    <a [routerLink]="'/assets/registrars/'+domain.registrar.name" class="text-default no-underline hover:underline">
-      {{ domain.registrar.name }}
-    </a>
-    <p *ngIf="domain.registrar?.url && domain.registrar?.url?.includes('.')"  class="flex items-center">
-      <app-domain-favicon [domain]="domain.registrar.url" [size]="24" class="mr-1"></app-domain-favicon>
-      <a [href]="domain.registrar.url" target="_blank" rel="noopener noreferrer">{{
-        (domain.registrar.url || '')
-          .replace('https://', '').replace('http://', '').replace('www.', '')
-        }}
-      </a>
-    </p>
-  </p-card>
-
-  <!-- Dates -->
-  <p-card *ngIf="domain.expiry_date || domain.registration_date">
-    <ng-template pTemplate="header">
-      <h4 class="text-surface-600 text-2xl font-bold m-0 block z-1 relative">Dates</h4>
-      <div class="absolute top-4 right-4 h-16 w-16 opacity-70">
-        <dl-icon icon="dates" classNames="w-full h-full" color= "var(--surface-200)"></dl-icon>
-      </div>
-    </ng-template>
-    <div *ngIf="domain.expiry_date" class="row">
-      <h5 class="mt-3 mb-1">Expiry</h5>
-      <p class="m-0">
-        {{ domain.expiry_date | safeDate:'medium' }}
-        <p-tag class="float-right opacity-70"
-          [value]="domainUtils.getRemainingDaysText(domain.expiry_date)"
-          [severity]="domainUtils.getExpirySeverity(domain.expiry_date)"
-        ></p-tag>
-      </p>
-    </div>
-
-    <div *ngIf="domain.registration_date" class="row">
-      <h5 class="mt-3 mb-1">Registration</h5>
-      <p class="m-0">{{ domain.registration_date | safeDate:'medium' }}</p>
-    </div>
-
-    <div *ngIf="domain.updated_date" class="row">
-      <h5 class="mt-3 mb-1">Updated</h5>
-      <p class="m-0">{{ domain.updated_date | safeDate:'medium' }}</p>
-    </div>
-  </p-card>
-
-  <!-- Statuses -->
-  <p-card *ngIf="domain.statuses && domain.statuses.length">
-    <ng-template pTemplate="header">
-      <h4 class="text-surface-600 text-2xl font-bold m-0 block z-1 relative">Status</h4>
-      <div class="absolute top-4 right-4 h-16 w-16 opacity-70">
-        <dl-icon icon="status" classNames="w-full h-full" color= "var(--surface-200)"></dl-icon>
-      </div>
-    </ng-template>
-    <ul  class="row p-0 list-none">
-      @for (status of domain.statuses; track status.label) {
-        <li class="py-1">
-        @if (status.severity === 'good') {
-          <p-tag icon="pi pi-check-circle" severity="success" [pTooltip]="status.description" />
-        } @else if (status.severity === 'bad') {
-          <p-tag icon="pi pi-times-circle" severity="danger" [pTooltip]="status.description" />
-        } @else {
-          <p-tag icon="pi pi-info-circle" severity="info" [pTooltip]="status.description" />
-        }
-        <a [routerLink]="'/assets/statuses/'+status.eppCode" class="ml-2 text-default no-underline hover:underline">
-          {{ status.label }}
+@if (domain) {
+  <div
+    class="masonry sm:masonry-sm md:masonry-md lg:masonry-lg xl:masonry-lg 2xl:masonry-xl"
+  >
+    <!-- Registrar -->
+    @if (domain.registrar && domain.registrar.name) {
+      <p-card>
+        <ng-template pTemplate="header">
+          <h4 class="text-surface-600 text-2xl font-bold m-0 block z-1 relative">
+            Registrar
+          </h4>
+          <div class="absolute top-4 right-4 h-16 w-16 opacity-70 mr-2">
+            <app-dl-icon
+              icon="registrar"
+              viewBox="0 0 640 512"
+              classNames="w-full h-full"
+              color="var(--surface-200)"
+            ></app-dl-icon>
+          </div>
+        </ng-template>
+        <a
+          [routerLink]="'/assets/registrars/' + domain.registrar.name"
+          class="text-default no-underline hover:underline"
+        >
+          {{ domain.registrar.name }}
         </a>
-        <ul class="pl-5 ml-1 text-surface-400 list-none text-xs">
-          <li>{{status.description}}</li>
-          @if (status.actionToTake) {
-            <li [class]="status.severity === 'bad' ? 'text-red-400' : 'text-blue-400'">{{status.actionToTake}}</li>
+        @if (domain.registrar.url && domain.registrar.url.includes('.')) {
+          <p class="flex items-center">
+            <app-domain-favicon
+              [domain]="domain.registrar.url"
+              [size]="24"
+              class="mr-1"
+            ></app-domain-favicon>
+            <a [href]="domain.registrar.url" target="_blank" rel="noopener noreferrer"
+              >{{
+                (domain.registrar.url || '')
+                  .replace('https://', '')
+                  .replace('http://', '')
+                  .replace('www.', '')
+              }}
+            </a>
+          </p>
+        }
+      </p-card>
+    }
+    <!-- Dates -->
+    @if (domain.expiry_date || domain.registration_date) {
+      <p-card>
+        <ng-template pTemplate="header">
+          <h4 class="text-surface-600 text-2xl font-bold m-0 block z-1 relative">
+            Dates
+          </h4>
+          <div class="absolute top-4 right-4 h-16 w-16 opacity-70">
+            <app-dl-icon
+              icon="dates"
+              classNames="w-full h-full"
+              color="var(--surface-200)"
+            ></app-dl-icon>
+          </div>
+        </ng-template>
+        @if (domain.expiry_date) {
+          <div class="row">
+            <h5 class="mt-3 mb-1">Expiry</h5>
+            <p class="m-0">
+              {{ domain.expiry_date | safeDate: 'medium' }}
+              <p-tag
+                class="float-right opacity-70"
+                [value]="domainUtils.getRemainingDaysText(domain.expiry_date)"
+                [severity]="domainUtils.getExpirySeverity(domain.expiry_date)"
+              ></p-tag>
+            </p>
+          </div>
+        }
+        @if (domain.registration_date) {
+          <div class="row">
+            <h5 class="mt-3 mb-1">Registration</h5>
+            <p class="m-0">{{ domain.registration_date | safeDate: 'medium' }}</p>
+          </div>
+        }
+        @if (domain.updated_date) {
+          <div class="row">
+            <h5 class="mt-3 mb-1">Updated</h5>
+            <p class="m-0">{{ domain.updated_date | safeDate: 'medium' }}</p>
+          </div>
+        }
+      </p-card>
+    }
+    <!-- Statuses -->
+    @if (domain.statuses && domain.statuses.length) {
+      <p-card>
+        <ng-template pTemplate="header">
+          <h4 class="text-surface-600 text-2xl font-bold m-0 block z-1 relative">
+            Status
+          </h4>
+          <div class="absolute top-4 right-4 h-16 w-16 opacity-70">
+            <app-dl-icon
+              icon="status"
+              classNames="w-full h-full"
+              color="var(--surface-200)"
+            ></app-dl-icon>
+          </div>
+        </ng-template>
+        <ul class="row p-0 list-none">
+          @for (status of domain.statuses; track status.label) {
+            <li class="py-1">
+              @if (status.severity === 'good') {
+                <p-tag
+                  icon="pi pi-check-circle"
+                  severity="success"
+                  [pTooltip]="status.description"
+                />
+              } @else if (status.severity === 'bad') {
+                <p-tag
+                  icon="pi pi-times-circle"
+                  severity="danger"
+                  [pTooltip]="status.description"
+                />
+              } @else {
+                <p-tag
+                  icon="pi pi-info-circle"
+                  severity="info"
+                  [pTooltip]="status.description"
+                />
+              }
+              <a
+                [routerLink]="'/assets/statuses/' + status.eppCode"
+                class="ml-2 text-default no-underline hover:underline"
+              >
+                {{ status.label }}
+              </a>
+              <ul class="pl-5 ml-1 text-surface-400 list-none text-xs">
+                <li>{{ status.description }}</li>
+                @if (status.actionToTake) {
+                  <li
+                    [class]="status.severity === 'bad' ? 'text-red-400' : 'text-blue-400'"
+                  >
+                    {{ status.actionToTake }}
+                  </li>
+                }
+              </ul>
+            </li>
           }
         </ul>
-      </li>
-      }
-    </ul>
-  </p-card>
-
-  <!-- Valuation -->
-  <p-card *ngIf="domain.domain_costings" class="mb-6">
-    <ng-template pTemplate="header">
-      <h4 class="text-surface-600 text-2xl font-bold m-0 block z-1 relative">Value</h4>
-      <div class="absolute top-4 right-4 h-16 w-16 opacity-70">
-        <dl-icon icon="valuation" classNames="w-full h-full" color= "var(--surface-200)"></dl-icon>
-      </div>
-    </ng-template>
-    <div class="row" *ngIf="domain.domain_costings.renewal_cost">
-      <h5>Renewal Cost</h5>
-      <p>
-        Payment of {{ domain.domain_costings.renewal_cost| currency:currencyService.getCurrencyCode():'symbol':'1.0-0' }}
-        is due on {{ domain.expiry_date | date:'mediumDate' }}
-      </p>
-    </div>
-    <div class="row">
-      <h5>Auto-Renew</h5>
-      @if (domain.domain_costings.auto_renew) {
-        <span class="text-green-400"><i class="pi pi-check"></i> Enabled</span>
-      } @else {
-        <span class="text-red-400"><i class="pi pi-times"></i> Not Enabled</span>
-      }
-    </div>
-    <div class="row" *ngIf="domain.domain_costings.purchase_price">
-      <h5>Purchase Price</h5>
-      <p>{{ domain.domain_costings.purchase_price | currency:currencyService.getCurrencyCode():'symbol':'1.0-0' }}</p>
-    </div>
-    <div class="row" *ngIf="domain.domain_costings.current_value">
-      <h5>Current Value</h5>
-      <p>{{ domain.domain_costings.current_value | currency:currencyService.getCurrencyCode():'symbol':'1.0-0' }}</p>
-    </div>
-  </p-card>
-
-  <!-- IP Addresses -->
-  <p-card *ngIf="domain.ip_addresses && (domain.ip_addresses.length > 0)" class="mb-6">
-    <ng-template pTemplate="header">
-      <h4 class="text-surface-600 text-2xl font-bold m-0 block z-1 relative">IP Addresses</h4>
-      <div class="absolute top-4 right-4 h-16 w-16 opacity-70">
-        <dl-icon icon="ips" classNames="w-full h-full" color= "var(--surface-200)"></dl-icon>
-      </div>
-    </ng-template>
-    <div class="row" *ngIf="filterIpAddresses(domain.ip_addresses, false).length">
-      <h5>IPv4</h5>
-      <ul class="list-none p-0 m-0">
-        <li *ngFor="let ip of filterIpAddresses(domain.ip_addresses, false)" class="mb-2">
-          {{ ip.ip_address }}
-        </li>
-      </ul>
-    </div>
-    <div class="row" *ngIf="filterIpAddresses(domain.ip_addresses, true).length">
-      <h5>IPv6</h5>
-      <ul class="list-none p-0 m-0">
-        <li *ngFor="let ip of filterIpAddresses(domain.ip_addresses, true)" class="mb-2 truncate">
-          {{ ip.ip_address }}
-        </li>
-      </ul>
-    </div>
-  </p-card>
-
-  <!-- SSL Certificate -->
-  <p-card *ngIf="domain.ssl && domain.ssl.issuer" class="mb-6">
-    <ng-template pTemplate="header">
-      <h4 class="text-surface-600 text-2xl font-bold m-0 block z-1 relative">SSL Certificate</h4>
-      <div class="absolute top-4 right-4 h-16 w-16 opacity-70">
-        <dl-icon icon="ssl" classNames="w-full h-full" color= "var(--surface-200)"></dl-icon>
-      </div>
-    </ng-template>
-
-    <div>
-      <div class="row" *ngIf="domain.ssl.issuer">
-        <h5>Issuer</h5>
-        <a [routerLink]="'/assets/certs/'+domain.ssl.issuer" class="text-default no-underline hover:underline">
-          {{ domain.ssl.issuer }}
-        </a>
-      </div>
-      <div class="row" *ngIf="domain.ssl.issuer_country">
-        <h5>Issuer Country</h5>
-        <p>{{ domain.ssl.issuer_country }}</p>
-      </div>
-      <div class="row" *ngIf="domain.ssl.subject">
-        <h5>Subject</h5>
-        <p>{{ domain.ssl.subject }}</p>
-      </div>
-      <div class="row" *ngIf="domain.ssl.valid_from">
-        <h5>Valid From</h5>
-        <p>{{ domain.ssl.valid_from | safeDate:'medium' }}</p>
-      </div>
-      <div class="row" *ngIf="domain.ssl.valid_to">
-        <h5>Valid To</h5>
-        <p>{{ domain.ssl.valid_to | safeDate:'medium' }}</p>
-      </div>
-      <div class="row" *ngIf="domain.ssl.key_size">
-        <h5>Key Size</h5>
-        <p>{{ domain.ssl.key_size }}</p>
-      </div>
-      <div class="row" *ngIf="domain.ssl.signature_algorithm">
-        <h5>Signature Algorithm</h5>
-        <p>{{ domain.ssl.signature_algorithm }}</p>
-      </div>
-      <div class="row" *ngIf="domain.ssl.fingerprint">
-        <h5>Fingerprint</h5>
-        <p class="truncate">{{ domain.ssl.fingerprint }}</p>
-      </div>
-    </div>
-  </p-card>
-
-  <!-- WHOIS Information -->
-  <p-card *ngIf="domain.whois && (domain.whois.name || domain.whois.organization || domain.whois.city)" class="mb-6">
-    <ng-template pTemplate="header">
-      <h4 class="text-surface-600 text-2xl font-bold m-0 block z-1 relative">Whois Records</h4>
-      <div class="absolute top-4 right-4 h-16 w-16 opacity-70 mr-2">
-        <dl-icon icon="whois" viewBox="0 0 640 512" classNames="w-full h-full" color= "var(--surface-200)"></dl-icon>
-      </div>
-    </ng-template>
-    <div>
-      <div class="row" *ngIf="domain.whois.name">
-        <h5>Name</h5>
-        <p>{{ domain.whois.name }}</p>
-      </div>
-      <div class="row" *ngIf="domain.whois.organization">
-        <h5>Organization</h5>
-        <p>{{ domain.whois.organization }}</p>
-      </div>
-      <div class="row" *ngIf="domain.whois.street || domain.whois.city || domain.whois.state || domain.whois.postal_code">
-        <h5>Address</h5>
-        <p>
-          {{ domain.whois.street }},
-          {{ domain.whois.city }},
-          {{ domain.whois.state }}
-          {{ domain.whois.postal_code }}
-        </p>
-      </div>
-      <div class="row" *ngIf="domain.whois.country">
-        <h5>Country</h5>
-        <p>{{ domain.whois.country }}</p>
-      </div>
-    </div>
-  </p-card>
-
-  <!-- Host Information -->
-  <p-card *ngIf="domain.host" class="mb-6">
-    <ng-template pTemplate="header">
-      <h4 class="text-surface-600 text-2xl font-bold m-0 block z-1 relative">Host</h4>
-      <div class="absolute top-4 right-4 h-16 w-16 opacity-70">
-        <dl-icon icon="host" classNames="w-full h-full" color= "var(--surface-200)"></dl-icon>
-      </div>
-    </ng-template>
-    <div>
-      <div class="row" *ngIf="domain.host.isp">
-        <h5>ISP</h5>
-        <a [routerLink]="'/assets/hosts/'+domain.host.isp" class="text-default no-underline hover:underline">
-          {{ domain.host.isp }}
-        </a>
-      </div>
-      <div class="row" *ngIf="domain.host.org">
-        <h5>Organization</h5>
-        <p>{{ domain.host.org }}</p>
-      </div>
-      <div *ngIf="domain.host.asNumber" class="row">
-        <h5>AS Number</h5>
-        <p>{{ domain.host.asNumber }}</p>
-      </div>
-      <div class="row" *ngIf="domain.host.city || domain.host.region || domain.host.country">
-        <h5>Address</h5>
-        <p>{{ domain.host.city }}, {{ domain.host.region }}, {{ domain.host.country }}</p>
-      </div>
-    </div>
-  </p-card>
-
-  <!-- DNS Records -->
-  <p-card *ngIf="domain.dns && (domain.dns.nameServers.length || domain.dns.txtRecords.length || domain.dns.mxRecords.length)" class="mb-6">
-    <ng-template pTemplate="header">
-      <h4 class="text-surface-600 text-2xl font-bold m-0 block z-1 relative">DNS Records</h4>
-      <div class="absolute top-4 right-4 h-16 w-16 opacity-70 mr-2">
-        <dl-icon icon="dns" viewBox="0 0 640 512" classNames="w-full h-full" color= "var(--surface-200)"></dl-icon>
-      </div>
-    </ng-template>
-    <p-tabView [scrollable]="true" styleClass="mt-4">
-      <p-tabPanel header="NS" *ngIf="domain.dns.nameServers?.length">
-        <ul class="list-none p-0 m-0">
-          <li *ngFor="let ns of domain.dns.nameServers" class="mb-2 truncate">{{ ns }}</li>
+      </p-card>
+    }
+    <!-- Valuation -->
+    @if (domain.domain_costings) {
+      <p-card class="mb-6">
+        <ng-template pTemplate="header">
+          <h4 class="text-surface-600 text-2xl font-bold m-0 block z-1 relative">
+            Value
+          </h4>
+          <div class="absolute top-4 right-4 h-16 w-16 opacity-70">
+            <app-dl-icon
+              icon="valuation"
+              classNames="w-full h-full"
+              color="var(--surface-200)"
+            ></app-dl-icon>
+          </div>
+        </ng-template>
+        @if (domain.domain_costings.renewal_cost) {
+          <div class="row">
+            <h5>Renewal Cost</h5>
+            <p>
+              Payment of
+              {{
+                domain.domain_costings.renewal_cost
+                  | currency: currencyService.getCurrencyCode() : 'symbol' : '1.0-0'
+              }}
+              is due on {{ domain.expiry_date | date: 'mediumDate' }}
+            </p>
+          </div>
+        }
+        <div class="row">
+          <h5>Auto-Renew</h5>
+          @if (domain.domain_costings.auto_renew) {
+            <span class="text-green-400"><i class="pi pi-check"></i> Enabled</span>
+          } @else {
+            <span class="text-red-400"><i class="pi pi-times"></i> Not Enabled</span>
+          }
+        </div>
+        @if (domain.domain_costings.purchase_price) {
+          <div class="row">
+            <h5>Purchase Price</h5>
+            <p>
+              {{
+                domain.domain_costings.purchase_price
+                  | currency: currencyService.getCurrencyCode() : 'symbol' : '1.0-0'
+              }}
+            </p>
+          </div>
+        }
+        @if (domain.domain_costings.current_value) {
+          <div class="row">
+            <h5>Current Value</h5>
+            <p>
+              {{
+                domain.domain_costings.current_value
+                  | currency: currencyService.getCurrencyCode() : 'symbol' : '1.0-0'
+              }}
+            </p>
+          </div>
+        }
+      </p-card>
+    }
+    <!-- IP Addresses -->
+    @if (domain.ip_addresses && domain.ip_addresses.length > 0) {
+      <p-card class="mb-6">
+        <ng-template pTemplate="header">
+          <h4 class="text-surface-600 text-2xl font-bold m-0 block z-1 relative">
+            IP Addresses
+          </h4>
+          <div class="absolute top-4 right-4 h-16 w-16 opacity-70">
+            <app-dl-icon
+              icon="ips"
+              classNames="w-full h-full"
+              color="var(--surface-200)"
+            ></app-dl-icon>
+          </div>
+        </ng-template>
+        @if (filterIpAddresses(domain.ip_addresses, false).length) {
+          <div class="row">
+            <h5>IPv4</h5>
+            <ul class="list-none p-0 m-0">
+              @for (ip of filterIpAddresses(domain.ip_addresses, false); track ip) {
+                <li class="mb-2">
+                  {{ ip.ip_address }}
+                </li>
+              }
+            </ul>
+          </div>
+        }
+        @if (filterIpAddresses(domain.ip_addresses, true).length) {
+          <div class="row">
+            <h5>IPv6</h5>
+            <ul class="list-none p-0 m-0">
+              @for (ip of filterIpAddresses(domain.ip_addresses, true); track ip) {
+                <li class="mb-2 truncate">
+                  {{ ip.ip_address }}
+                </li>
+              }
+            </ul>
+          </div>
+        }
+      </p-card>
+    }
+    <!-- SSL Certificate -->
+    @if (domain.ssl && domain.ssl.issuer) {
+      <p-card class="mb-6">
+        <ng-template pTemplate="header">
+          <h4 class="text-surface-600 text-2xl font-bold m-0 block z-1 relative">
+            SSL Certificate
+          </h4>
+          <div class="absolute top-4 right-4 h-16 w-16 opacity-70">
+            <app-dl-icon
+              icon="ssl"
+              classNames="w-full h-full"
+              color="var(--surface-200)"
+            ></app-dl-icon>
+          </div>
+        </ng-template>
+        <div>
+          @if (domain.ssl.issuer) {
+            <div class="row">
+              <h5>Issuer</h5>
+              <a
+                [routerLink]="'/assets/certs/' + domain.ssl.issuer"
+                class="text-default no-underline hover:underline"
+              >
+                {{ domain.ssl.issuer }}
+              </a>
+            </div>
+          }
+          @if (domain.ssl.issuer_country) {
+            <div class="row">
+              <h5>Issuer Country</h5>
+              <p>{{ domain.ssl.issuer_country }}</p>
+            </div>
+          }
+          @if (domain.ssl.subject) {
+            <div class="row">
+              <h5>Subject</h5>
+              <p>{{ domain.ssl.subject }}</p>
+            </div>
+          }
+          @if (domain.ssl.valid_from) {
+            <div class="row">
+              <h5>Valid From</h5>
+              <p>{{ domain.ssl.valid_from | safeDate: 'medium' }}</p>
+            </div>
+          }
+          @if (domain.ssl.valid_to) {
+            <div class="row">
+              <h5>Valid To</h5>
+              <p>{{ domain.ssl.valid_to | safeDate: 'medium' }}</p>
+            </div>
+          }
+          @if (domain.ssl.key_size) {
+            <div class="row">
+              <h5>Key Size</h5>
+              <p>{{ domain.ssl.key_size }}</p>
+            </div>
+          }
+          @if (domain.ssl.signature_algorithm) {
+            <div class="row">
+              <h5>Signature Algorithm</h5>
+              <p>{{ domain.ssl.signature_algorithm }}</p>
+            </div>
+          }
+          @if (domain.ssl.fingerprint) {
+            <div class="row">
+              <h5>Fingerprint</h5>
+              <p class="truncate">{{ domain.ssl.fingerprint }}</p>
+            </div>
+          }
+        </div>
+      </p-card>
+    }
+    <!-- WHOIS Information -->
+    @if (
+      domain.whois &&
+      (domain.whois.name || domain.whois.organization || domain.whois.city)
+    ) {
+      <p-card class="mb-6">
+        <ng-template pTemplate="header">
+          <h4 class="text-surface-600 text-2xl font-bold m-0 block z-1 relative">
+            Whois Records
+          </h4>
+          <div class="absolute top-4 right-4 h-16 w-16 opacity-70 mr-2">
+            <app-dl-icon
+              icon="whois"
+              viewBox="0 0 640 512"
+              classNames="w-full h-full"
+              color="var(--surface-200)"
+            ></app-dl-icon>
+          </div>
+        </ng-template>
+        <div>
+          @if (domain.whois.name) {
+            <div class="row">
+              <h5>Name</h5>
+              <p>{{ domain.whois.name }}</p>
+            </div>
+          }
+          @if (domain.whois.organization) {
+            <div class="row">
+              <h5>Organization</h5>
+              <p>{{ domain.whois.organization }}</p>
+            </div>
+          }
+          @if (
+            domain.whois.street ||
+            domain.whois.city ||
+            domain.whois.state ||
+            domain.whois.postal_code
+          ) {
+            <div class="row">
+              <h5>Address</h5>
+              <p>
+                {{ domain.whois.street }}, {{ domain.whois.city }},
+                {{ domain.whois.state }}
+                {{ domain.whois.postal_code }}
+              </p>
+            </div>
+          }
+          @if (domain.whois.country) {
+            <div class="row">
+              <h5>Country</h5>
+              <p>{{ domain.whois.country }}</p>
+            </div>
+          }
+        </div>
+      </p-card>
+    }
+    <!-- Host Information -->
+    @if (domain.host) {
+      <p-card class="mb-6">
+        <ng-template pTemplate="header">
+          <h4 class="text-surface-600 text-2xl font-bold m-0 block z-1 relative">Host</h4>
+          <div class="absolute top-4 right-4 h-16 w-16 opacity-70">
+            <app-dl-icon
+              icon="host"
+              classNames="w-full h-full"
+              color="var(--surface-200)"
+            ></app-dl-icon>
+          </div>
+        </ng-template>
+        <div>
+          @if (domain.host.isp) {
+            <div class="row">
+              <h5>ISP</h5>
+              <a
+                [routerLink]="'/assets/hosts/' + domain.host.isp"
+                class="text-default no-underline hover:underline"
+              >
+                {{ domain.host.isp }}
+              </a>
+            </div>
+          }
+          @if (domain.host.org) {
+            <div class="row">
+              <h5>Organization</h5>
+              <p>{{ domain.host.org }}</p>
+            </div>
+          }
+          @if (domain.host.asNumber) {
+            <div class="row">
+              <h5>AS Number</h5>
+              <p>{{ domain.host.asNumber }}</p>
+            </div>
+          }
+          @if (domain.host.city || domain.host.region || domain.host.country) {
+            <div class="row">
+              <h5>Address</h5>
+              <p>
+                {{ domain.host.city }}, {{ domain.host.region }},
+                {{ domain.host.country }}
+              </p>
+            </div>
+          }
+        </div>
+      </p-card>
+    }
+    <!-- DNS Records -->
+    @if (
+      domain.dns &&
+      (domain.dns.nameServers.length ||
+        domain.dns.txtRecords.length ||
+        domain.dns.mxRecords.length)
+    ) {
+      <p-card class="mb-6">
+        <ng-template pTemplate="header">
+          <h4 class="text-surface-600 text-2xl font-bold m-0 block z-1 relative">
+            DNS Records
+          </h4>
+          <div class="absolute top-4 right-4 h-16 w-16 opacity-70 mr-2">
+            <app-dl-icon
+              icon="dns"
+              viewBox="0 0 640 512"
+              classNames="w-full h-full"
+              color="var(--surface-200)"
+            ></app-dl-icon>
+          </div>
+        </ng-template>
+        <p-tabView [scrollable]="true" styleClass="mt-4">
+          @if (domain.dns.nameServers.length) {
+            <p-tabPanel header="NS">
+              <ul class="list-none p-0 m-0">
+                @for (ns of domain.dns.nameServers; track ns) {
+                  <li class="mb-2 truncate">{{ ns }}</li>
+                }
+              </ul>
+            </p-tabPanel>
+          }
+          @if (domain.dns.mxRecords.length) {
+            <p-tabPanel header="MX">
+              <ul class="list-none p-0 m-0">
+                @for (mx of domain.dns.mxRecords; track mx) {
+                  <li class="mb-2 truncate">{{ mx }}</li>
+                }
+              </ul>
+            </p-tabPanel>
+          }
+          @if (domain.dns.txtRecords.length) {
+            <p-tabPanel header="TXT">
+              <ul class="list-none p-0 m-0">
+                @for (txt of domain.dns.txtRecords; track txt) {
+                  <li class="mb-2 truncate">{{ txt }}</li>
+                }
+              </ul>
+            </p-tabPanel>
+          }
+        </p-tabView>
+        @if (domain.dns.dnssec) {
+          <p><strong>DNSSEC:</strong> {{ domain.dns.dnssec }}</p>
+        }
+      </p-card>
+    }
+    <!-- Subdomains -->
+    @if (domain.sub_domains && domain.sub_domains.length) {
+      <p-card class="mb-6 relative">
+        <ng-template pTemplate="header">
+          <h4 class="text-surface-600 text-2xl font-bold m-0 block z-1 relative">
+            Subdomains
+          </h4>
+          <div class="absolute top-4 right-4 h-16 w-16 opacity-70">
+            <app-dl-icon
+              icon="subdomains"
+              classNames="w-full h-full"
+              color="var(--surface-200)"
+            ></app-dl-icon>
+          </div>
+        </ng-template>
+        <div class="transition-all duration-300 max-h-96 overflow-y-scroll mt-2">
+          <ul class="list-none p-0 m-0">
+            @for (subdomain of domain.sub_domains; track subdomain) {
+              <li class="mb-2 truncate">
+                <a
+                  [routerLink]="[
+                    '/',
+                    'assets',
+                    'subdomains',
+                    domain.domain_name,
+                    subdomain.name,
+                  ]"
+                  class="no-underline text-default hover:underline"
+                >
+                  {{ subdomain.name }}.{{ domain.domain_name }}
+                </a>
+              </li>
+            }
+          </ul>
+        </div>
+      </p-card>
+    }
+    <!-- Notes -->
+    @if (domain.notes) {
+      <p-card class="mb-6">
+        <ng-template pTemplate="header">
+          <h4 class="text-surface-600 text-2xl font-bold m-0 block z-1 relative">
+            Notes
+          </h4>
+          <div class="absolute top-4 right-4 h-16 w-16 opacity-70">
+            <app-dl-icon
+              icon="notes"
+              classNames="w-full h-full"
+              color="var(--surface-200)"
+            ></app-dl-icon>
+          </div>
+        </ng-template>
+        <p>{{ domain.notes }}</p>
+      </p-card>
+    }
+    <!-- Tags -->
+    @if (domain.tags?.length) {
+      <p-card class="mb-6">
+        <ng-template pTemplate="header">
+          <h4 class="text-surface-600 text-2xl font-bold m-0 block z-1 relative">Tags</h4>
+          <div class="absolute top-4 right-4 h-16 w-16 opacity-70">
+            <app-dl-icon
+              icon="tags"
+              classNames="w-full h-full"
+              color="var(--surface-200)"
+            ></app-dl-icon>
+          </div>
+        </ng-template>
+        <div class="row mt-4">
+          @for (tag of domain.tags; track tag) {
+            <a [routerLink]="'/assets/tags/' + tag">
+              <p-tag
+                [value]="tag"
+                styleClass="bg-primary rounded-lg text-highlight px-2  py-1 mr-1"
+              ></p-tag>
+            </a>
+          }
+        </div>
+      </p-card>
+    }
+    <!-- Links -->
+    @if (domain.domain_links && domain.domain_links.length) {
+      <p-card class="mb-6">
+        <ng-template pTemplate="header">
+          <h4 class="text-surface-600 text-2xl font-bold m-0 block z-1 relative">
+            Links
+          </h4>
+          <div class="absolute top-4 right-4 h-16 w-16 opacity-70">
+            <app-dl-icon
+              icon="links"
+              classNames="w-full h-full"
+              color="var(--surface-200)"
+            ></app-dl-icon>
+          </div>
+        </ng-template>
+        <ul class="list-none p-0 m-0 mt-2">
+          @for (link of domain.domain_links; track link) {
+            <li class="truncate">
+              <a
+                [href]="link.link_url"
+                target="_blank"
+                class="no-underline text-primary hover:opacity-95"
+              >
+                <app-domain-favicon [domain]="link.link_url" [size]="16" />
+                {{ link.link_name }}
+              </a>
+            </li>
+          }
         </ul>
-      </p-tabPanel>
-      <p-tabPanel header="MX" *ngIf="domain.dns.mxRecords?.length">
-        <ul class="list-none p-0 m-0">
-          <li *ngFor="let mx of domain.dns.mxRecords" class="mb-2 truncate">{{ mx }}</li>
-        </ul>
-      </p-tabPanel>
-      <p-tabPanel header="TXT" *ngIf="domain.dns.txtRecords?.length">
-        <ul class="list-none p-0 m-0">
-          <li *ngFor="let txt of domain.dns.txtRecords" class="mb-2 truncate">{{ txt }}</li>
-        </ul>
-      </p-tabPanel>
-    </p-tabView>
-    <p *ngIf="domain.dns.dnssec"><strong>DNSSEC:</strong> {{ domain.dns.dnssec }}</p>
-  </p-card>
-
-  <!-- Subdomains -->
-  <p-card *ngIf="domain.sub_domains && domain.sub_domains.length" class="mb-6 relative">
-    <ng-template pTemplate="header">
-      <h4 class="text-surface-600 text-2xl font-bold m-0 block z-1 relative">Subdomains</h4>
-      <div class="absolute top-4 right-4 h-16 w-16 opacity-70">
-        <dl-icon icon="subdomains" classNames="w-full h-full" color="var(--surface-200)"></dl-icon>
-      </div>
-    </ng-template>
-    <div class="transition-all duration-300 max-h-96 overflow-y-scroll mt-2">
-      <ul class="list-none p-0 m-0">
-        <li *ngFor="let subdomain of domain.sub_domains" class="mb-2 truncate">
-          <a
-            [routerLink]="['/', 'assets', 'subdomains', domain.domain_name, subdomain.name]"
-            class="no-underline text-default hover:underline"
-          >
-            {{ subdomain.name }}.{{ domain.domain_name }}
-          </a>
-        </li>
-      </ul>
-    </div>
-  </p-card>
-
-  <!-- Notes -->
-  <p-card *ngIf="domain.notes" class="mb-6">
-    <ng-template pTemplate="header">
-      <h4 class="text-surface-600 text-2xl font-bold m-0 block z-1 relative">Notes</h4>
-      <div class="absolute top-4 right-4 h-16 w-16 opacity-70">
-        <dl-icon icon="notes" classNames="w-full h-full" color= "var(--surface-200)"></dl-icon>
-      </div>
-    </ng-template>
-    <p>{{ domain.notes }}</p>
-  </p-card>
-
-  <!-- Tags -->
-  <p-card *ngIf="domain.tags?.length" class="mb-6">
-    <ng-template pTemplate="header">
-      <h4 class="text-surface-600 text-2xl font-bold m-0 block z-1 relative">Tags</h4>
-      <div class="absolute top-4 right-4 h-16 w-16 opacity-70">
-        <dl-icon icon="tags" classNames="w-full h-full" color= "var(--surface-200)"></dl-icon>
-      </div>
-    </ng-template>
-    <div class="row mt-4">
-      <a *ngFor="let tag of domain.tags" [routerLink]="'/assets/tags/'+tag">
-        <p-tag  [value]="tag" styleClass="bg-primary rounded-lg text-highlight px-2  py-1 mr-1"></p-tag>
-      </a>
-    </div>
-  </p-card>
-
-  <!-- Links -->
-  <p-card *ngIf="domain.domain_links && domain.domain_links.length" class="mb-6">
-    <ng-template pTemplate="header">
-      <h4 class="text-surface-600 text-2xl font-bold m-0 block z-1 relative">Links</h4>
-      <div class="absolute top-4 right-4 h-16 w-16 opacity-70">
-        <dl-icon icon="links" classNames="w-full h-full" color= "var(--surface-200)"></dl-icon>
-      </div>
-    </ng-template>
-    <ul class="list-none p-0 m-0 mt-2">
-      <li *ngFor="let link of domain.domain_links" class="truncate">
-        <a [href]="link.link_url" target="_blank" class="no-underline text-primary hover:opacity-95">
-          <app-domain-favicon [domain]="link.link_url" [size]="16" />
-          {{ link.link_name }}
-        </a>
-      </li>
-    </ul>
-  </p-card>
-</div>
+      </p-card>
+    }
+  </div>
+}

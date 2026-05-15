@@ -1,17 +1,14 @@
-
 ::ng-deep .apexcharts-canvas {
-
   .apexcharts-heatmap {
     .apexcharts-heatmap-series {
       rect {
         border-radius: 2px;
         stroke-width: 3;
         stroke: var(--surface-ground);
-        &[color="rgba(204,204,204,1)"] {
+        &[color='rgba(204,204,204,1)'] {
           opacity: 0.25;
         }
       }
     }
   }
 }
-
