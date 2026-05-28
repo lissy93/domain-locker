@@ -85,7 +85,9 @@ describe('parseTrabis', () => {
     expect(out!.status).toContain('ok');
     expect(out!.status).toContain('clientTransferProhibited');
     expect(out!.whois.country).toBe('TR');
-    expect(out!.abuse.phone).toBe('90-312-9881106-');
+    expect(out!.whois.name).toBeNull();
+    expect(out!.abuse.email).toBeNull();
+    expect(out!.abuse.phone).toBeNull();
     expect(out!.dnssec).toBeNull();
   });
 

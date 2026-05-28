@@ -71,7 +71,9 @@ export const getWhoisInfo = async (domain: string): Promise<WhoisResult | null> 
   // native `whois` command resolves to a broken whois.metu.edu.tr CNAME.
   if (/\.tr$/i.test(trimmed)) {
     const trabis = await tryTrabisWhois(trimmed);
-    if (trabis && (trabis.dates.expiry_date || trabis.registrar.name !== 'Unknown')) {
+    // parseTrabis() already returns null for empty/not-found responses, so any
+    // non-null value here is real Trabis data and we should surface it.
+    if (trabis) {
       log.success(`Got WHOIS data via Trabis for ${trimmed}`);
       return trabis;
     }
@@ -513,17 +515,18 @@ const tryWhoisXml = async (domain: string): Promise<WhoisResult | null> => {
  * The response format is stable and easy to parse — see parseTrabis().
  * ──────────────────────────────────────────────────────────────────── */
 
+const TRABIS_MONTHS: Record<string, number> = {
+  jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
+  jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
+};
+
 // Trabis prints dates as "2022-Sep-14." — translate to ISO yyyy-mm-dd.
 const parseTrabisDate = (raw: string | undefined): string | undefined => {
   if (!raw) return undefined;
   const cleaned = raw.replace(/\.$/, '').trim();
   const m = cleaned.match(/^(\d{4})-([A-Za-z]{3})-(\d{1,2})$/);
   if (m) {
-    const months: Record<string, number> = {
-      jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
-      jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
-    };
-    const mi = months[m[2].toLowerCase()];
+    const mi = TRABIS_MONTHS[m[2].toLowerCase()];
     if (mi !== undefined) {
       const d = new Date(Date.UTC(+m[1], mi, +m[3]));
       if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
@@ -566,15 +569,13 @@ export const parseTrabis = (
   const frozen = get(/Frozen Status:\s*(.+?)(?:\r?\n)/);
   if (frozen && frozen !== '-') status.push('serverHold');
 
-  const registrarPhone = get(/Phone\s*:\s*(.+?)(?:\r?\n)/);
-
   return {
     domainName: get(/\*\*\s*Domain Name:\s*(\S+)/) || domain,
     registrar: {
       name: registrarName,
-      id: nicHandle,
-      url: undefined,
-      registryDomainId: undefined,
+      id: nicHandle ?? null,
+      url: null,
+      registryDomainId: null,
     },
     dates: {
       creation_date: parseTrabisDate(get(/Created on\.*:\s*(.+?)(?:\r?\n)/)),
@@ -584,17 +585,20 @@ export const parseTrabis = (
     whois: {
       // Trabis redacts registrant info ("Hidden upon user request"). Country
       // is implicit in the namespace.
-      name: undefined,
-      organization: undefined,
-      street: undefined,
-      city: undefined,
+      name: null,
+      organization: null,
+      street: null,
+      city: null,
       country: 'TR',
-      state: undefined,
-      postal_code: undefined,
+      state: null,
+      postal_code: null,
     },
+    // Trabis doesn't publish a dedicated abuse contact — leaving these empty
+    // rather than spoofing the registrar's general phone number into abuse.phone,
+    // which would be semantically incorrect per WHOIS/RDAP conventions.
     abuse: {
-      email: undefined,
-      phone: registrarPhone && registrarPhone !== '-' ? registrarPhone : undefined,
+      email: null,
+      phone: null,
     },
     status,
     dnssec: null,
