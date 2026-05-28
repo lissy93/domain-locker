@@ -1,6 +1,7 @@
 import whois from 'whois-json';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import * as net from 'net';
 import type { Dates, Registrar, Contact, Abuse } from '../../types/common';
 import Logger from './logger';
 
@@ -62,6 +63,19 @@ let rdapBootstrapCache: Record<string, string> | null = null;
 
 export const getWhoisInfo = async (domain: string): Promise<WhoisResult | null> => {
   const trimmed = domain.replace(/^(?:https?:\/\/)?(?:www\.)?/i, '').trim();
+
+  // .tr TLDs (com.tr, net.tr, gen.tr, k12.tr, gov.tr, ...) need a direct
+  // query to whois.trabis.gov.tr — the canonical .tr WHOIS server per IANA.
+  // whois-json doesn't ship .tr in its server map, IANA's RDAP bootstrap
+  // doesn't list .tr (Trabis hasn't published RDAP endpoints), and the
+  // native `whois` command resolves to a broken whois.metu.edu.tr CNAME.
+  if (/\.tr$/i.test(trimmed)) {
+    const trabis = await tryTrabisWhois(trimmed);
+    if (trabis && (trabis.dates.expiry_date || trabis.registrar.name !== 'Unknown')) {
+      log.success(`Got WHOIS data via Trabis for ${trimmed}`);
+      return trabis;
+    }
+  }
 
   const fallback = async (): Promise<WhoisResult | null> => {
     const native = await tryNativeWhois(trimmed);
@@ -480,6 +494,164 @@ const tryWhoisXml = async (domain: string): Promise<WhoisResult | null> => {
     };
   } catch (err) {
     log.warn(`WhoisXML failed for ${domain}: ${(err as Error).message}`);
+    return null;
+  }
+};
+
+/* ──────────────────────────────────────────────────────────────────────
+ * Trabis (.tr) WHOIS support
+ *
+ * The Turkish ccTLD .tr is administered by Trabis (under BTK), which runs
+ * the authoritative WHOIS server at whois.trabis.gov.tr on TCP/43.
+ *
+ * Other tiers in this file all fail for .tr:
+ *   - whois-json:  no .tr in its TLD→server map
+ *   - native whois: resolves to broken whois.metu.edu.tr CNAME (whois.nic.tr
+ *                   has no A record)
+ *   - IANA RDAP bootstrap: doesn't list .tr (Trabis hasn't deployed RDAP)
+ *
+ * The response format is stable and easy to parse — see parseTrabis().
+ * ──────────────────────────────────────────────────────────────────── */
+
+// Trabis prints dates as "2022-Sep-14." — translate to ISO yyyy-mm-dd.
+const parseTrabisDate = (raw: string | undefined): string | undefined => {
+  if (!raw) return undefined;
+  const cleaned = raw.replace(/\.$/, '').trim();
+  const m = cleaned.match(/^(\d{4})-([A-Za-z]{3})-(\d{1,2})$/);
+  if (m) {
+    const months: Record<string, number> = {
+      jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
+      jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
+    };
+    const mi = months[m[2].toLowerCase()];
+    if (mi !== undefined) {
+      const d = new Date(Date.UTC(+m[1], mi, +m[3]));
+      if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+    }
+  }
+  return parseDate(cleaned);
+};
+
+/** Pure parser for Trabis WHOIS text. Exported so it can be unit-tested. */
+export const parseTrabis = (
+  domain: string,
+  text: string,
+): WhoisResult | null => {
+  if (!text || text.length < 50) return null;
+  if (/no match|not found|no entries|domain.*not.*found/i.test(text)) return null;
+
+  const get = (re: RegExp): string | undefined => {
+    const m = text.match(re);
+    return m ? m[1].trim() : undefined;
+  };
+
+  // "** Registrar:" block — capture Organization Name
+  const registrarMatch = text.match(
+    /\*\*\s*Registrar:[\s\S]*?Organization Name\s*:\s*(.+?)(?:\r?\n)/,
+  );
+  const registrarName = registrarMatch ? registrarMatch[1].trim() : 'Unknown';
+
+  // NIC Handle — Trabis's internal registrar id (e.g. "ogv40")
+  const nicHandle = get(/NIC Handle\s*:\s*(\S+)/);
+
+  // Status mapping
+  const statusLine = get(/Domain Status:\s*(.+?)(?:\r?\n)/);
+  const status: string[] = [];
+  if (statusLine) {
+    const s = statusLine.toLowerCase();
+    if (s === 'active') status.push('ok');
+    else if (s !== '-' && s !== '') status.push(statusLine);
+  }
+  if (/LOCKED to transfer/i.test(text)) status.push('clientTransferProhibited');
+  const frozen = get(/Frozen Status:\s*(.+?)(?:\r?\n)/);
+  if (frozen && frozen !== '-') status.push('serverHold');
+
+  const registrarPhone = get(/Phone\s*:\s*(.+?)(?:\r?\n)/);
+
+  return {
+    domainName: get(/\*\*\s*Domain Name:\s*(\S+)/) || domain,
+    registrar: {
+      name: registrarName,
+      id: nicHandle,
+      url: undefined,
+      registryDomainId: undefined,
+    },
+    dates: {
+      creation_date: parseTrabisDate(get(/Created on\.*:\s*(.+?)(?:\r?\n)/)),
+      updated_date: parseDate(get(/Last Update Time:\s*(.+?)(?:\r?\n)/)),
+      expiry_date: parseTrabisDate(get(/Expires on\.*:\s*(.+?)(?:\r?\n)/)),
+    },
+    whois: {
+      // Trabis redacts registrant info ("Hidden upon user request"). Country
+      // is implicit in the namespace.
+      name: undefined,
+      organization: undefined,
+      street: undefined,
+      city: undefined,
+      country: 'TR',
+      state: undefined,
+      postal_code: undefined,
+    },
+    abuse: {
+      email: undefined,
+      phone: registrarPhone && registrarPhone !== '-' ? registrarPhone : undefined,
+    },
+    status,
+    dnssec: null,
+  };
+};
+
+/** Open a TCP/43 socket to Trabis and read the WHOIS response. */
+const fetchTrabisWhois = (domain: string): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    const client = net.createConnection({
+      host: 'whois.trabis.gov.tr',
+      port: 43,
+    });
+    const timer = setTimeout(() => {
+      client.destroy();
+      reject(new Error('Trabis WHOIS timeout after 10s'));
+    }, 10_000);
+    client.on('connect', () => client.write(`${domain}\r\n`));
+    client.on('data', (c) => chunks.push(c));
+    client.on('end', () => {
+      clearTimeout(timer);
+      resolve(Buffer.concat(chunks).toString('utf-8'));
+    });
+    client.on('error', (e) => {
+      clearTimeout(timer);
+      reject(e);
+    });
+  });
+
+/** Top-level Trabis WHOIS lookup. Returns null for non-.tr domains or on error. */
+const tryTrabisWhois = async (
+  domain: string,
+): Promise<WhoisResult | null> => {
+  if (!/\.tr$/i.test(domain)) return null;
+
+  // Skip in serverless environments — raw TCP isn't available.
+  if (
+    process.env['VERCEL'] ||
+    process.env['AWS_LAMBDA_FUNCTION_NAME'] ||
+    process.env['NETLIFY']
+  ) {
+    return null;
+  }
+
+  // Prevent CRLF injection into the WHOIS query line.
+  const sanitised = domain.replace(/[^a-zA-Z0-9.-]/g, '');
+  if (!sanitised || sanitised !== domain) {
+    log.warn(`Invalid domain format for Trabis WHOIS: ${domain}`);
+    return null;
+  }
+
+  try {
+    const raw = await fetchTrabisWhois(sanitised);
+    return parseTrabis(sanitised, raw);
+  } catch (err) {
+    log.warn(`Trabis WHOIS failed for ${domain}: ${(err as Error).message}`);
     return null;
   }
 };
