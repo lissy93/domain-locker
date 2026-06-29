@@ -444,6 +444,21 @@ CREATE TABLE IF NOT EXISTS "public"."users" (
     CONSTRAINT users_pkey PRIMARY KEY (id)
 );
 
+-- User info table (notification channels and plan, per self-hosted user)
+CREATE TABLE IF NOT EXISTS "public"."user_info" (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    user_id uuid DEFAULT 'a0000000-aaaa-42a0-a0a0-00a000000a69',
+    notification_channels jsonb,
+    current_plan text,
+    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT user_info_pkey PRIMARY KEY (id),
+    CONSTRAINT user_info_user_id_key UNIQUE (user_id),
+    CONSTRAINT user_info_user_id_fkey FOREIGN KEY (user_id) REFERENCES "public"."users" (id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_info_user_id ON "public"."user_info" (user_id);
+
 -- Domain Hosts table
 CREATE TABLE IF NOT EXISTS "public"."domain_hosts" (
     domain_id uuid NOT NULL,

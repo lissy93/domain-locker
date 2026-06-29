@@ -1,6 +1,6 @@
 import { isPlatformBrowser } from '@angular/common';
 import { Injectable, PLATFORM_ID, inject } from '@angular/core';
-import { REQUEST } from '@angular/core';
+import { REQUEST } from '@analogjs/router/tokens';
 import { environment } from '~/app/environments/environment';
 
 export type EnvironmentType = 'dev' | 'managed' | 'selfHosted' | 'demo';
@@ -35,6 +35,7 @@ export type EnvVar =
 })
 export class EnvService {
   private platformId = inject<object>(PLATFORM_ID);
+  private request = inject(REQUEST, { optional: true });
 
   private environmentFile = (environment || {}) as Record<string, string | undefined>;
 
@@ -144,51 +145,29 @@ export class EnvService {
     };
   }
 
-  getBaseUrl(): string {
-    // If user has explicitly set DL_BASE_URL, always respect it
-    const envBase = this.getEnvVar('DL_BASE_URL', '');
-    if (envBase) {
-      return envBase;
-    }
-
-    // Otherwise, detect from runtime context
-
-    // Use current location for browser environments
-    if (isPlatformBrowser(this.platformId)) {
-      if (window.location.origin) return window.location.origin;
-    }
-
-    // For SSR (server-side rendering), detect from HTTP request context
-    try {
-      const request = inject(REQUEST, { optional: true }) as {
-        headers?: Record<string, string>;
-      } | null;
-
-      if (request?.headers) {
-        // Check for reverse proxy headers first
-        const forwardedProto =
-          request.headers['x-forwarded-proto'] ||
-          (request.headers['x-forwarded-ssl'] === 'on' ? 'https' : null);
-        const forwardedHost =
-          request.headers['x-forwarded-host'] || request.headers['host'];
-
-        if (forwardedHost) {
-          const protocol = forwardedProto || 'http';
-          return `${protocol}://${forwardedHost}`;
-        }
-      }
-    } catch {
-      // REQUEST token not available (not in SSR context)
-    }
-
-    // Fallback to relative paths (SSR will handle this)
-    return '/';
-  }
-
   getPostgresApiUrl(): string {
     const endpoint = '/api/pg-executer/';
-    const baseUrl = this.getBaseUrl();
-    return `${baseUrl}${endpoint}`;
+    if (isPlatformBrowser(this.platformId)) {
+      // Respect an explicitly configured public origin (DL_BASE_URL), else same-origin
+      const configured = this.getEnvVar('DL_BASE_URL', '');
+      return configured ? `${configured}${endpoint}` : endpoint;
+    }
+    // SSR: call ourselves on the loopback, never the public host (see issue #102)
+    return `${this.getInternalApiBase()}${endpoint}`;
+  }
+
+  /* SSR self-call base: dev reuses the request host (0.0.0.0 normalized), prod localhost:<port> */
+  private getInternalApiBase(): string {
+    const env = (globalThis as { process?: { env?: Record<string, string | undefined> } })
+      .process?.env;
+    if (env?.['DL_INTERNAL_BASE_URL']) {
+      return env['DL_INTERNAL_BASE_URL'];
+    }
+    const host = this.request?.headers?.['host'];
+    if (env?.['NODE_ENV'] === 'development' && host) {
+      return `http://${host.replace(/^0\.0\.0\.0/, '127.0.0.1')}`;
+    }
+    return `http://localhost:${env?.['NITRO_PORT'] || env?.['PORT'] || '3000'}`;
   }
 
   getPlausibleConfig(): { site: string; url: string; isConfigured: boolean } {

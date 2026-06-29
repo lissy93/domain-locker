@@ -1,7 +1,7 @@
 import { defineEventHandler } from 'h3';
 import https from 'https';
 import { performance } from 'perf_hooks';
-import { getBaseUrl } from '../utils/base-url';
+import { getInternalBaseUrl } from '../utils/base-url';
 
 const HTTP_TIMEOUT_MS = 10000;
 const MAX_EXECUTION_TIME_MS = 12 * 60 * 1000;
@@ -93,7 +93,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const startTime = Date.now();
-  const baseUrl = getBaseUrl(event);
+  const baseUrl = getInternalBaseUrl(event);
   const pgUrl = `${baseUrl}/api/pg-executer`;
 
   const domains = await callPgExecutor<{ id: string; domain_name: string }>(

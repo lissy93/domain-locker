@@ -865,6 +865,7 @@ export default class PgDatabaseService extends DatabaseService {
       'registrars',
       'tags',
       'users',
+      'user_info',
       'domains',
     ];
 
@@ -933,6 +934,7 @@ export default class PgDatabaseService extends DatabaseService {
       'hosts',
       'registrars',
       'tags',
+      'user_info',
     ];
 
     // Determine which tables to target if specific tables are provided

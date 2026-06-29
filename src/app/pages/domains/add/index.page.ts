@@ -371,6 +371,7 @@ export default class AddDomainComponent implements OnInit, OnDestroy {
 
   private formatDomainName(domainName: string): string {
     return domainName
+      .toLowerCase()
       .replace(/^https?:\/\//, '')
       .replace(/^www\./, '')
       .replace(/\/.*$/, '');

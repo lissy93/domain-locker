@@ -19,11 +19,11 @@ export class RegistrarQueries {
     );
   }
 
-  // Get or insert a registrar by name
-  async getOrInsertRegistrarId(registrarName: string): Promise<string> {
+  // Get or insert a registrar by name, recording its url on first insert
+  async getOrInsertRegistrarId(registrarName: string, url?: string): Promise<string> {
     const sanitizedName = (registrarName || '').trim().replace(/[/\\?#%]/g, '');
     const selectQuery = 'SELECT id FROM registrars WHERE name = $1 LIMIT 1';
-    const insertQuery = 'INSERT INTO registrars (name) VALUES ($1) RETURNING id';
+    const insertQuery = 'INSERT INTO registrars (name, url) VALUES ($1, $2) RETURNING id';
 
     const selectResponse = await this.pgApiUtil
       .postToPgExecutor<{ id: string }>(selectQuery, [sanitizedName])
@@ -33,7 +33,7 @@ export class RegistrarQueries {
     }
 
     const insertResponse = await this.pgApiUtil
-      .postToPgExecutor<{ id: string }>(insertQuery, [sanitizedName])
+      .postToPgExecutor<{ id: string }>(insertQuery, [sanitizedName, url ?? null])
       .toPromise();
     if (insertResponse && insertResponse.data.length > 0) {
       return insertResponse.data[0].id;
@@ -173,7 +173,7 @@ export class RegistrarQueries {
   ): Promise<void> {
     if (!registrar?.name) return;
 
-    const registrarId = await this.getOrInsertRegistrarId(registrar.name);
+    const registrarId = await this.getOrInsertRegistrarId(registrar.name, registrar.url);
 
     const updateQuery = 'UPDATE domains SET registrar_id = $1 WHERE id = $2';
     await this.pgApiUtil

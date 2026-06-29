@@ -13,6 +13,9 @@ export async function updateDomainStatuses(
   const domainId = domainRow.id;
   const freshStatuses = Array.isArray(freshInfo?.status) ? freshInfo.status : [];
 
+  // Skip if no fresh statuses
+  if (freshStatuses.length === 0) return;
+
   const freshSet = new Set<string>(
     freshStatuses.map((s: string) => normalizeStr(s)).filter(Boolean) as string[],
   );

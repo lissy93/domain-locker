@@ -20,8 +20,8 @@ export class RegistrarQueries {
     );
   }
 
-  // Method to get or insert registrar by name
-  async getOrInsertRegistrarId(registrarName: string): Promise<string> {
+  // Method to get or insert registrar by name, recording its url on first insert
+  async getOrInsertRegistrarId(registrarName: string, url?: string): Promise<string> {
     const sanitizedName = (registrarName || '').trim().replace(/[/\\?#%]/g, '');
     const { data: existingRegistrar, error: registrarError } = await this.supabase
       .from('registrars')
@@ -36,11 +36,12 @@ export class RegistrarQueries {
     } else {
       const { data: newRegistrar, error: insertError } = await this.supabase
         .from('registrars')
-        .insert({ name: sanitizedName })
+        .insert({ name: sanitizedName, url: url ?? null })
         .select('id')
         .single();
 
       if (insertError) throw insertError;
+      if (!newRegistrar) throw new Error('Failed to insert registrar');
       return newRegistrar.id;
     }
   }
@@ -107,30 +108,7 @@ export class RegistrarQueries {
   ): Promise<void> {
     if (!registrar?.name) return;
 
-    const sanitizedName = (registrar.name || '').trim().replace(/[/\\?#%]/g, '');
-    const { data: existingRegistrar, error: fetchError } = await this.supabase
-      .from('registrars')
-      .select('id')
-      .eq('name', sanitizedName)
-      .single();
-
-    if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
-    let registrarId: string;
-
-    if (existingRegistrar) {
-      registrarId = existingRegistrar.id;
-    } else {
-      const { data: newRegistrar, error: insertError } = await this.supabase
-        .from('registrars')
-        .insert({ name: sanitizedName, url: registrar['url'] })
-        .select('id')
-        .single();
-
-      if (insertError) throw insertError;
-      if (!newRegistrar) throw new Error('Failed to insert registrar');
-
-      registrarId = newRegistrar.id;
-    }
+    const registrarId = await this.getOrInsertRegistrarId(registrar.name, registrar.url);
 
     const { error: updateError } = await this.supabase
       .from('domains')
