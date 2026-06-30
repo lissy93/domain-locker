@@ -97,7 +97,7 @@ export class HostsQueries {
   }
 
   async saveHost(domainId: string, host?: Host): Promise<void> {
-    if (!host || !host?.isp) return;
+    if (!host?.isp || !host?.query) return;
     // First, try to find an existing host with the same ISP
     const { data: existingHost, error: fetchError } = await this.supabase
       .from('hosts')

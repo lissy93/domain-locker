@@ -17,6 +17,15 @@ interface SslRow {
   created_at?: string;
 }
 
+const hasUsefulSslData = (fresh: Record<string, unknown>): boolean =>
+  Boolean(
+    fresh['valid_to'] ||
+    fresh['fingerprint'] ||
+    fresh['issuer'] ||
+    fresh['subject'] ||
+    fresh['key_size'],
+  );
+
 export async function updateSSL(
   pgExec: string,
   domainRow: DomainRow,
@@ -26,6 +35,7 @@ export async function updateSSL(
   const domainId = domainRow.id;
   const fresh = freshInfo?.ssl as Record<string, unknown> | undefined;
   if (!fresh) return;
+  if (!hasUsefulSslData(fresh)) return;
 
   const [existing] = await callPgExecutor<SslRow>(
     pgExec,
@@ -155,6 +165,8 @@ export async function updateSSL(
 
     // Special date comparison, because timezones are stupid
     if (field.type === 'date') {
+      if (!newVal) continue;
+
       const oldDate = new Date(oldVal);
       const newDate = new Date(newVal);
 
@@ -176,7 +188,7 @@ export async function updateSSL(
       }
     }
 
-    if (oldVal !== newVal && field.type != 'date') {
+    if (newVal && oldVal !== newVal && field.type != 'date') {
       updateSet.push(`${field.column} = $${updateSet.length + 2}::${field.type}`);
       updateValues.push(field.new ?? null);
 

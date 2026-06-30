@@ -74,21 +74,4 @@ export async function updateDNS(
       }
     }
   }
-
-  // Handle DNSSEC flag
-  if (typeof dns.dnssec === 'boolean' && domainRow.dnssec_enabled !== dns.dnssec) {
-    await callPgExecutor(pgExec, `UPDATE domains SET dnssec_enabled = $1 WHERE id = $2`, [
-      dns.dnssec,
-      domainId,
-    ]);
-    await recordDomainUpdate(
-      pgExec,
-      domainId,
-      `DNSSEC changed`,
-      'dnssec',
-      String(domainRow.dnssec_enabled),
-      String(dns.dnssec),
-    );
-    changes.push('DNSSEC toggled');
-  }
 }

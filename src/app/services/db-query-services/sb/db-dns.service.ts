@@ -43,8 +43,12 @@ export class DnsQueries {
     const recordTypes = ['mxRecords', 'txtRecords', 'nameServers'] as const;
     const typeMap = { mxRecords: 'MX', txtRecords: 'TXT', nameServers: 'NS' };
 
+    const seen = new Set<string>();
     recordTypes.forEach((type) => {
       dns[type]?.forEach((record) => {
+        const key = `${typeMap[type]}:${record}`;
+        if (seen.has(key)) return;
+        seen.add(key);
         dnsRecords.push({
           domain_id: domainId,
           record_type: typeMap[type],

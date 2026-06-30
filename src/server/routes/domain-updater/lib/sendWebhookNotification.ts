@@ -5,8 +5,8 @@ export async function sendWebhookNotification(
   title = 'Domain Locker',
   tags?: string[],
 ): Promise<void> {
-  const base = getEnvVar('NOTIFY_WEBHOOK_BASE');
-  const topic = getEnvVar('NOTIFY_WEBHOOK_TOPIC');
+  const base = getEnvVar('NOTIFY_WEBHOOK_BASE', '');
+  const topic = getEnvVar('NOTIFY_WEBHOOK_TOPIC', '');
   const token = getEnvVar('NOTIFY_WEBHOOK_TOKEN', '');
 
   if (!base || !topic) {

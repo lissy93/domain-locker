@@ -1,5 +1,8 @@
 import { callPgExecutor } from './pgExecutor';
 import { sendWebhookNotification } from './sendWebhookNotification';
+import Logger from '../../../utils/logger';
+
+const log = new Logger('domain-updater');
 
 /**
  * Check if a notification should be sent for a changeType, and insert it if so.
@@ -27,7 +30,7 @@ export async function notifyUser(
     );
 
     if (!isEnabled) {
-      console.info(
+      log.info(
         `Skipping notification for ${changeType}, because not enabled for this domain`,
       );
       return;
@@ -59,6 +62,6 @@ export async function notifyUser(
     );
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error(`Failed to insert notification for ${changeType}: ${msg}`);
+    log.error(`Failed to insert notification for ${changeType}: ${msg}`);
   }
 }

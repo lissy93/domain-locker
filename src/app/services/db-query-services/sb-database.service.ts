@@ -294,8 +294,8 @@ export default class MainDatabaseService extends DatabaseService {
       .select()
       .single();
 
-    if (domainError) this.handleError(domainError);
-    if (!insertedDomain) this.handleError(new Error('Failed to insert domain'));
+    if (domainError) throw domainError;
+    if (!insertedDomain) throw new Error('Failed to insert domain');
 
     await Promise.all([
       this.ipQueries.saveIpAddresses(insertedDomain.id, ipAddresses),

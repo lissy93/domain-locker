@@ -1,6 +1,8 @@
 import { createError, defineEventHandler, readBody, sendError, type H3Event } from 'h3';
 import pkg from 'pg';
-const { Client } = pkg;
+const { Client, types } = pkg;
+// Keep DATE columns as YYYY-MM-DD strings (avoid node-pg's local-midnight UTC day-shift)
+types.setTypeParser(1082, (val) => val);
 
 interface PgCredentials {
   host?: string;

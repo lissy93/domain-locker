@@ -5,9 +5,11 @@ import type { DomainInfo } from '../../types/DomainInfo';
 import type { Host } from 'src/types/common';
 import { verifyAuth } from '../utils/auth';
 import { getWhoisInfo } from '../utils/whois';
+import { parseDate } from '../utils/whois/dates';
 import Logger from '../utils/logger';
 
 const log = new Logger('domain-info');
+const SECONDARY_LOOKUP_TIMEOUT_MS = 5000;
 
 /**
  * Execute a function safely
@@ -75,13 +77,19 @@ const getSslCertificateDetails = (domain: string): Promise<Partial<PeerCertifica
       if (cert) resolve(cert);
       else reject(new Error('No certificate found'));
     });
+    socket.setTimeout(SECONDARY_LOOKUP_TIMEOUT_MS, () => {
+      socket.destroy();
+      reject(new Error('SSL certificate lookup timed out'));
+    });
     socket.on('error', reject);
   });
 
 /* Uses the wonderful ip-api to find host location and org of a given IP */
 const getHostData = async (ip: string): Promise<Host | undefined> => {
   try {
-    const res = await fetch(`http://ip-api.com/json/${ip}?fields=12249`);
+    const res = await fetch(`http://ip-api.com/json/${ip}?fields=12249`, {
+      signal: AbortSignal.timeout(SECONDARY_LOOKUP_TIMEOUT_MS),
+    });
     if (!res.ok) return;
     const data = await res.json();
     if (data.regionName) data.region = data.regionName;
@@ -126,17 +134,6 @@ export default defineEventHandler(async (event) => {
       return { error: 'Failed to fetch WHOIS data' };
     }
 
-    // Validate expiry date - if it's exactly today's date, it's likely a parsing bug
-    if (whoisData.dates?.expiry_date) {
-      const todayStr = new Date().toISOString().split('T')[0];
-      if (whoisData.dates.expiry_date === todayStr) {
-        log.warn(
-          `Expiry date is exactly today for ${domain} - likely parsing bug, removing it`,
-        );
-        whoisData.dates.expiry_date = undefined;
-      }
-    }
-
     // Then, gather additional DNS and SSL information
     const [ipv4, ipv6, mx, txt, ns, ssl] = await Promise.all([
       safeExecute(() => getIpAddress(domain), 'IPv4 lookup failed', errors),
@@ -173,8 +170,8 @@ export default defineEventHandler(async (event) => {
       ssl: {
         issuer: ssl?.issuer?.O || dunno,
         issuer_country: ssl?.issuer?.C || '',
-        valid_from: ssl?.valid_from || '',
-        valid_to: ssl?.valid_to || '',
+        valid_from: parseDate(ssl?.valid_from) || '',
+        valid_to: parseDate(ssl?.valid_to) || '',
         subject: ssl?.subject?.CN || '',
         fingerprint: ssl?.fingerprint || '',
         key_size: ssl?.bits || 0,

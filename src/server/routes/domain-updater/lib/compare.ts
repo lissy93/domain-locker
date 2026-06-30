@@ -1,4 +1,5 @@
 import { updateExpiryDate } from './../updateFns/expiry';
+import { updateDomainDates } from './../updateFns/dates';
 import { updateRegistrar } from './../updateFns/registrar';
 import { updateDomainStatuses } from './../updateFns/statuses';
 import { updateSSL } from './../updateFns/ssl';
@@ -24,6 +25,7 @@ export async function compareAndUpdateDomain(
 
   const fns: UpdateFn[] = [
     updateExpiryDate,
+    updateDomainDates,
     updateRegistrar,
     updateDomainStatuses,
     updateSSL,

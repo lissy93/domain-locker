@@ -46,59 +46,62 @@ export async function updateWhois(
       column: 'name',
       changeType: 'whois_name',
       dbValue: existing?.name ?? '',
-      freshValue: fresh.name ?? '',
+      freshValue: fresh['name'] ?? '',
     },
     {
       label: 'Organization',
       column: 'organization',
       changeType: 'whois_organization',
       dbValue: existing?.organization ?? '',
-      freshValue: fresh.organization ?? '',
+      freshValue: fresh['organization'] ?? '',
     },
     {
       label: 'Country',
       column: 'country',
       changeType: 'whois_country',
       dbValue: existing?.country ?? '',
-      freshValue: fresh.country ?? '',
+      freshValue: fresh['country'] ?? '',
     },
     {
       label: 'State',
       column: 'state',
       changeType: 'whois_state',
       dbValue: existing?.state ?? '',
-      freshValue: fresh.state ?? '',
+      freshValue: fresh['state'] ?? '',
     },
     {
       label: 'City',
       column: 'city',
       changeType: 'whois_city',
       dbValue: existing?.city ?? '',
-      freshValue: fresh.city ?? '',
+      freshValue: fresh['city'] ?? '',
     },
     {
       label: 'Street',
       column: 'street',
       changeType: 'whois_street',
       dbValue: existing?.street ?? '',
-      freshValue: fresh.street ?? '',
+      freshValue: fresh['street'] ?? '',
     },
     {
       label: 'Postal Code',
       column: 'postal_code',
       changeType: 'whois_postal_code',
       dbValue: existing?.postal_code ?? '',
-      freshValue: fresh.postal_code ?? '',
+      freshValue: fresh['postal_code'] ?? '',
     },
   ];
+  const populatedFields = fields.filter((field) => normalizeStr(field.freshValue));
 
   // If no existing WHOIS row, insert one
   if (!existing) {
+    if (populatedFields.length === 0) return;
+
     await callPgExecutor(
       pgExec,
-      `INSERT INTO whois_info (domain_id, ${fields.map((f) => f.column).join(', ')})
-       VALUES ($1, ${fields.map((_, i) => `$${i + 2}`).join(', ')})`,
-      [domainId, ...fields.map((f) => f.freshValue || null)],
+      `INSERT INTO whois_info (domain_id, ${populatedFields.map((f) => f.column).join(', ')})
+       VALUES ($1, ${populatedFields.map((_, i) => `$${i + 2}`).join(', ')})`,
+      [domainId, ...populatedFields.map((f) => f.freshValue)],
     );
 
     await recordDomainUpdate(
@@ -120,9 +123,9 @@ export async function updateWhois(
   for (const field of fields) {
     const oldVal = normalizeStr(field.dbValue);
     const newVal = normalizeStr(field.freshValue);
-    if (oldVal !== newVal) {
+    if (newVal && oldVal !== newVal) {
       setFragments.push(`${field.column} = $${setFragments.length + 2}`);
-      updateParams.push(field.freshValue || null);
+      updateParams.push(field.freshValue);
       await recordDomainUpdate(
         pgExec,
         domainId,

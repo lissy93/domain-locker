@@ -107,7 +107,7 @@ export default class QuickAddDomain {
     if (this.domainForm.invalid) return;
 
     this.isLoading = true;
-    const domainName = this.domainForm.value.domainName?.trim();
+    const domainName = this.domainForm.value.domainName?.trim().toLowerCase();
     if (!domainName) {
       this.messagingService.showError(
         'Invalid domain name',

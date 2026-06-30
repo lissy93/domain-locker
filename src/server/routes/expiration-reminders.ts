@@ -1,5 +1,5 @@
 import { defineEventHandler } from 'h3';
-import { getBaseUrl } from '../utils/base-url';
+import { getInternalBaseUrl } from '../utils/base-url';
 
 export default defineEventHandler(async (event) => {
   const {
@@ -33,8 +33,8 @@ export default defineEventHandler(async (event) => {
     thresholds = defaultThresholds;
   }
 
-  const DL_BASE_URL = getBaseUrl(event);
-  const pgExecUrl = `${DL_BASE_URL}/api/pg-executer`;
+  const baseUrl = getInternalBaseUrl(event);
+  const pgExecUrl = `${baseUrl}/api/pg-executer`;
   const today = new Date().toISOString().split('T')[0];
 
   const res = await fetch(pgExecUrl, {

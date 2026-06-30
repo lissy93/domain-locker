@@ -76,7 +76,7 @@ export class NotificationQueries {
     const userId = await this.getCurrentUser().then((user) => user?.id);
     if (!userId) return null;
 
-    const query = `SELECT notification_channels FROM user_info WHERE id = $1`;
+    const query = `SELECT notification_channels FROM user_info WHERE user_id = $1`;
     const params = [userId];
 
     const { data } = (await this.pgApiUtil
