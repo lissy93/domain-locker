@@ -126,38 +126,39 @@ export class TagQueries {
     );
   }
 
-  // Method to update tags
+  // Replace a domain's tags, creating any new tags for the current user
   async updateTags(domainId: string, tags: string[]): Promise<void> {
-    // Delete existing domain tags
+    const userId = await this.getCurrentUser().then((user) => user?.id);
+    if (!userId) throw new Error('User must be authenticated to update tags.');
+
+    // Clear existing links before re-adding
     await this.supabase.from('domain_tags').delete().eq('domain_id', domainId);
 
-    // Insert or update tags
     for (const tagName of tags) {
-      const { data: tag, error: _tagError } = await this.supabase
+      const { data: existingTag } = await this.supabase
         .from('tags')
         .select('id')
         .eq('name', tagName)
-        .single();
+        .eq('user_id', userId)
+        .maybeSingle();
 
       let tagId: string;
-      if (tag) {
-        tagId = tag.id;
+      if (existingTag) {
+        tagId = existingTag.id;
       } else {
-        const { data: newTag, error: newTagError } = await this.supabase
+        const { data: newTag, error: insertError } = await this.supabase
           .from('tags')
-          .insert({ name: tagName })
+          .insert({ name: tagName, user_id: userId })
           .select('id')
           .single();
-
-        if (newTagError) {
-          this.handleError(newTagError);
-          return;
-        }
+        if (insertError) throw insertError;
         tagId = newTag.id;
       }
-      await this.supabase
+
+      const { error: linkError } = await this.supabase
         .from('domain_tags')
         .insert({ domain_id: domainId, tag_id: tagId });
+      if (linkError) throw linkError;
     }
   }
 

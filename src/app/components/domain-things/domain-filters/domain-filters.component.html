@@ -1,17 +1,28 @@
 <div
-  class="flex-col md:flex-row flex gap-2 justify-between align-items-center flex-wrap mt-2 mb-4"
+  class="flex flex-col md:flex-row flex-wrap gap-2 justify-between md:items-end mt-2 mb-4"
 >
-  <div class="flex-col sm:flex-row flex gap-2 justify-between align-items-center">
+  <div
+    class="md:flex flex-col sm:flex-row sm:flex-wrap gap-2 items-center sm:items-end flex-1 min-w-0"
+    [class.hidden]="!filtersOpen"
+    [class.flex]="filtersOpen"
+  >
     <!-- Search Input -->
-    <div class="flex flex-col gap-1">
+    <div class="flex flex-col gap-1 min-w-48 sm:flex-1 sm:min-w-28 sm:max-w-56">
       <label for="global-search" class="text-xs text-surface-400">Filter</label>
-      <span class="p-input-icon-left">
+      <span class="p-input-icon-left w-full">
         <i class="pi pi-search"></i>
-        <input pInputText (input)="onSearch($event)" type="text" placeholder="Search" />
+        <input
+          id="global-search"
+          pInputText
+          (input)="onSearch($event)"
+          type="text"
+          placeholder="Search"
+          class="w-full"
+        />
       </span>
     </div>
     <!-- Field Select Dropdown -->
-    <div class="flex flex-col gap-1">
+    <div class="flex flex-col gap-1 min-w-48 sm:flex-1 sm:min-w-28 sm:max-w-56">
       <label for="field-filters" class="text-xs text-surface-400">Fields</label>
       <p-multiSelect
         id="field-filters"
@@ -20,29 +31,29 @@
         (onChange)="onSelectionChange()"
         optionLabel="label"
         selectedItemsLabel="{0} fields shown"
-        [style]="{ minWidth: '200px' }"
         placeholder="Choose visible fields"
+        styleClass="w-full leading-tight"
       />
     </div>
     <!-- Sort Select Dropdown -->
     @if (selectedLayout) {
-      <div class="flex flex-col gap-1">
-        <label for="field-filters" class="text-xs text-surface-400">Sort</label>
+      <div class="flex flex-col gap-1 min-w-48 sm:flex-1 sm:min-w-28 sm:max-w-56">
+        <label for="sort-order" class="text-xs text-surface-400">Sort</label>
         <p-dropdown
-          id="field-filters"
+          id="sort-order"
           [options]="sortOptions"
           [(ngModel)]="sortOrder"
           (onChange)="onSortChange($event)"
           optionLabel="label"
-          selectedItemsLabel="sorted by {0}"
-          [style]="{ minWidth: '160px' }"
+          styleClass="w-full leading-tight"
         />
       </div>
     }
     <!-- Layout Toggle -->
-    <div class="flex flex-col gap-1">
-      <label for="field-filters" class="text-xs text-surface-400">Layout</label>
+    <div class="flex flex-col gap-1 shrink-0">
+      <label for="layout-toggle" class="text-xs text-surface-400">Layout</label>
       <p-selectButton
+        id="layout-toggle"
         [(ngModel)]="selectedLayout"
         [options]="layoutOptions"
         (onChange)="onLayoutChange($event.value)"
@@ -55,17 +66,26 @@
       </p-selectButton>
     </div>
   </div>
-  <!-- Add Domain Button -->
-  @if (showAddButton) {
-    <p-splitButton
-      label="Add Domain"
-      (onClick)="showQuickAddDialog()"
-      icon="pi pi-plus"
-      class="w-fit"
-      aria-label="Add Domain"
-      [model]="addButtonLinks"
+  <div class="flex justify-between items-center gap-2 order-first md:order-none">
+    <p-button
+      class="md:hidden w-fit"
+      [text]="true"
+      [icon]="filtersOpen ? 'pi pi-chevron-up' : 'pi pi-filter'"
+      label="Filters"
+      [attr.aria-expanded]="filtersOpen"
+      (onClick)="filtersOpen = !filtersOpen"
     />
-  }
+    @if (showAddButton) {
+      <p-splitButton
+        label="Add Domain"
+        (onClick)="showQuickAddDialog()"
+        icon="pi pi-plus"
+        class="w-fit shrink-0"
+        aria-label="Add Domain"
+        [model]="addButtonLinks"
+      />
+    }
+  </div>
 </div>
 
 <p-dialog

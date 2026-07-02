@@ -76,8 +76,8 @@ import { MetaTagsService } from '~/app/services/meta-tags.service';
       </div>
       <!-- Footer -->
       <app-footer [big]="isBigFooter" />
-      <!-- While initializing, show loading spinner -->
-      @if (loading) {
+      <!-- While initializing, show loading spinner (not on public pages) -->
+      @if (showInitLoader) {
         <app-loading [isAbsolute]="true" />
       }
     </div>
@@ -220,6 +220,11 @@ export class AppComponent implements OnInit, OnDestroy {
 
   get publicPath(): boolean {
     return this.isPublicRoute(this.pagePath, true);
+  }
+
+  // Init loader is only for awaiting user data, so hide it on public pages (home, about, etc)
+  get showInitLoader(): boolean {
+    return this.loading && !this.isPublicRoute(this.pagePath || this.router.url, true);
   }
 
   private isPublicRoute(route: string, allowHome = false): boolean {

@@ -67,6 +67,7 @@ export class FieldVisibilityFilterComponent implements OnInit {
   sortOrder: FieldOption = this.sortOptions[0];
   selectedLayout = true;
   quickAddDialogOpen = false;
+  filtersOpen = false;
 
   layoutOptions = [
     { label: 'Grid', value: true, icon: 'pi pi-th-large' },

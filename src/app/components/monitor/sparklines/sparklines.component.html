@@ -1,7 +1,9 @@
 <div class="domain-uptime">
-  <div class="flex justify-between mb-3 items-end gap-3 items-center">
-    <div class="flex gap-3 flex-wrap">
-      <div class="flex flex-col p-card p-3 w-40 gap-3">
+  <div class="flex flex-col xl:flex-row xl:justify-between xl:items-end mb-3 gap-3">
+    <div
+      class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:flex xl:flex-wrap gap-3"
+    >
+      <div class="flex flex-col p-card p-3 xl:w-40 gap-3">
         <strong class="font-semibold">Average Uptime</strong>
         @if (uptimePercentage) {
           <span class="text-{{ getUptimeColor(uptimePercentage, '') }}">
@@ -9,13 +11,13 @@
           </span>
         }
       </div>
-      <div class="flex flex-col p-card p-3 w-40 gap-3">
+      <div class="flex flex-col p-card p-3 xl:w-40 gap-3">
         <strong class="font-semibold">Current Status</strong>
         <span [class.text-green-400]="isUp" [class.text-red-400]="!isUp">
           {{ isUp ? '✅ Up' : ' ❌ Down' }}
         </span>
       </div>
-      <div class="flex flex-col p-card p-3 w-80 gap-3">
+      <div class="flex flex-col p-card p-3 xl:w-80 gap-3 sm:col-span-2 md:col-span-1">
         <strong class="font-semibold">Response Codes</strong>
         <ul class="list-none p-0 m-0 flex gap-1 flex-wrap">
           @for (code of responseCodes; track code; let isLast = $last) {
@@ -32,28 +34,31 @@
         </ul>
       </div>
     </div>
-    <div class="flex flex-col gap-1 flex-1 items-end">
-      <label for="advanced-mode-switch" class="text-sm opacity-70">Advanced</label>
-      <p-inputSwitch
-        [(ngModel)]="advancedMode"
-        (onChange)="onAdvancedModeChange()"
-        inputId="advanced-mode-switch"
-      />
+    <div class="flex items-end gap-3 flex-shrink-0">
+      <div class="hidden md:flex flex-col gap-1 items-end">
+        <label for="advanced-mode-switch" class="text-sm opacity-70">Advanced</label>
+        <p-inputSwitch
+          [(ngModel)]="advancedMode"
+          (onChange)="onAdvancedModeChange()"
+          inputId="advanced-mode-switch"
+        />
+      </div>
+      <p-selectButton
+        class="hidden sm:block"
+        [options]="timeframeOptions"
+        [(ngModel)]="timeframe"
+        (onChange)="onTimeframeChange($event.value)"
+      >
+        <ng-template let-item pTemplate>
+          <span class="capitalize font-semibold">{{ item }}</span>
+        </ng-template>
+      </p-selectButton>
     </div>
-    <p-selectButton
-      [options]="timeframeOptions"
-      [(ngModel)]="timeframe"
-      (onChange)="onTimeframeChange($event.value)"
-    >
-      <ng-template let-item pTemplate>
-        <span class="capitalize font-semibold">{{ item }}</span>
-      </ng-template>
-    </p-selectButton>
   </div>
 
-  <div class="flex gap-3 w-full">
+  <div class="flex flex-col xl:flex-row gap-3 w-full">
     <!-- Timing cards -->
-    <div class="flex flex-col gap-3 min-w-40">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-1 gap-3">
       <!-- 1. Response time -->
       <div class="p-card p-3 flex flex-col gap-2 h-full">
         <strong class="font-semibold">Response Time</strong>
@@ -147,6 +152,7 @@
             [chart]="responseTimeChart.chart!"
             [stroke]="responseTimeChart.stroke!"
             [xaxis]="responseTimeChart.xaxis!"
+            [yaxis]="responseTimeChart.yaxis!"
             [tooltip]="responseTimeChart.tooltip!"
             [ngClass]="{ 'advanced-mode': advancedMode }"
           />
@@ -162,6 +168,7 @@
             [chart]="dnsTimeChart.chart!"
             [stroke]="dnsTimeChart.stroke!"
             [xaxis]="dnsTimeChart.xaxis!"
+            [yaxis]="dnsTimeChart.yaxis!"
             [tooltip]="dnsTimeChart.tooltip!"
             [ngClass]="{ 'advanced-mode': advancedMode }"
           ></apx-chart>
@@ -175,6 +182,7 @@
             [chart]="sslTimeChart.chart!"
             [stroke]="sslTimeChart.stroke!"
             [xaxis]="sslTimeChart.xaxis!"
+            [yaxis]="sslTimeChart.yaxis!"
             [tooltip]="sslTimeChart.tooltip!"
             [ngClass]="{ 'advanced-mode': advancedMode }"
           ></apx-chart>

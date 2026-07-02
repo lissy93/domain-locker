@@ -11,7 +11,7 @@ At **Domain Locker**, we are committed to protecting your personal data and comp
 
 ## GDPR Principles We Follow
 1. **Lawfulness, Fairness, and Transparency**  
-   We only collect and use personal data with your consent or as required to provide our services. All processing activities are clearly outlined in our [Privacy Policy](link-to-privacy-policy).
+   We only collect and use personal data with your consent or as required to provide our services. All processing activities are clearly outlined in our [Privacy Policy](/about/legal/privacy-policy).
 
 2. **Purpose Limitation**  
    We only use your data for legitimate purposes, such as managing your domain portfolio and providing related services.
@@ -43,7 +43,7 @@ To exercise these rights, contact us at `support@domain-locker.com`
 ---
 
 ## Third-Party Compliance
-We ensure all third-party providers we use (e.g., Stripe, Supabase, Cloudflare) comply with GDPR standards. For more details, see our [Privacy Policy](link-to-privacy-policy).
+We ensure all third-party providers we use (e.g., Stripe, Supabase, Cloudflare) comply with GDPR standards. For more details, see our [Privacy Policy](/about/legal/privacy-policy).
 
 ---
 

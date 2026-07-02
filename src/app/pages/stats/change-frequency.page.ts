@@ -19,12 +19,6 @@ import { ChangeHistoryChartComponent } from '~/app/components/charts/change-hist
       ::ng-deep .filter-button {
         display: none;
       }
-      ::ng-deep .change-summary {
-        display: inline !important;
-        span {
-          margin: 0 0.2rem 0 0.2rem;
-        }
-      }
     `,
   ],
 })
