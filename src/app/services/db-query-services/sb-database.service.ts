@@ -840,6 +840,24 @@ export default class MainDatabaseService extends DatabaseService {
     });
   }
 
+  /* One averaged response time per day, for the uptime calendar heatmap */
+  async getDomainUptimeDaily(
+    userId: string,
+    domainId: string,
+    days: number,
+  ): Promise<{ day: string; avg_response_time_ms: number | null }[]> {
+    const { data, error } = await this.supabase.supabase.rpc('get_domain_uptime_daily', {
+      user_id: userId,
+      domain_id: domainId,
+      days,
+    });
+    if (error) {
+      this.handleError(error);
+      throw error;
+    }
+    return data || [];
+  }
+
   checkAllTables(): Observable<
     { table: string; count: number | string; success: string }[]
   > {

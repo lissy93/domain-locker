@@ -273,6 +273,11 @@ export class DomainSparklineComponent implements OnInit {
       xaxis: {
         type: 'datetime',
       },
+      yaxis: {
+        labels: {
+          formatter: (value: number) => `${this.round(value)}`,
+        },
+      },
     };
   }
 

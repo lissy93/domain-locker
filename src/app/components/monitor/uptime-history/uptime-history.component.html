@@ -1,5 +1,5 @@
-@if (calendarHeatmap) {
-  <div class="flex gap-3 my-3">
+@if (calendarHeatmap || responseCodePieChart || calendarError) {
+  <div class="flex flex-col md:flex-row gap-3 my-3">
     <div class="p-card p-3 flex-1 flex flex-col gap-3">
       @if (calendarHeatmap) {
         <apx-chart
@@ -9,11 +9,16 @@
           [xaxis]="calendarHeatmap.xaxis!"
           [tooltip]="calendarHeatmap.tooltip!"
           [dataLabels]="calendarHeatmap.dataLabels!"
-          [yaxis]="calendarHeatmap.yaxis!"
+          [stroke]="calendarHeatmap.stroke!"
         />
+      } @else if (calendarError) {
+        <p class="my-4 text-center italic text-surface-400">
+          <i class="pi pi-info-circle mr-2"></i>
+          Unable to load uptime history
+        </p>
       }
     </div>
-    <div class="p-card p-3 flex flex-col gap-3 w-64">
+    <div class="p-card p-3 flex flex-col gap-3 md:w-64">
       @if (responseCodePieChart) {
         <apx-chart
           [series]="responseCodePieChart.series!"

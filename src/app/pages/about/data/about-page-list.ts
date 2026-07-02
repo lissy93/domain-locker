@@ -100,13 +100,13 @@ export const aboutPages: AboutPage[] = [
       {
         title: 'Support Domain Locker',
         description: 'Ways you can help us out',
-        link: '/about/we-need-you',
+        href: 'https://github.com/sponsors/Lissy93',
         icon: 'pi pi-heart',
       },
       {
         title: 'Contributing',
         description: "Contributing guidelines for Domain Locker's open source code",
-        link: '',
+        link: '/about/developing',
         icon: '',
       },
     ],

@@ -138,6 +138,11 @@ export abstract class DatabaseService {
     domainId: string,
     timeframe: string,
   ): PromiseLike<unknown>;
+  abstract getDomainUptimeDaily(
+    userId: string,
+    domainId: string,
+    days: number,
+  ): Promise<{ day: string; avg_response_time_ms: number | null }[]>;
   abstract listDomains(): Observable<DbDomain[]>;
   abstract domainExists(inputUserId: string | null, domainName: string): Promise<boolean>;
   abstract saveDomain(data: SaveDomainData): Observable<DbDomain>;

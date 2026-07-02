@@ -13,6 +13,17 @@ interface UptimeData {
   response_time_ms: number | null;
 }
 
+interface DailyUptime {
+  day: string; // YYYY-MM-DD (UTC)
+  avg_response_time_ms: number | null;
+}
+
+interface HeatmapCell {
+  x: string;
+  y: number | null;
+  fullDate: string | null;
+}
+
 @Component({
   selector: 'app-uptime-history',
   standalone: true,
@@ -27,15 +38,42 @@ export class UptimeHistoryComponent implements OnInit {
   @Input() domainId!: string;
   @Input() userId!: string;
 
+  // 52 weekly columns ending on the current week, fetched with a little slack
+  private readonly calendarWeeks = 52;
+  private readonly calendarDays = this.calendarWeeks * 7 + 7;
+
+  dailyData: DailyUptime[] = [];
   uptimeData: UptimeData[] = [];
   calendarHeatmap: ApexOptions | null = null;
   responseCodePieChart: ApexOptions | null = null;
+  calendarError = false;
 
   ngOnInit(): void {
-    this.fetchUptimeHistory();
+    this.fetchDailyUptime();
+    this.fetchResponseCodes();
   }
 
-  fetchUptimeHistory(): void {
+  /* Daily averages power the calendar heatmap */
+  fetchDailyUptime(): void {
+    this.databaseService.instance
+      .getDomainUptimeDaily(this.userId, this.domainId, this.calendarDays)
+      .then((data) => {
+        this.dailyData = data || [];
+        this.generateCalendarHeatmap();
+      })
+      .catch((error) => {
+        this.calendarError = true;
+        this.errorHandler.handleError({
+          error,
+          message: 'Failed to load uptime history',
+          showToast: true,
+          location: 'Uptime History',
+        });
+      });
+  }
+
+  /* Raw checks power the response-code distribution */
+  fetchResponseCodes(): void {
     this.databaseService.instance
       .getDomainUptime(this.userId, this.domainId, 'year')
       .then((raw: unknown) => {
@@ -44,145 +82,68 @@ export class UptimeHistoryComponent implements OnInit {
           length?: number;
           error?: unknown;
         } & UptimeData[];
-        if (!data.data && data.length) data.data = data; // wtf.
+        if (!data.data && data.length) data.data = data;
         if (data.data) {
           this.uptimeData = data.data;
-          this.generateCalendarHeatmap();
           this.generateResponseCodePieChart();
         } else {
           this.errorHandler.handleError({
             error: data?.error,
-            message: 'Failed to load uptime history',
-            showToast: true,
+            message: 'Failed to load response codes',
+            showToast: false,
             location: 'Uptime History',
           });
         }
       });
   }
 
+  /* Build a GitHub-style calendar: 7 weekday rows over the past year of weeks */
   generateCalendarHeatmap(): void {
-    const daysInYear = this.getDaysInPastYear();
-    const groupedByDay: Record<string, number[]> = {};
+    const valueByDay = new Map<string, number | null>();
+    this.dailyData.forEach((entry) =>
+      valueByDay.set(entry.day, entry.avg_response_time_ms),
+    );
 
-    // Group response times by day
-    this.uptimeData.forEach((entry) => {
-      const day = new Date(entry.checked_at).toISOString().split('T')[0]; // YYYY-MM-DD
-      if (!groupedByDay[day]) groupedByDay[day] = [];
-      if (entry.response_time_ms) groupedByDay[day].push(entry.response_time_ms);
-    });
+    const today = this.startOfTodayUtc();
+    const start = new Date(today);
+    start.setUTCDate(
+      today.getUTCDate() - today.getUTCDay() - 7 * (this.calendarWeeks - 1),
+    );
 
-    // Calculate daily averages
-    const dailyAverages = daysInYear.map((day) => ({
-      day,
-      avgResponseTime: groupedByDay[day]?.length
-        ? groupedByDay[day].reduce((sum, time) => Number(sum) + Number(time), 0) /
-          groupedByDay[day].length
-        : null,
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const series = dayNames.map((name, weekday) => ({
+      name,
+      data: Array.from({ length: this.calendarWeeks }, (_, week): HeatmapCell => {
+        const weekStart = new Date(start);
+        weekStart.setUTCDate(start.getUTCDate() + week * 7);
+        const cellDate = new Date(weekStart);
+        cellDate.setUTCDate(weekStart.getUTCDate() + weekday);
+        const x = this.toDayString(weekStart);
+        if (cellDate > today) {
+          return { x, y: null, fullDate: null };
+        }
+        const value = valueByDay.get(this.toDayString(cellDate));
+        return { x, y: value == null ? -1 : value, fullDate: this.toDayString(cellDate) };
+      }),
     }));
 
-    // Split data into 7 series (one for each day of the week)
-    const series = Array.from({ length: 7 }, (_, i) => ({
-      name: this.getDayName(i),
-      data: dailyAverages
-        .filter((item) => new Date(item.day).getDay() === i)
-        .map((item) => ({
-          x: this.getWeekOfYear(item.day),
-          y: item.avgResponseTime ?? -1,
-          fullDate: item.day,
-        })),
-    }));
-
-    // Configure the heatmap chart
     this.calendarHeatmap = {
-      chart: {
-        type: 'heatmap',
-        height: 220,
-      },
+      chart: { type: 'heatmap', height: 220 },
       plotOptions: {
-        heatmap: {
-          shadeIntensity: 1,
-          colorScale: {
-            ranges: [
-              {
-                from: -Infinity,
-                to: -1,
-                color: this.getCssVariableColor('--grey-400', '#cccccc'),
-                name: 'No Results Yet',
-              },
-              {
-                from: 0,
-                to: 250,
-                color: this.getCssVariableColor('--green-400', '#00ff00'),
-                name: 'Fast',
-              },
-              {
-                from: 251,
-                to: 500,
-                color: this.getCssVariableColor('--yellow-400', '#ffff00'),
-                name: 'Moderate',
-              },
-              {
-                from: 501,
-                to: 1000,
-                color: this.getCssVariableColor('--orange-400', '#ff9900'),
-                name: 'Slow',
-              },
-              {
-                from: 1001,
-                to: Infinity,
-                color: this.getCssVariableColor('--red-400', '#ff0000'),
-                name: 'Very Slow',
-              },
-            ],
-          },
-        },
+        heatmap: { shadeIntensity: 1, colorScale: { ranges: this.heatmapRanges() } },
       },
-      dataLabels: {
-        enabled: false,
-      },
+      dataLabels: { enabled: false },
+      stroke: { width: 2 },
       xaxis: {
         type: 'category',
-        categories: Array.from({ length: 52 }, (_, i) => `Week ${i + 1}`),
-        title: {
-          text: 'Week of the Year',
+        labels: {
+          rotate: 0,
+          hideOverlappingLabels: true,
+          formatter: (value: string) => this.monthLabel(value),
         },
+        tooltip: { enabled: false },
       },
-      tooltip: {
-        enabled: true,
-        custom: ({
-          seriesIndex,
-          dataPointIndex,
-          w,
-        }: {
-          series: unknown;
-          seriesIndex: number;
-          dataPointIndex: number;
-          w: {
-            globals: { initialSeries: { data: { y: number; fullDate: string }[] }[] };
-          };
-        }) => {
-          const data = w.globals.initialSeries[seriesIndex].data[dataPointIndex];
-          if (data.y === -1) {
-            return `<div class="tooltip-text">
-              <span style="color: var(--grey-400)">No Results Yet</span>
-            </div>`;
-          }
-          const date = new Date(data.fullDate);
-          const day = date.toLocaleDateString('en-US', {
-            weekday: 'short',
-          });
-          const month = date.toLocaleDateString('en-US', {
-            month: 'short',
-          });
-          const dayOfMonth = date.getDate();
-          const ordinalSuffix = this.getOrdinalSuffix(dayOfMonth);
-
-          return `<div class="tooltip-text">
-            <strong>${day} ${dayOfMonth}${ordinalSuffix} ${month}</strong>: 
-            <span style="color: var(--cyan-400)">${data.y.toFixed(2)} ms</span>
-          </div>`;
-        },
-      },
+      tooltip: { enabled: true, custom: this.heatmapTooltip },
       series,
     };
   }
@@ -201,88 +162,113 @@ export class UptimeHistoryComponent implements OnInit {
     const colors = labels.map((code) => this.getResponseCodeColor(Number(code)));
 
     this.responseCodePieChart = {
-      chart: {
-        type: 'pie',
-        height: 300,
-      },
+      chart: { type: 'pie', height: 300 },
       series,
       labels,
       colors,
       tooltip: {
         y: {
-          formatter: (
-            value: number,
-            { seriesIndex: _seriesIndex }: { seriesIndex: number },
-          ) =>
+          formatter: (value: number) =>
             `${value} checks (${((value / this.uptimeData.length) * 100).toFixed(2)}%)`,
         },
       },
-      legend: {
-        position: 'bottom',
-      },
+      legend: { position: 'bottom' },
     };
   }
 
+  private heatmapRanges() {
+    return [
+      {
+        from: -Infinity,
+        to: -1,
+        color: this.getCssVariableColor('--grey-400', '#cccccc'),
+        name: 'No checks',
+      },
+      {
+        from: 0,
+        to: 250,
+        color: this.getCssVariableColor('--green-400', '#22c55e'),
+        name: 'Fast',
+      },
+      {
+        from: 251,
+        to: 500,
+        color: this.getCssVariableColor('--yellow-400', '#eab308'),
+        name: 'Moderate',
+      },
+      {
+        from: 501,
+        to: 1000,
+        color: this.getCssVariableColor('--orange-400', '#f97316'),
+        name: 'Slow',
+      },
+      {
+        from: 1001,
+        to: Infinity,
+        color: this.getCssVariableColor('--red-400', '#ef4444'),
+        name: 'Very Slow',
+      },
+    ];
+  }
+
+  /* Tooltip showing the exact day and its average response time */
+  private heatmapTooltip = ({
+    seriesIndex,
+    dataPointIndex,
+    w,
+  }: {
+    seriesIndex: number;
+    dataPointIndex: number;
+    w: { globals: { initialSeries: { data: HeatmapCell[] }[] } };
+  }): string => {
+    const point = w.globals.initialSeries[seriesIndex]?.data[dataPointIndex];
+    if (!point || point.fullDate == null) return '';
+    const date = new Date(`${point.fullDate}T00:00:00Z`);
+    const label = date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      timeZone: 'UTC',
+    });
+    const value =
+      point.y === -1
+        ? '<span style="color: var(--grey-400)">No checks</span>'
+        : `<span style="color: var(--cyan-400)">${(point.y as number).toFixed(2)} ms</span>`;
+    return `<div class="tooltip-text"><strong>${label}</strong>: ${value}</div>`;
+  };
+
   getResponseCodeColor(code: number, prefix = ''): string {
-    if (code >= 200 && code < 300) return `var(--${prefix}green-400)`; // Green for success
-    if (code >= 300 && code < 400) return `var(--${prefix}blue-400)`; // Blue for redirects
-    if (code >= 400 && code < 500) return `var(--${prefix}yellow-400)`; // Yellow for client errors
-    if (code >= 500) return `var(--${prefix}red-400)`; // Red for server errors
-    return `var(--${prefix}grey-400)`; // Grey for unknown
+    if (code >= 200 && code < 300) return `var(--${prefix}green-400)`;
+    if (code >= 300 && code < 400) return `var(--${prefix}blue-400)`;
+    if (code >= 400 && code < 500) return `var(--${prefix}yellow-400)`;
+    if (code >= 500) return `var(--${prefix}red-400)`;
+    return `var(--${prefix}grey-400)`;
   }
 
-  /**
-   * Helper function to get the ordinal suffix for a number (e.g., 1st, 2nd, 3rd).
-   */
-  getOrdinalSuffix(day: number): string {
-    if (day > 3 && day < 21) return 'th';
-    switch (day % 10) {
-      case 1:
-        return 'st';
-      case 2:
-        return 'nd';
-      case 3:
-        return 'rd';
-      default:
-        return 'th';
-    }
+  /* Midnight UTC today, so day keys line up with the DB's day grouping */
+  private startOfTodayUtc(): Date {
+    const now = new Date();
+    return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   }
 
-  /**
-   * Gets all days in the past year.
-   * @returns An array of strings in the format YYYY-MM-DD.
-   */
-  getDaysInPastYear(): string[] {
-    const days: string[] = [];
-    const today = new Date();
-    for (let i = 0; i < 365; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() - i);
-      days.push(date.toISOString().split('T')[0]); // YYYY-MM-DD
-    }
-    return days.reverse(); // Order from oldest to newest
+  private toDayString(date: Date): string {
+    const month = `${date.getUTCMonth() + 1}`.padStart(2, '0');
+    const day = `${date.getUTCDate()}`.padStart(2, '0');
+    return `${date.getUTCFullYear()}-${month}-${day}`;
   }
 
-  /**
-   * Gets the day name for a given index (0 = Sunday, 1 = Monday, ...).
-   */
-  getDayName(index: number): string {
-    return ['Sun', 'Mon', 'Tue', 'Wed', 'Thur', 'Fri', 'Sat'][index];
+  /* Short month name on the first week-column of each month, else blank */
+  private monthLabel(weekStartIso: string): string {
+    const date = new Date(`${weekStartIso}T00:00:00Z`);
+    const prev = new Date(date);
+    prev.setUTCDate(date.getUTCDate() - 7);
+    return date.getUTCMonth() !== prev.getUTCMonth()
+      ? date.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' })
+      : '';
   }
 
-  /**
-   * Gets the week of the year for a given date.
-   */
-  getWeekOfYear(date: string): number {
-    const currentDate = new Date(date);
-    const startOfYear = new Date(currentDate.getFullYear(), 0, 1);
-    const diff = currentDate.getTime() - startOfYear.getTime();
-    return Math.ceil(diff / (7 * 24 * 60 * 60 * 1000));
-  }
-
-  /**
-   * Gets the hex color value of a CSS variable.
-   */
+  /* Gets the hex color value of a CSS variable */
   getCssVariableColor(cssVarName: string, fallback = '#cccccc'): string {
     if (typeof window === 'undefined' || !window?.getComputedStyle) {
       return fallback;

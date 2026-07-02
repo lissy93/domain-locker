@@ -2,11 +2,14 @@ import {
   Component,
   Input,
   HostListener,
+  ViewChild,
+  ElementRef,
   ViewEncapsulation,
   PLATFORM_ID,
   inject,
   OnInit,
   OnDestroy,
+  AfterViewInit,
   AfterViewChecked,
 } from '@angular/core';
 import { ContentFile } from '@analogjs/content';
@@ -37,6 +40,7 @@ export interface DocAttributes {
   imports: [CommonModule, MarkdownComponent, PrimeNgModule],
   template: `
     <section
+      #docSection
       class="flex flex-row-reverse items-start gap-4 h-full mx-auto my-4 flex-wrap md:flex-nowrap min-h-[105vh]"
     >
       @if (doc) {
@@ -194,7 +198,9 @@ export interface DocAttributes {
     `,
   ],
 })
-export class DocsViewerComponent implements OnInit, OnDestroy, AfterViewChecked {
+export class DocsViewerComponent
+  implements OnInit, OnDestroy, AfterViewInit, AfterViewChecked
+{
   private router = inject(Router);
   private errorHandler = inject(ErrorHandlerService);
   private metaTagsService = inject(MetaTagsService);
@@ -213,6 +219,7 @@ export class DocsViewerComponent implements OnInit, OnDestroy, AfterViewChecked 
 
   navTop = 'unset';
   navBottom = 'unset';
+  @ViewChild('docSection') private docSection?: ElementRef<HTMLElement>;
   private docSub?: Subscription;
   private routerSub?: Subscription;
   private docLoaded = false;
@@ -314,6 +321,11 @@ export class DocsViewerComponent implements OnInit, OnDestroy, AfterViewChecked 
     }
   }
 
+  ngAfterViewInit(): void {
+    // Defer so the initial cap doesn't mutate bound styles mid-check
+    if (isPlatformBrowser(this.platformId)) setTimeout(() => this.updateNav());
+  }
+
   ngAfterViewChecked(): void {
     // If running client-side, and doc is loaded but no mermaid rendered yet, then init
     if (!isPlatformBrowser(this.platformId)) return;
@@ -338,18 +350,20 @@ export class DocsViewerComponent implements OnInit, OnDestroy, AfterViewChecked 
     });
   }
 
-  /** Called on window scroll. If user scrolled > 7rem => fix nav top at 7rem. Otherwise 0. */
+  /** Pin nav near the top, and cap its height so it never overlaps the sponsor */
   @HostListener('window:scroll')
-  onWindowScroll() {
+  @HostListener('window:resize')
+  updateNav() {
     try {
-      const scrollY = window.scrollY;
-      const sevenRemInPx = 112; // approx 7rem if root font-size = 16px
-      this.navTop = scrollY > sevenRemInPx ? '1rem' : '9rem';
+      const scrolledPastHeader = window.scrollY > 112; // ~7rem at 16px root
+      const navTopPx = scrolledPastHeader ? 16 : 144; // matches navTop (1rem / 9rem)
+      this.navTop = scrolledPastHeader ? '1rem' : '9rem';
 
-      // If at bottom of page, then apply max-height: 80vh; to nav
-      const scrollHeight = document.documentElement.scrollHeight;
-      if (scrollY + 1000 >= scrollHeight) {
-        this.navBottom = '80vh';
+      // Nav is only fixed at md+, so cap its height there to clear the sponsor below
+      const section = this.docSection?.nativeElement;
+      if (section && window.innerWidth >= 768) {
+        const available = section.getBoundingClientRect().bottom - navTopPx;
+        this.navBottom = `${Math.max(available, 0)}px`;
       } else {
         this.navBottom = 'unset';
       }

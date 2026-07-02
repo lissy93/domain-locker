@@ -109,15 +109,16 @@ export default class HomePageComponent implements OnInit, OnDestroy {
   }
 
   /* Sets the user's auth state, and listens for auth changes (skip on self-hosted) */
-  async setAuthState() {
+  setAuthState() {
     if (!this.environmentService.isSupabaseEnabled()) {
       this.isAuthenticated = true;
       return;
     }
-    this.isAuthenticated = await this.supabaseService.isAuthenticated();
+
     this.subscriptions.add(
       this.supabaseService.authState$.subscribe((isAuthenticated) => {
         this.isAuthenticated = isAuthenticated;
+        this.cdr.markForCheck();
       }),
     );
   }

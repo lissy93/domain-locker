@@ -767,6 +767,32 @@ export default class PgDatabaseService extends DatabaseService {
     }
   }
 
+  /* One averaged response time per day, for the uptime calendar heatmap */
+  async getDomainUptimeDaily(
+    userId: string,
+    domainId: string,
+    days: number,
+  ): Promise<{ day: string; avg_response_time_ms: number | null }[]> {
+    const query = `
+      SELECT
+        to_char(date_trunc('day', u.checked_at), 'YYYY-MM-DD') AS day,
+        AVG(u.response_time_ms)::float8 AS avg_response_time_ms
+      FROM uptime u
+      JOIN domains d ON u.domain_id = d.id
+      WHERE d.user_id = $1
+        AND u.domain_id = $2
+        AND u.checked_at >= NOW() - make_interval(days => $3::int)
+      GROUP BY 1
+      ORDER BY 1
+    `;
+
+    const data = await this.executeQuery<{
+      day: string;
+      avg_response_time_ms: number | null;
+    }>(query, [userId, domainId, days]).toPromise();
+    return data || [];
+  }
+
   getTotalDomains(): Observable<number> {
     const query = `
       SELECT COUNT(*) AS total

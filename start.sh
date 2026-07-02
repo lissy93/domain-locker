@@ -4,28 +4,30 @@
 # Load Docker secrets as environment variables (if they exist)
 #==============================================================================#
 
-# allow setting environment variables with docker secrets 
+# allow setting environment variables with docker secrets
 # the format is <variable-name>__FILE
 SUFFIX="_FILE"
 
 # loop through all environment variables
 for VAR in $(printenv | awk -F= '{print $1}'); do
-	if [[ $VAR == *"$SUFFIX" ]]; then
-		ENV_FILE_NAME="$(printenv "${VAR}")"
-		ENV_VAR="${VAR%$SUFFIX}"
+	case "$VAR" in
+		*"$SUFFIX")
+			ENV_FILE_NAME="$(printenv "${VAR}")"
+			ENV_VAR="${VAR%"$SUFFIX"}"
 
-		if printenv "$ENV_VAR" &>/dev/null; then
-			echo "warning: Both $ENV_VAR and $VAR are set. $VAR will override $ENV_VAR."
-		fi
+			if printenv "$ENV_VAR" >/dev/null 2>&1; then
+				echo "warning: Both $ENV_VAR and $VAR are set. $VAR will override $ENV_VAR."
+			fi
 
-		if [[ -r "$ENV_FILE_NAME" ]]; then
-			VALUE="$(cat "$ENV_FILE_NAME")"
-			export "$ENV_VAR"="$VALUE"
-			echo "$ENV_VAR environment variable was set by secret file $ENV_FILE_NAME"
-		else
-			echo "warning: Secret file $ENV_FILE_NAME for $VAR is not readable or does not exist."
-		fi
-	fi
+			if [ -r "$ENV_FILE_NAME" ]; then
+				VALUE="$(cat "$ENV_FILE_NAME")"
+				export "${ENV_VAR}=${VALUE}"
+				echo "$ENV_VAR environment variable was set by secret file $ENV_FILE_NAME"
+			else
+				echo "warning: Secret file $ENV_FILE_NAME for $VAR is not readable or does not exist."
+			fi
+			;;
+	esac
 done
 
 #==============================================================================#
@@ -52,11 +54,33 @@ if { [ -n "$SUPABASE_URL" ] && [ -n "$SUPABASE_ANON_KEY" ]; } || \
 fi
 
 #==============================================================================#
+# Set variables to use later
+#==============================================================================#
+
+# ANSI color codes (build with printf so we don't depend on echo -e or $'...')
+ESC=$(printf '\033')
+ERR="${ESC}[0;31m❌"
+WARN="${ESC}[1;33m⚠️"
+SUCCESS="${ESC}[0;32m✅"
+# INFO begins with a literal newline (POSIX-safe; just embed the newline)
+INFO="
+ℹ️ ${ESC}[90m"
+RESET="${ESC}[0m"
+
+PURPLE="${ESC}[0;35m"
+BOLD_PURPLE="${ESC}[1;35m"
+
+# Other vars
+MAX_WAIT=600
+WARNINGS_FOUND=0
+
+#==============================================================================#
 # Welcome message, app info
 #==============================================================================#
 
 # Print totally pointless, but kinda cool ASCII art
-echo $'\033[0;35m
+cat <<EOF
+${PURPLE}
 ██████╗  ██████╗ ███╗   ███╗ █████╗ ██╗███╗   ██╗
 ██╔══██╗██╔═══██╗████╗ ████║██╔══██╗██║████╗  ██║
 ██║  ██║██║   ██║██╔████╔██║███████║██║██╔██╗ ██║
@@ -71,23 +95,9 @@ echo $'\033[0;35m
 ███████╗╚██████╔╝╚██████╗██║  ██╗███████╗██║  ██║
 ╚══════╝ ╚═════╝  ╚═════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝
 
-\033[1;35mSource at https://github.com/lissy93/domain-locker
-\033[0;35mLicensed under MIT. Coded with ☕ and ❤️ by Lissy93'
-
-#==============================================================================#
-# Set variables to use later
-#==============================================================================#
-
-# ANSI color codes
-ERR=$'\033[0;31m❌'
-WARN=$'\033[1;33m⚠️'
-SUCCESS=$'\033[0;32m✅'
-INFO=$'\nℹ️ \033[90m'
-RESET=$'\033[0m'
-
-# Other vars
-MAX_WAIT=600
-WARNINGS_FOUND=0
+${BOLD_PURPLE}Source at https://github.com/lissy93/domain-locker
+${PURPLE}Licensed under MIT. Coded with ☕ and ❤️ by Lissy93${RESET}
+EOF
 
 #==============================================================================#
 # Run checks: version, environment, commands, is docker, etc
@@ -139,10 +149,11 @@ fi
 if [ "$WARNINGS_FOUND" -eq 0 ]; then
   echo "${SUCCESS} All environment checks have passed${RESET}"
 else
-  echo "\n${ERR} Unable to start app, as issues were found${RESET}"
-  echo "\n\033[94mIf you think this is a false positive, you can set the" \
+  printf '\n%s\n' "${ERR} Unable to start app, as issues were found${RESET}"
+  printf '\n%s[94mIf you think this is a false positive, you can set the %s %s\n\n' \
+    "${ESC}" \
     "'DL_SKIP_INIT' environment variable to true, to skip the checks" \
-    "and initialization, and attempt to start the app anyway.\n"
+    "and initialization, and attempt to start the app anyway."
   exit 1
 fi
 
@@ -168,10 +179,12 @@ done
 echo "${SUCCESS} Postgres is ready (took ${elapsed}s)${RESET}"
 
 # Check if schema is applied / and apply it
-echo "${INFO} Applying schema from schema.sql...${RESET}"
+SCHEMA_FILE=./schema.sql
+[ -f "$SCHEMA_FILE" ] || SCHEMA_FILE=./db/schema.sql
+echo "${INFO} Applying schema from ${SCHEMA_FILE}...${RESET}"
 PGPASSWORD="$DL_PG_PASSWORD" \
   psql -h "$DL_PG_HOST" -p "$DL_PG_PORT" -U "$DL_PG_USER" \
-  -d "$DL_PG_NAME" -f ./schema.sql || {
+  -d "$DL_PG_NAME" -f "$SCHEMA_FILE" || {
     echo "${ERR} Failed to apply schema. See error above.${RESET}"
   } \
   && echo "${SUCCESS} Schema applied successfully${RESET}" \
@@ -191,5 +204,5 @@ PGPASSWORD="$DL_PG_PASSWORD" \
 
 # Start the app!
 echo "${INFO} Starting Domain Locker${RESET}"
-echo "${SUCCESS} Ready at http://localhost:${PORT:-3000}${RESET}\n"
+printf '%s\n\n' "${SUCCESS} Ready at http://localhost:${PORT:-3000}${RESET}"
 exec node ./dist/analog/server/index.mjs

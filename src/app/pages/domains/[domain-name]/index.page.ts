@@ -63,6 +63,9 @@ export default class DomainDetailsPage implements OnInit {
   shouldMountMonitor = false;
   shouldMountHistory = false;
 
+  // Monitor charts only become meaningful after a couple of days of history
+  private readonly minMonitorHistoryDays = 2;
+
   ngOnInit() {
     this.route.params
       .pipe(
@@ -116,6 +119,14 @@ export default class DomainDetailsPage implements OnInit {
 
   onHistoryVisible(): void {
     this.shouldMountHistory = true;
+  }
+
+  /* True once the domain has been tracked long enough for monitor charts */
+  get hasMonitorHistory(): boolean {
+    if (!this.domain?.created_at) return false;
+    const addedAt = new Date(this.domain.created_at).getTime();
+    const daysTracked = (Date.now() - addedAt) / (1000 * 60 * 60 * 24);
+    return daysTracked >= this.minMonitorHistoryDays;
   }
 
   public filterIpAddresses(

@@ -1,3 +1,8 @@
+/* Keep the timeframe toggle on one line, never wrapping */
+:host ::ng-deep .p-selectbutton {
+  flex-wrap: nowrap;
+}
+
 ::ng-deep apx-chart {
   &:not(.advanced-mode) .apexcharts-canvas {
     .apexcharts-toolbar {
