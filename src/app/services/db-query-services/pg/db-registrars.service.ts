@@ -1,5 +1,10 @@
-import { catchError, map, Observable } from 'rxjs';
+import { catchError, map, Observable, switchMap } from 'rxjs';
 import { PgApiUtilService } from '~/app/utils/pg-api.util';
+import {
+  dedupeRegistrars,
+  matchRegistrarRows,
+  mergeRegistrarCounts,
+} from '~/app/services/domain-utils.service';
 import { DbDomain, Registrar } from '~/app/../types/Database';
 
 export class RegistrarQueries {
@@ -9,27 +14,28 @@ export class RegistrarQueries {
     private formatDomainData: (data: Record<string, unknown>) => DbDomain,
   ) {}
 
-  // Get all registrars
+  // Get all registrars, collapsing name variants of the same registrar
   getRegistrars(): Observable<Registrar[]> {
     const query = 'SELECT * FROM registrars';
 
     return this.pgApiUtil.postToPgExecutor<Registrar>(query).pipe(
-      map((response) => response.data),
+      map((response) => dedupeRegistrars(response.data)),
       catchError((error) => this.handleError(error)),
     );
   }
 
-  // Get or insert a registrar by name, recording its url on first insert
+  // Get or insert a registrar, loose-matching existing names to avoid duplicates
   async getOrInsertRegistrarId(registrarName: string, url?: string): Promise<string> {
     const sanitizedName = (registrarName || '').trim().replace(/[/\\?#%]/g, '');
-    const selectQuery = 'SELECT id FROM registrars WHERE name = $1 LIMIT 1';
+    const selectQuery = 'SELECT id, name FROM registrars';
     const insertQuery = 'INSERT INTO registrars (name, url) VALUES ($1, $2) RETURNING id';
 
     const selectResponse = await this.pgApiUtil
-      .postToPgExecutor<{ id: string }>(selectQuery, [sanitizedName])
+      .postToPgExecutor<{ id: string; name: string }>(selectQuery)
       .toPromise();
-    if (selectResponse && selectResponse.data.length > 0) {
-      return selectResponse.data[0].id;
+    const existing = matchRegistrarRows(selectResponse?.data || [], sanitizedName)[0];
+    if (existing) {
+      return existing.id;
     }
 
     const insertResponse = await this.pgApiUtil
@@ -41,31 +47,33 @@ export class RegistrarQueries {
     throw new Error('Failed to insert registrar');
   }
 
-  // Get domain counts by registrar
+  // Get domain counts by registrar, merged across name variants
   getDomainCountsByRegistrar(): Observable<Record<string, number>> {
     const query = `
       SELECT r.name AS registrar_name, COUNT(d.id) AS domain_count
-      FROM domains d
-      INNER JOIN registrars r ON d.registrar_id = r.id
+      FROM registrars r
+      -- LEFT JOIN so zero-count variants still feed the canonical name merge
+      LEFT JOIN domains d ON d.registrar_id = r.id
       GROUP BY r.name
     `;
 
     return this.pgApiUtil
-      .postToPgExecutor<{ registrar_name: string; domain_count: number }>(query)
+      .postToPgExecutor<{ registrar_name: string; domain_count: string }>(query)
       .pipe(
         map((response) => {
           const counts: Record<string, number> = {};
           response.data.forEach((item) => {
-            counts[item.registrar_name] = item.domain_count;
+            counts[item.registrar_name] = Number(item.domain_count);
           });
-          return counts;
+          return mergeRegistrarCounts(counts);
         }),
         catchError((error) => this.handleError(error)),
       );
   }
 
-  // Get domains by registrar name
+  // Get domains by registrar name, including variant spellings of the same registrar
   getDomainsByRegistrar(registrarName: string): Observable<DbDomain[]> {
+    const registrarsQuery = 'SELECT id, name FROM registrars';
     const query = `
     SELECT 
       d.id,
@@ -151,16 +159,22 @@ export class RegistrarQueries {
     LEFT JOIN dns_records dr ON d.id = dr.domain_id
     LEFT JOIN domain_tags dt ON d.id = dt.domain_id
     LEFT JOIN tags t ON dt.tag_id = t.id
-    WHERE r.name = $1
-    GROUP BY 
+    WHERE d.registrar_id = ANY($1::uuid[])
+    GROUP BY
       d.id,
       r.name, r.url,
       wi.name, wi.organization, wi.country, wi.street, wi.city, wi.state, wi.postal_code
   `;
 
     return this.pgApiUtil
-      .postToPgExecutor<Record<string, unknown>>(query, [registrarName])
+      .postToPgExecutor<{ id: string; name: string }>(registrarsQuery)
       .pipe(
+        switchMap((registrarsResponse) => {
+          const ids = matchRegistrarRows(registrarsResponse.data, registrarName).map(
+            (row) => row.id,
+          );
+          return this.pgApiUtil.postToPgExecutor<Record<string, unknown>>(query, [ids]);
+        }),
         map((response) => response.data.map(this.formatDomainData)),
         catchError((error) => this.handleError(error)),
       );

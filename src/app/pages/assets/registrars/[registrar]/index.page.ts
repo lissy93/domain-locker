@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 
 import { ActivatedRoute } from '@angular/router';
 import { PrimeNgModule } from '~/app/prime-ng.module';
@@ -47,6 +47,7 @@ export default class RegistrarDomainsPageComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private databaseService = inject(DatabaseService);
   private errorHandler = inject(ErrorHandlerService);
+  private cdr = inject(ChangeDetectorRef);
 
   registrarName = '';
   registrarUrl = '';
@@ -76,6 +77,7 @@ export default class RegistrarDomainsPageComponent implements OnInit {
               this.registrarUrl = 'https://' + this.registrarUrl;
             }
           }
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.errorHandler.handleError({
@@ -85,6 +87,7 @@ export default class RegistrarDomainsPageComponent implements OnInit {
             location: 'RegistrarIndexPage.loadDomains',
           });
           this.loading = false;
+          this.cdr.markForCheck();
         },
       });
   }

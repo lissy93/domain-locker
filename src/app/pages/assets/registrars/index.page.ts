@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 
 import { RouterModule } from '@angular/router';
 import { forkJoin } from 'rxjs';
@@ -17,6 +17,7 @@ import { ErrorHandlerService } from '~/app/services/error-handler.service';
 export default class RegistrarsIndexPageComponent implements OnInit {
   private databaseService = inject(DatabaseService);
   private errorHandler = inject(ErrorHandlerService);
+  private cdr = inject(ChangeDetectorRef);
 
   registrars: (Registrar & { domainCount: number })[] = [];
   loading = true;
@@ -40,6 +41,7 @@ export default class RegistrarsIndexPageComponent implements OnInit {
           }))
           .sort((a, b) => b.domainCount - a.domainCount);
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: (error) => {
         this.errorHandler.handleError({
@@ -49,6 +51,7 @@ export default class RegistrarsIndexPageComponent implements OnInit {
           location: 'RegistrarsIndexPageComponent.loadRegistrars',
         });
         this.loading = false;
+        this.cdr.markForCheck();
       },
     });
   }
