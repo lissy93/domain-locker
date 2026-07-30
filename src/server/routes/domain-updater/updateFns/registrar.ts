@@ -1,6 +1,6 @@
 import { callPgExecutor } from '../lib/pgExecutor';
 import { recordDomainUpdate } from '../lib/recordUpdate';
-import { normalizeStr, removeUrlChars } from '../lib/utils';
+import { normalizeRegistrarName, normalizeStr, removeUrlChars } from '../lib/utils';
 import type { DomainRow } from '../index';
 import type { FreshDomainInfo } from '../lib/fetchInfo';
 
@@ -11,6 +11,17 @@ async function upsertRegistrar(
   userId: string,
 ): Promise<string> {
   const sanitizedName = removeUrlChars(name);
+  const registrars = await callPgExecutor<{ id: string; name: string }>(
+    pgExec,
+    `SELECT id, name FROM registrars WHERE user_id = $1`,
+    [userId],
+  );
+  const targetName = normalizeRegistrarName(sanitizedName);
+  const existing = registrars.find(
+    (row) => normalizeRegistrarName(row.name) === targetName,
+  );
+  if (existing) return existing.id;
+
   const res = await callPgExecutor<{ id: string }>(
     pgExec,
     `
@@ -37,7 +48,9 @@ export async function updateRegistrar(
 
   const userId = domainRow.user_id || 'a0000000-aaaa-42a0-a0a0-00a000000a69';
 
-  if (!newName || oldName === newName) return;
+  if (!newName || normalizeRegistrarName(oldName) === normalizeRegistrarName(newName)) {
+    return;
+  }
 
   const registrarId = await upsertRegistrar(
     pgExec,

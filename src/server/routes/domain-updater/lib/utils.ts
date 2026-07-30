@@ -14,6 +14,15 @@ export function removeUrlChars(input: string | null | undefined): string {
   return (input || '').trim().replace(/[/\\?#%]/g, '');
 }
 
+// Loose-match registrar names, ignoring case, punctuation and any trailing [Tag] suffix
+export function normalizeRegistrarName(input: string | null | undefined): string {
+  return (input || '')
+    .replace(/\s*\[[^\]]*\]\s*$/, '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s,.-]+/g, '');
+}
+
 export function normalizeDate(input: string | null | undefined): string {
   if (!input) return '';
   const date = new Date(input);
