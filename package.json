@@ -1,6 +1,6 @@
 {
   "name": "domain-locker",
-  "version": "0.2.2",
+  "version": "0.2.4",
   "type": "module",
   "engines": {
     "node": ">=20.0.0"
