@@ -47,8 +47,19 @@ To configure notifications for domain locker, set the following env vars. These 
 ```
 NOTIFY_WEBHOOK_BASE=https://ntfy.sh
 NOTIFY_WEBHOOK_TOPIC=my-topic-name
-NOTIFY_WEBHOOK_TOKEN=optional-token-if-private
+
+# If your instance is private, authenticate with either a token or credentials
+NOTIFY_WEBHOOK_TOKEN=tk_your-access-token
+NOTIFY_WEBHOOK_USERNAME=your-username
+NOTIFY_WEBHOOK_PASSWORD=your-password
 ```
+
+Use whichever your instance expects. Credentials are useful when ntfy sits behind a
+reverse proxy doing basic auth, and the token takes precedence if you set both.
+
+Credentials can also be embedded in the base URL (like
+`NOTIFY_WEBHOOK_BASE=https://user:pass@ntfy.example.com`), and will be sent as a
+basic auth header.
 
 ---
 

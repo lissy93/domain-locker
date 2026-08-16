@@ -22,7 +22,7 @@ services:
       - domain_locker_network
 
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DL_PG_USER:-postgres}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DL_PG_USER:-postgres} -d ${DL_PG_NAME:-domain_locker}"]
       interval: 5s
       timeout: 3s
       retries: 10

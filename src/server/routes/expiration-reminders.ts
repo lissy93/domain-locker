@@ -1,13 +1,9 @@
 import { defineEventHandler } from 'h3';
 import { getInternalBaseUrl } from '../utils/base-url';
+import { sendWebhookNotification } from '../utils/webhook';
 
 export default defineEventHandler(async (event) => {
-  const {
-    DL_ENV_TYPE,
-    NOTIFY_WEBHOOK_BASE,
-    NOTIFY_WEBHOOK_TOPIC,
-    DL_EXPIRATION_REMINDER_DAYS,
-  } = process.env;
+  const { DL_ENV_TYPE, DL_EXPIRATION_REMINDER_DAYS } = process.env;
 
   if (DL_ENV_TYPE !== 'selfHosted') {
     return new Response('Disabled in managed environment', { status: 403 });
@@ -69,7 +65,6 @@ export default defineEventHandler(async (event) => {
       continue;
     }
 
-    let notification_sent = false;
     const msg = `⚠️ Domain ${d.domain_name} expires in ${days} days`;
     const title = `Domain expires in ${days} days`;
 
@@ -90,18 +85,7 @@ export default defineEventHandler(async (event) => {
       continue;
     }
 
-    if (NOTIFY_WEBHOOK_BASE && NOTIFY_WEBHOOK_TOPIC) {
-      try {
-        await $fetch(`${NOTIFY_WEBHOOK_BASE}/${NOTIFY_WEBHOOK_TOPIC}`, {
-          method: 'POST',
-          headers: { 'X-Title': title },
-          body: msg,
-        });
-        notification_sent = true;
-      } catch (e) {
-        console.error('Failed to call webhook:', e);
-      }
-    }
+    const notification_sent = await sendWebhookNotification(msg, title);
 
     results.push({
       domain: d.domain_name,
