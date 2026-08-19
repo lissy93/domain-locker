@@ -1,13 +1,13 @@
-import { updateExpiryDate } from './../updateFns/expiry';
-import { updateDomainDates } from './../updateFns/dates';
-import { updateRegistrar } from './../updateFns/registrar';
-import { updateDomainStatuses } from './../updateFns/statuses';
-import { updateSSL } from './../updateFns/ssl';
-import { updateWhois } from './../updateFns/whois';
-import { updateDNS } from './../updateFns/dns';
-import { updateHost } from './../updateFns/hosts';
-import type { DomainRow } from '../index';
-import type { FreshDomainInfo } from './fetchInfo';
+import { updateExpiryDate } from './fns/expiry';
+import { updateDomainDates } from './fns/dates';
+import { updateRegistrar } from './fns/registrar';
+import { updateDomainStatuses } from './fns/statuses';
+import { updateSSL } from './fns/ssl';
+import { updateWhois } from './fns/whois';
+import { updateDNS } from './fns/dns';
+import { updateHost } from './fns/hosts';
+import type { DomainRow } from './index';
+import type { FreshDomainInfo } from './fetch-info';
 
 type UpdateFn = (
   domainRow: DomainRow,

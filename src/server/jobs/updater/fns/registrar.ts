@@ -1,8 +1,8 @@
 import { runQuery } from '../../../db/raw';
-import { recordDomainUpdate } from '../lib/recordUpdate';
-import { normalizeRegistrarName, normalizeStr, removeUrlChars } from '../lib/utils';
+import { recordDomainUpdate } from '../record-update';
+import { normalizeRegistrarName, normalizeStr, removeUrlChars } from '../utils';
 import type { DomainRow } from '../index';
-import type { FreshDomainInfo } from '../lib/fetchInfo';
+import type { FreshDomainInfo } from '../fetch-info';
 
 async function upsertRegistrar(
   name: string,
@@ -49,8 +49,8 @@ export async function updateRegistrar(
   }
 
   const registrarId = await upsertRegistrar(
-    freshInfo.registrar.name,
-    freshInfo.registrar.url ?? null,
+    newName,
+    freshInfo.registrar?.url ?? null,
     userId,
   );
 

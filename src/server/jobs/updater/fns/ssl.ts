@@ -1,8 +1,8 @@
 import { runQuery } from '../../../db/raw';
-import { normalizeStr, toDateOnly } from '../lib/utils';
-import { recordDomainUpdate } from '../lib/recordUpdate';
+import { normalizeStr, toDateOnly } from '../utils';
+import { recordDomainUpdate } from '../record-update';
 import type { DomainRow } from '../index';
-import type { FreshDomainInfo } from '../lib/fetchInfo';
+import type { FreshDomainInfo } from '../fetch-info';
 
 interface SslRow {
   id: string;

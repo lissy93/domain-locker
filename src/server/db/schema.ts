@@ -228,6 +228,14 @@ export interface BillingTable {
   updated_at: Timestamp;
 }
 
+export interface JobRunsTable {
+  name: string;
+  started_at: string | null;
+  finished_at: string | null;
+  status: string | null;
+  detail: string | null;
+}
+
 /** Bookkeeping for the migration runner, created before anything else */
 export interface SchemaMigrationsTable {
   version: string;
@@ -246,6 +254,7 @@ export interface Database {
   domains: DomainsTable;
   hosts: HostsTable;
   ip_addresses: IpAddressesTable;
+  job_runs: JobRunsTable;
   notification_preferences: NotificationPreferencesTable;
   notifications: NotificationsTable;
   registrars: RegistrarsTable;
@@ -272,6 +281,7 @@ export const TABLE_NAMES = [
   'domains',
   'hosts',
   'ip_addresses',
+  'job_runs',
   'notification_preferences',
   'notifications',
   'registrars',

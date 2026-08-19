@@ -3,6 +3,7 @@ import { sql, type Kysely } from 'kysely';
 import type { Database } from '../schema';
 import type { Backend } from '../client';
 import { SQLITE_INITIAL_SCHEMA } from './sqlite-initial';
+import { POSTGRES_JOB_RUNS, SQLITE_JOB_RUNS } from './002-job-runs';
 import Logger from '../../utils/logger';
 
 const log = new Logger('migrations');
@@ -29,6 +30,9 @@ export function splitStatements(script: string): string[] {
  * rename an existing column while a deprecation window is open, so an install
  * can always be rolled back to the previous minor release.
  */
+/** The schema every pre-runner install already has */
+export const BASELINE_VERSION = '001_initial_schema';
+
 export const MIGRATIONS: Migration[] = [
   {
     version: '001_initial_schema',
@@ -36,6 +40,13 @@ export const MIGRATIONS: Migration[] = [
       // Postgres accepts the whole script in one go, dollar-quoted bodies included
       postgres: () => [readPostgresSchema()],
       sqlite: () => splitStatements(SQLITE_INITIAL_SCHEMA),
+    },
+  },
+  {
+    version: '002_job_runs',
+    statements: {
+      postgres: () => POSTGRES_JOB_RUNS,
+      sqlite: () => SQLITE_JOB_RUNS,
     },
   },
 ];
@@ -68,12 +79,11 @@ export async function migrateToLatest(
   // record it as done rather than replaying DDL over live tables
   const baselined: string[] = [];
   if (!applied.size && (await hasLegacyTables(db))) {
-    for (const migration of MIGRATIONS) {
-      await recordVersion(db, migration.version);
-      applied.add(migration.version);
-      baselined.push(migration.version);
-    }
-    log.info(`Existing database detected, baselined at ${baselined.at(-1)}`);
+    // Only the initial schema predates the runner; later migrations still apply
+    await recordVersion(db, BASELINE_VERSION);
+    applied.add(BASELINE_VERSION);
+    baselined.push(BASELINE_VERSION);
+    log.info(`Existing database detected, baselined at ${BASELINE_VERSION}`);
   }
 
   const newlyApplied: string[] = [];

@@ -1,4 +1,4 @@
-import { runQuery } from '../../../db/raw';
+import { runQuery } from '../../db/raw';
 import { notifyUser } from './notify';
 
 /** Records a change against the domain's real owner, not a hardcoded user */

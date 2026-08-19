@@ -18,7 +18,7 @@ describe('migration runner (sqlite)', () => {
   it('creates the whole schema on a fresh database', async () => {
     const { applied, baselined } = await migrateToLatest(db, 'sqlite');
 
-    expect(applied).toEqual(['001_initial_schema']);
+    expect(applied).toEqual(['001_initial_schema', '002_job_runs']);
     expect(baselined).toEqual([]);
     await expect(db.selectFrom('domains').selectAll().execute()).resolves.toEqual([]);
   });
@@ -106,7 +106,7 @@ describe.skipIf(!pgAvailable)('migration runner (postgres)', () => {
 
     const { applied } = await migrateToLatest(db, 'postgres');
 
-    expect(applied).toEqual(['001_initial_schema']);
+    expect(applied).toEqual(['001_initial_schema', '002_job_runs']);
     await expect(db.selectFrom('domains').selectAll().execute()).resolves.toEqual([]);
   });
 
@@ -123,7 +123,8 @@ describe.skipIf(!pgAvailable)('migration runner (postgres)', () => {
 
     const { applied, baselined } = await migrateToLatest(db, 'postgres');
 
-    expect(applied).toEqual([]);
+    // The initial schema is assumed present; later migrations still run
+    expect(applied).toEqual(['002_job_runs']);
     expect(baselined).toEqual(['001_initial_schema']);
     const kept = await db.selectFrom('domains').select('domain_name').execute();
     expect(kept).toEqual([{ domain_name: 'kept.com' }]);

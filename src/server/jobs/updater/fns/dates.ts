@@ -1,7 +1,7 @@
 import { runQuery } from '../../../db/raw';
-import { toDateOnly } from '../lib/utils';
+import { toDateOnly } from '../utils';
 import type { DomainRow } from '../index';
-import type { FreshDomainInfo } from '../lib/fetchInfo';
+import type { FreshDomainInfo } from '../fetch-info';
 
 /* Silently keep the registry creation/updated dates current (no notifications) */
 export async function updateDomainDates(

@@ -1,8 +1,8 @@
 import { runQuery } from '../../../db/raw';
-import { normalizeStr } from '../lib/utils';
-import { recordDomainUpdate } from '../lib/recordUpdate';
+import { normalizeStr } from '../utils';
+import { recordDomainUpdate } from '../record-update';
 import type { DomainRow } from '../index';
-import type { FreshDomainInfo } from '../lib/fetchInfo';
+import type { FreshDomainInfo } from '../fetch-info';
 
 export async function updateDNS(
   domainRow: DomainRow,

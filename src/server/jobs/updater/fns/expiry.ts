@@ -1,8 +1,8 @@
 import { runQuery } from '../../../db/raw';
-import { recordDomainUpdate } from '../lib/recordUpdate';
-import { toDateOnly, datesDifferBeyondThreshold } from '../lib/utils';
+import { recordDomainUpdate } from '../record-update';
+import { toDateOnly, datesDifferBeyondThreshold } from '../utils';
 import type { DomainRow } from '../index';
-import type { FreshDomainInfo } from '../lib/fetchInfo';
+import type { FreshDomainInfo } from '../fetch-info';
 
 export async function updateExpiryDate(
   domainRow: DomainRow,
