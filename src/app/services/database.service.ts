@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, shareReplay } from 'rxjs';
+import { Observable, isObservable, shareReplay, tap } from 'rxjs';
 import { EnvService } from '~/app/services/environment.service';
 import SbDatabaseService from '~/app/services/db-query-services/sb-database.service';
 import ApiDatabaseService from '~/app/services/db-query-services/api-database.service';
@@ -10,13 +10,14 @@ import {
   type DbDomain,
 } from '~/app/../types/Database';
 
-/** Anything that can change the domain list, so the cache is dropped after it */
-const DOMAIN_MUTATIONS = new Set([
-  'saveDomain',
-  'updateDomain',
-  'deleteDomain',
-  'deleteAllData',
-]);
+/**
+ * The domain list carries its relations, so tags, links, costings and
+ * subdomains all change it. Matching on the verb covers every query group
+ * without a list to keep in step with the services
+ */
+const WRITE_VERBS = ['save', 'update', 'delete', 'create', 'add'];
+
+const isWriteMethod = (name: string) => WRITE_VERBS.some((verb) => name.startsWith(verb));
 
 @Injectable({
   providedIn: 'root',
@@ -82,19 +83,43 @@ export default class DatabaseService {
     this.domainsCache = null;
   }
 
-  /** Clears the cached list whenever something writes through the service */
-  private watchForWrites(service: IDatabaseService): IDatabaseService {
+  /**
+   * Clears the cached list whenever something writes through the service or one
+   * of its query groups. Clearing on completion rather than on call means a read
+   * overlapping a write cannot put the pre-write rows back in the cache.
+   */
+  private watchForWrites<T extends object>(service: T): T {
+    const groups = new Map<string, object>();
     return new Proxy(service, {
       get: (target, property, receiver) => {
         const value = Reflect.get(target, property, receiver);
-        if (typeof value !== 'function' || !DOMAIN_MUTATIONS.has(String(property))) {
-          return value;
+        const name = String(property);
+
+        if (name.endsWith('Queries') && value && typeof value === 'object') {
+          const wrapped = groups.get(name) ?? this.watchForWrites(value as object);
+          groups.set(name, wrapped);
+          return wrapped;
         }
-        return (...args: unknown[]) => {
-          this.invalidateDomains();
-          return (value as (...a: unknown[]) => unknown).apply(target, args);
-        };
+
+        if (typeof value !== 'function' || !isWriteMethod(name)) return value;
+        return (...args: unknown[]) =>
+          this.invalidateOnceSettled(
+            (value as (...a: unknown[]) => unknown).apply(target, args),
+          );
       },
     });
+  }
+
+  /** Writes return either an Observable or a Promise, so handle both */
+  private invalidateOnceSettled(result: unknown): unknown {
+    const invalidate = () => this.invalidateDomains();
+    if (isObservable(result)) {
+      return result.pipe(
+        tap({ next: invalidate, complete: invalidate, error: invalidate }),
+      );
+    }
+    if (result instanceof Promise) return result.finally(invalidate);
+    invalidate();
+    return result;
   }
 }
