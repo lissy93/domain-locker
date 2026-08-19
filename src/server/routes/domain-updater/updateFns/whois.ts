@@ -1,4 +1,4 @@
-import { callPgExecutor } from '../lib/pgExecutor';
+import { runQuery } from '../../../db/raw';
 import { normalizeStr } from '../lib/utils';
 import { recordDomainUpdate } from '../lib/recordUpdate';
 import type { DomainRow } from '../index';
@@ -24,7 +24,6 @@ interface WhoisRow {
 }
 
 export async function updateWhois(
-  pgExec: string,
   domainRow: DomainRow,
   freshInfo: FreshDomainInfo,
   changes: string[],
@@ -34,8 +33,7 @@ export async function updateWhois(
   if (!fresh) return;
 
   // Fetch existing row
-  const [existing] = await callPgExecutor<WhoisRow>(
-    pgExec,
+  const [existing] = await runQuery<WhoisRow>(
     `SELECT * FROM whois_info WHERE domain_id = $1`,
     [domainId],
   );
@@ -97,15 +95,13 @@ export async function updateWhois(
   if (!existing) {
     if (populatedFields.length === 0) return;
 
-    await callPgExecutor(
-      pgExec,
+    await runQuery(
       `INSERT INTO whois_info (domain_id, ${populatedFields.map((f) => f.column).join(', ')})
        VALUES ($1, ${populatedFields.map((_, i) => `$${i + 2}`).join(', ')})`,
       [domainId, ...populatedFields.map((f) => f.freshValue)],
     );
 
     await recordDomainUpdate(
-      pgExec,
       domainId,
       'WHOIS record created',
       'whois_',
@@ -127,7 +123,6 @@ export async function updateWhois(
       setFragments.push(`${field.column} = $${setFragments.length + 2}`);
       updateParams.push(field.freshValue);
       await recordDomainUpdate(
-        pgExec,
         domainId,
         `WHOIS ${field.label} changed`,
         field.changeType,
@@ -139,8 +134,7 @@ export async function updateWhois(
   }
 
   if (setFragments.length > 0) {
-    await callPgExecutor(
-      pgExec,
+    await runQuery(
       `UPDATE whois_info SET ${setFragments.join(', ')} WHERE domain_id = $1`,
       [domainId, ...updateParams],
     );

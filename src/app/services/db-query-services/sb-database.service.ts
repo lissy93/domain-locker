@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { SupabaseService } from '~/app/services/supabase.service';
 import {
   DatabaseService,
+  UptimeRow,
   DbDomain,
   SaveDomainData,
   DomainExpiration,
@@ -44,6 +45,19 @@ import { FeatureService } from '../features.service';
   providedIn: 'root',
 })
 export default class MainDatabaseService extends DatabaseService {
+  // Narrowed from the shared union: this service only ever holds Supabase variants
+  declare tagQueries: TagQueries;
+  declare linkQueries: LinkQueries;
+  declare notificationQueries: NotificationQueries;
+  declare historyQueries: HistoryQueries;
+  declare valuationQueries: ValuationQueries;
+  declare registrarQueries: RegistrarQueries;
+  declare dnsQueries: DnsQueries;
+  declare hostsQueries: HostsQueries;
+  declare ipQueries: IpQueries;
+  declare sslQueries: SslQueries;
+  declare subdomainsQueries: SubdomainsQueries;
+
   private supabase = inject(SupabaseService);
   private errorHandler = inject(ErrorHandlerService);
   private globalMessagingService = inject(GlobalMessageService);
@@ -832,12 +846,21 @@ export default class MainDatabaseService extends DatabaseService {
    * @param domainId The ID of the domain
    * @param timeframe The timeframe to filter data (e.g., 'day', 'week', etc.)
    */
-  getDomainUptime(userId: string, domainId: string, timeframe: string) {
-    return this.supabase.supabase.rpc('get_domain_uptime', {
+  async getDomainUptime(
+    userId: string,
+    domainId: string,
+    timeframe: string,
+  ): Promise<UptimeRow[]> {
+    const { data, error } = await this.supabase.supabase.rpc('get_domain_uptime', {
       user_id: userId,
       domain_id: domainId,
       timeframe: timeframe,
     });
+    if (error) {
+      this.handleError(error);
+      throw error;
+    }
+    return data || [];
   }
 
   /* One averaged response time per day, for the uptime calendar heatmap */

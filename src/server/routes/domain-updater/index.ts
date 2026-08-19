@@ -1,6 +1,6 @@
 import { defineEventHandler } from 'h3';
 import { getEnvVar, withTimeout } from './lib/utils';
-import { callPgExecutor } from './lib/pgExecutor';
+import { runQuery } from '../../db/raw';
 import { fetchDomainInfo } from './lib/fetchInfo';
 import { compareAndUpdateDomain } from './lib/compare';
 import { getInternalBaseUrl } from '../../utils/base-url';
@@ -55,15 +55,13 @@ export default defineEventHandler(async (event) => {
   }
 
   const baseUrl = getInternalBaseUrl(event);
-  const pgExecUrl = `${baseUrl}/api/pg-executer`;
   const domainInfoUrl = `${baseUrl}/api/domain-info`;
 
   let domains: DomainRow[] = [];
 
   try {
     domains = await withTimeout(
-      callPgExecutor<DomainRow>(
-        pgExecUrl,
+      runQuery<DomainRow>(
         `
         SELECT d.id, d.domain_name, d.expiry_date, d.registration_date, d.updated_date, d.user_id,
                jsonb_build_object('name', r.name, 'url', r.url) as registrar,
@@ -102,7 +100,7 @@ export default defineEventHandler(async (event) => {
         DOMAIN_FETCH_TIMEOUT,
       );
       const { domain, changes } = await withTimeout(
-        compareAndUpdateDomain(pgExecUrl, row, fresh),
+        compareAndUpdateDomain(row, fresh),
         DOMAIN_UPDATE_TIMEOUT,
       );
 

@@ -1,183 +1,65 @@
-@if ((dbConfigEnabled$ | async) === false) {
-  <div class="max-w-3xl mx-auto">
-    <app-feature-not-enabled
-      feature="allowLocalDbConfig"
-      featureName="Connecting to third-party databases"
-      overrideText="This feature is only available in self-hosted instances and to enterprise users."
-    />
-  </div>
-}
-
-<form [formGroup]="dbForm" class="card max-w-3xl mx-auto p-card relative">
-  @if ((dbConfigEnabled$ | async) === false) {
-    <div class="absolute bg-surface-0 rounded opacity-40 w-full h-full z-2"></div>
-  }
-
-  <div class="p-4">
-    <h2 class="mb-4 text-2xl">Database Connection Settings</h2>
-
-    <!-- DB Type select -->
-    <div class="field mb-4">
-      <label for="dbType" class="block font-semibold mb-2">Database Type</label>
-      <p-selectButton
-        inputId="dbType"
-        [options]="DB_TYPES"
-        formControlName="dbType"
-        optionLabel="label"
-        optionValue="value"
-        class="w-full"
-        styleClass="w-full"
-      ></p-selectButton>
+<div class="card max-w-3xl mx-auto p-card">
+  <div class="p-4 flex flex-column gap-4">
+    <div>
+      <h2 class="text-2xl m-0">Database Connection</h2>
+      <p class="opacity-70 mt-2 mb-0">
+        Domain Locker connects to its database on the server. Credentials are never sent
+        to your browser.
+      </p>
     </div>
 
-    <!-- Supabase Fields -->
-    @if (dbForm.value.dbType === 'supabase') {
-      <div>
-        <div class="field mb-3">
-          <label for="supabaseUrl" class="block font-semibold mb-1"
-            >Supabase URL <span class="text-red-500">*</span></label
-          >
-          <input
-            id="supabaseUrl"
-            pInputText
-            formControlName="supabaseUrl"
-            placeholder="e.g. https://xyzcompany.supabase.co"
-            class="w-full"
-          />
-          @if (dbForm.get('supabaseUrl')?.touched && dbForm.get('supabaseUrl')?.invalid) {
-            <small class="p-error"> Required </small>
-          }
-        </div>
-        <div class="field mb-3">
-          <label for="supabaseAnon" class="block font-semibold mb-1"
-            >Supabase Anon Key <span class="text-red-500">*</span></label
-          >
-          <input
-            id="supabaseAnon"
-            pInputText
-            formControlName="supabaseAnon"
-            placeholder="Your anon key"
-            class="w-full"
-          />
-          @if (
-            dbForm.get('supabaseAnon')?.touched && dbForm.get('supabaseAnon')?.invalid
-          ) {
-            <small class="p-error"> Required </small>
-          }
-        </div>
-        <div class="flex gap-2 justify-between flex-wrap w-full">
-          <p-button
-            label="Reset"
-            icon="pi pi-undo"
-            severity="warning"
-            (onClick)="onResetSupabase()"
-            class="p-button-secondary"
-          ></p-button>
-          <p-button
-            label="Save Supabase"
-            icon="pi pi-save"
-            severity="success"
-            (onClick)="onSave()"
-            class="p-button-success"
-          ></p-button>
-        </div>
+    <div class="flex flex-column gap-2">
+      <div class="flex justify-content-between align-items-center">
+        <span class="font-semibold">Data source</span>
+        <p-tag
+          [value]="serviceType === 'supabase' ? 'Supabase' : (backend ?? serviceType)"
+          [severity]="serviceType === 'error' ? 'danger' : 'success'"
+        />
       </div>
+      <p class="m-0 opacity-70 text-sm">
+        @switch (backend) {
+          @case ('postgres') {
+            Configured with the <code>DL_PG_*</code> environment variables.
+          }
+          @case ('sqlite') {
+            Stored in a file on the server, set with <code>DL_SQLITE_PATH</code>.
+          }
+          @default {
+            Managed instance, backed by Supabase.
+          }
+        }
+      </p>
+    </div>
+
+    @if (leftoverCredentials.length) {
+      <p-message severity="warn" styleClass="w-full">
+        <div class="flex flex-column gap-2">
+          <span>
+            This browser still holds database credentials saved by an older version. They
+            are no longer used, and should be removed.
+          </span>
+          <ul class="m-0 pl-3">
+            @for (credential of leftoverCredentials; track credential.key) {
+              <li>{{ credential.label }}</li>
+            }
+          </ul>
+          <div>
+            <p-button
+              label="Remove stored credentials"
+              severity="warning"
+              size="small"
+              (onClick)="clearLegacyCredentials()"
+            />
+          </div>
+        </div>
+      </p-message>
     }
 
-    <!-- Postgres Fields -->
-    @if (dbForm.value.dbType === 'postgres') {
-      <div>
-        <div class="field mb-3">
-          <label for="pgHost" class="block font-semibold mb-1"
-            >Host <span class="text-red-500">*</span></label
-          >
-          <input
-            id="pgHost"
-            pInputText
-            formControlName="pgHost"
-            placeholder="e.g. localhost or 1.2.3.4"
-            class="w-full"
-          />
-          @if (dbForm.get('pgHost')?.touched && dbForm.get('pgHost')?.invalid) {
-            <small class="p-error">Required</small>
-          }
-        </div>
-        <div class="field mb-3">
-          <label for="pgPort" class="block font-semibold mb-1"
-            >Port <span class="text-red-500">*</span></label
-          >
-          <input
-            id="pgPort"
-            pInputText
-            formControlName="pgPort"
-            placeholder="5432"
-            class="w-full"
-          />
-          @if (dbForm.get('pgPort')?.touched && dbForm.get('pgPort')?.invalid) {
-            <small class="p-error">Required</small>
-          }
-        </div>
-        <div class="field mb-3">
-          <label for="pgUser" class="block font-semibold mb-1"
-            >User <span class="text-red-500">*</span></label
-          >
-          <input id="pgUser" pInputText formControlName="pgUser" class="w-full" />
-          @if (dbForm.get('pgUser')?.touched && dbForm.get('pgUser')?.invalid) {
-            <small class="p-error">Required</small>
-          }
-        </div>
-        <div class="field mb-3">
-          <label for="pgPassword" class="block font-semibold mb-1"
-            >Password <span class="text-red-500">*</span></label
-          >
-          <input
-            id="pgPassword"
-            pInputText
-            type="password"
-            formControlName="pgPassword"
-            class="w-full"
-          />
-          @if (dbForm.get('pgPassword')?.touched && dbForm.get('pgPassword')?.invalid) {
-            <small class="p-error">Required</small>
-          }
-        </div>
-        <div class="field mb-3">
-          <label for="pgDatabase" class="block font-semibold mb-1"
-            >Database Name <span class="text-red-500">*</span></label
-          >
-          <input id="pgDatabase" pInputText formControlName="pgDatabase" class="w-full" />
-          @if (dbForm.get('pgDatabase')?.touched && dbForm.get('pgDatabase')?.invalid) {
-            <small class="p-error">Required</small>
-          }
-        </div>
-        <div class="flex gap-2 justify-between w-full flex-wrap">
-          <p-button
-            label="Reset"
-            icon="pi pi-undo"
-            severity="warning"
-            (onClick)="onResetPostgres()"
-            class="p-button-secondary"
-          ></p-button>
-          <p-button
-            label="Save Postgres"
-            icon="pi pi-save"
-            severity="success"
-            (onClick)="onSave()"
-            class="p-button-success"
-          ></p-button>
-        </div>
-      </div>
-    }
-
-    <p-divider class="my-4" />
-    <h3>Test Connection</h3>
-    <p>We can verify the connection to whichever DB is selected.</p>
-    <p-button
-      label="Test Connection"
-      icon="pi pi-check"
-      (onClick)="onTestConnection()"
-      class="p-button-info"
-      severity="info"
-    ></p-button>
+    <p class="m-0 opacity-70 text-sm">
+      To change database, update the environment variables on the server and restart. See
+      the
+      <a href="/about/self-hosting" class="text-primary">self-hosting docs</a>
+      for the full list.
+    </p>
   </div>
-</form>
+</div>

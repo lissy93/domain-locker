@@ -265,46 +265,68 @@ describe.each(BACKENDS)('repositories (%s)', (backend) => {
 
   describe('links', () => {
     it('adds one link across several domains and groups them on read', async () => {
-      const first = await repo.domains.save(domainInput('link-a.com', { links: [] }));
-      const second = await repo.domains.save(domainInput('link-b.com', { links: [] }));
+      await repo.domains.save(domainInput('link-a.com', { links: [] }));
+      await repo.domains.save(domainInput('link-b.com', { links: [] }));
 
-      const added = await repo.links.addToDomains(
-        { link_name: 'Panel', link_url: 'https://panel.test' },
-        [first!.id, second!.id],
-      );
+      const added = await repo.links.add({
+        link_name: 'Panel',
+        link_url: 'https://panel.test',
+        domains: ['link-a.com', 'link-b.com'],
+      });
       expect(added).toBe(2);
 
-      const links = await repo.links.list();
-      expect(links).toHaveLength(1);
-      expect(links[0].domains.map((domain) => domain.domain_name).sort()).toEqual([
-        'link-a.com',
-        'link-b.com',
-      ]);
+      const { groupedByDomain, linksWithDomains } = await repo.links.list();
+      expect(linksWithDomains).toHaveLength(1);
+      expect(linksWithDomains[0].domains.sort()).toEqual(['link-a.com', 'link-b.com']);
+      expect(linksWithDomains[0].link_ids).toHaveLength(2);
+      expect(Object.keys(groupedByDomain).sort()).toEqual(['link-a.com', 'link-b.com']);
     });
 
     it('repoints a link at a different set of domains', async () => {
       const first = await repo.domains.save(domainInput('move-a.com'));
-      const second = await repo.domains.save(domainInput('move-b.com', { links: [] }));
+      await repo.domains.save(domainInput('move-b.com', { links: [] }));
+      const { linksWithDomains } = await repo.links.list();
 
-      await repo.links.updateAcrossDomains(
-        { link_name: 'Docs', link_url: 'https://docs.test' },
-        { link_name: 'Docs', link_url: 'https://docs.test', link_description: 'Moved' },
-        [second!.id],
-      );
+      await repo.links.update(linksWithDomains[0].link_ids, {
+        link_name: 'Docs',
+        link_url: 'https://docs.test',
+        link_description: 'Moved',
+        domains: ['move-b.com'],
+      });
 
       expect(await repo.links.forDomain(first!.id)).toEqual([]);
-      const moved = await repo.links.forDomain(second!.id);
-      expect(moved[0].link_description).toBe('Moved');
+      const after = await repo.links.list();
+      expect(after.linksWithDomains[0].domains).toEqual(['move-b.com']);
+      expect(after.linksWithDomains[0].link_description).toBe('Moved');
     });
 
-    it('deletes a link everywhere it appears', async () => {
+    it('deletes links by id', async () => {
       await repo.domains.save(domainInput('del-a.com'));
       await repo.domains.save(domainInput('del-b.com'));
+      const { linksWithDomains } = await repo.links.list();
 
-      expect(
-        await repo.links.remove({ link_name: 'Docs', link_url: 'https://docs.test' }),
-      ).toBe(2);
-      expect(await repo.links.list()).toEqual([]);
+      expect(await repo.links.remove(linksWithDomains[0].link_ids)).toBe(2);
+      expect((await repo.links.list()).linksWithDomains).toEqual([]);
+    });
+
+    it('ignores links belonging to another user', async () => {
+      const theirs = await db
+        .insertInto('domains')
+        .values({ user_id: OTHER_USER, domain_name: 'theirs.com' })
+        .returning('id')
+        .executeTakeFirstOrThrow();
+      const link = await db
+        .insertInto('domain_links')
+        .values({
+          domain_id: theirs.id,
+          link_name: 'Theirs',
+          link_url: 'https://theirs.test',
+        })
+        .returning('id')
+        .executeTakeFirstOrThrow();
+
+      expect(await repo.links.remove([link.id])).toBe(0);
+      expect((await repo.links.list()).linksWithDomains).toEqual([]);
     });
   });
 

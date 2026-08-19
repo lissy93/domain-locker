@@ -123,3 +123,12 @@ export interface Link {
   link_name: string;
   link_description?: string;
 }
+
+export interface UptimeRow {
+  checked_at: string;
+  is_up: boolean;
+  response_code: number | null;
+  response_time_ms: number | null;
+  dns_lookup_time_ms: number | null;
+  ssl_handshake_time_ms: number | null;
+}

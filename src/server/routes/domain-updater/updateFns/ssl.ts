@@ -1,4 +1,4 @@
-import { callPgExecutor } from '../lib/pgExecutor';
+import { runQuery } from '../../../db/raw';
 import { normalizeStr, toDateOnly } from '../lib/utils';
 import { recordDomainUpdate } from '../lib/recordUpdate';
 import type { DomainRow } from '../index';
@@ -27,7 +27,6 @@ const hasUsefulSslData = (fresh: Record<string, unknown>): boolean =>
   );
 
 export async function updateSSL(
-  pgExec: string,
   domainRow: DomainRow,
   freshInfo: FreshDomainInfo,
   changes: string[],
@@ -37,8 +36,7 @@ export async function updateSSL(
   if (!fresh) return;
   if (!hasUsefulSslData(fresh)) return;
 
-  const [existing] = await callPgExecutor<SslRow>(
-    pgExec,
+  const [existing] = await runQuery<SslRow>(
     `SELECT * FROM ssl_certificates WHERE domain_id = $1 ORDER BY created_at DESC LIMIT 1`,
     [domainId],
   );
@@ -112,8 +110,7 @@ export async function updateSSL(
 
   // No previous SSL? Insert new row
   if (!existing) {
-    await callPgExecutor(
-      pgExec,
+    await runQuery(
       `INSERT INTO ssl_certificates (
          domain_id, issuer, issuer_country, subject,
          valid_from, valid_to, fingerprint,
@@ -137,7 +134,6 @@ export async function updateSSL(
     );
 
     await recordDomainUpdate(
-      pgExec,
       domainId,
       'SSL certificate added',
       'ssl_created',
@@ -177,7 +173,6 @@ export async function updateSSL(
         updateSet.push(`${field.column} = $${updateSet.length + 2}::date`);
         updateValues.push(toDateOnly(newVal));
         await recordDomainUpdate(
-          pgExec,
           domainId,
           `SSL ${field.label} changed`,
           field.changeType,
@@ -193,7 +188,6 @@ export async function updateSSL(
       updateValues.push(field.new ?? null);
 
       await recordDomainUpdate(
-        pgExec,
         domainId,
         `SSL ${field.label} changed`,
         field.changeType,
@@ -205,10 +199,9 @@ export async function updateSSL(
   }
 
   if (updateSet.length > 0) {
-    await callPgExecutor(
-      pgExec,
-      `UPDATE ssl_certificates SET ${updateSet.join(', ')} WHERE id = $1`,
-      [existing.id, ...updateValues],
-    );
+    await runQuery(`UPDATE ssl_certificates SET ${updateSet.join(', ')} WHERE id = $1`, [
+      existing.id,
+      ...updateValues,
+    ]);
   }
 }

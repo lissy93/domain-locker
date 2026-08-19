@@ -1,11 +1,10 @@
-import { callPgExecutor } from '../lib/pgExecutor';
+import { runQuery } from '../../../db/raw';
 import { toDateOnly } from '../lib/utils';
 import type { DomainRow } from '../index';
 import type { FreshDomainInfo } from '../lib/fetchInfo';
 
 /* Silently keep the registry creation/updated dates current (no notifications) */
 export async function updateDomainDates(
-  pgExec: string,
   domainRow: DomainRow,
   freshInfo: FreshDomainInfo,
   changes: string[],
@@ -29,11 +28,10 @@ export async function updateDomainDates(
   }
 
   for (const { column, label, value } of pending) {
-    await callPgExecutor(
-      pgExec,
-      `UPDATE domains SET ${column} = $1::timestamptz WHERE id = $2::uuid`,
-      [`${value}T00:00:00Z`, domainRow.id],
-    );
+    await runQuery(`UPDATE domains SET ${column} = $1::timestamptz WHERE id = $2`, [
+      `${value}T00:00:00Z`,
+      domainRow.id,
+    ]);
     changes.push(label);
   }
 }

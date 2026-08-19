@@ -1,7 +1,7 @@
 import { getRequestHeader, type H3Event } from 'h3';
 
 /**
- * Base URL for internal self-calls (pg-executer, domain-info)
+ * Base URL for internal self-calls (domain-info, domain-subs)
  * Dev reuses the request host, prod uses localhost:<port>
  */
 export function getInternalBaseUrl(event?: H3Event): string {

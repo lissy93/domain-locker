@@ -99,8 +99,8 @@ const PG_TYPE_NUMERIC = 1700;
 const PG_TYPE_INT8 = 20;
 
 /**
- * Scoped to this pool so the legacy pg-executer path keeps its own behaviour.
- * Aligns Postgres output with SQLite: ISO timestamps, real numbers, plain dates.
+ * Scoped to this pool, and aligned with SQLite so both dialects agree:
+ * ISO timestamps, real numbers, plain dates.
  */
 function getPostgresTypeParser(oid: number, format?: string) {
   if (format === undefined || format === 'text') {

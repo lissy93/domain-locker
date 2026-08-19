@@ -1,11 +1,10 @@
-import { callPgExecutor } from '../lib/pgExecutor';
+import { runQuery } from '../../../db/raw';
 import { normalizeStr } from '../lib/utils';
 import { recordDomainUpdate } from '../lib/recordUpdate';
 import type { DomainRow } from '../index';
 import type { FreshDomainInfo } from '../lib/fetchInfo';
 
 export async function updateDNS(
-  pgExec: string,
   domainRow: DomainRow,
   freshInfo: FreshDomainInfo,
   changes: string[],
@@ -27,8 +26,7 @@ export async function updateDNS(
       freshRecords.map((r: string) => normalizeStr(r)).filter(Boolean),
     );
 
-    const existing = await callPgExecutor<{ id: string; record_value: string }>(
-      pgExec,
+    const existing = await runQuery<{ id: string; record_value: string }>(
       `SELECT id, record_value FROM dns_records WHERE domain_id = $1 AND record_type = $2`,
       [domainId, type],
     );
@@ -40,13 +38,11 @@ export async function updateDNS(
     // Add new records
     for (const record of freshSet) {
       if (!existingSet.has(record)) {
-        await callPgExecutor(
-          pgExec,
+        await runQuery(
           `INSERT INTO dns_records (domain_id, record_type, record_value) VALUES ($1, $2, $3)`,
           [domainId, type, record],
         );
         await recordDomainUpdate(
-          pgExec,
           domainId,
           `DNS ${type} record added`,
           `dns_${type.toLowerCase()}_added`,
@@ -61,9 +57,8 @@ export async function updateDNS(
     for (const row of existing) {
       const normalized = normalizeStr(row.record_value);
       if (!freshSet.has(normalized)) {
-        await callPgExecutor(pgExec, `DELETE FROM dns_records WHERE id = $1`, [row.id]);
+        await runQuery(`DELETE FROM dns_records WHERE id = $1`, [row.id]);
         await recordDomainUpdate(
-          pgExec,
           domainId,
           `DNS ${type} record removed`,
           `dns_${type.toLowerCase()}_removed`,

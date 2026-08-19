@@ -1,11 +1,10 @@
-import { callPgExecutor } from '../lib/pgExecutor';
+import { runQuery } from '../../../db/raw';
 import { recordDomainUpdate } from '../lib/recordUpdate';
 import { toDateOnly, datesDifferBeyondThreshold } from '../lib/utils';
 import type { DomainRow } from '../index';
 import type { FreshDomainInfo } from '../lib/fetchInfo';
 
 export async function updateExpiryDate(
-  pgExec: string,
   domainRow: DomainRow,
   freshInfo: FreshDomainInfo,
   changes: string[],
@@ -20,7 +19,6 @@ export async function updateExpiryDate(
 
   if (!oldDateStr || datesDifferBeyondThreshold(oldDateStr, newDateStr, 7)) {
     await recordDomainUpdate(
-      pgExec,
       domainRow.id,
       'Expiry date changed',
       'expiry_domain',
@@ -28,11 +26,10 @@ export async function updateExpiryDate(
       newDateStr,
     );
 
-    await callPgExecutor(
-      pgExec,
-      `UPDATE domains SET expiry_date = $1::date WHERE id = $2::uuid`,
-      [newDateStr, domainRow.id],
-    );
+    await runQuery(`UPDATE domains SET expiry_date = $1::date WHERE id = $2`, [
+      newDateStr,
+      domainRow.id,
+    ]);
 
     changes.push('Expiry Date');
   }

@@ -74,10 +74,10 @@ describe.each(BACKENDS)('domain writes (%s)', (backend) => {
     ]);
   });
 
-  it('stores subdomain metadata as json', async () => {
+  it('returns subdomain metadata as the json string the UI parses', async () => {
     const saved = await repo.save(FULL_INPUT);
     const api = saved?.sub_domains.find((sub) => sub.name === 'api');
-    expect(api?.sd_info).toEqual({ ports: [443] });
+    expect(JSON.parse(api?.sd_info as string)).toEqual({ ports: [443] });
     const www = saved?.sub_domains.find((sub) => sub.name === 'www');
     expect(www?.sd_info).toBeNull();
   });

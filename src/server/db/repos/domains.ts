@@ -1,6 +1,13 @@
 import { sql, type Kysely } from 'kysely';
 import type { Database } from '../schema';
-import { currentUserId, groupBy, indexBy, toBoolean, toNumber } from './helpers';
+import {
+  currentUserId,
+  groupBy,
+  indexBy,
+  toBoolean,
+  toJsonString,
+  toNumber,
+} from './helpers';
 import { insertDomain, updateDomain, type SaveDomainInput } from './domain-write';
 
 export type { SaveDomainInput };
@@ -31,7 +38,7 @@ export interface DomainRecord {
   notification_preferences: { notification_type: string; is_enabled: boolean }[];
   dns: { mxRecords: string[]; txtRecords: string[]; nameServers: string[] };
   statusCodes: string[];
-  sub_domains: { name: string; sd_info: unknown }[];
+  sub_domains: { name: string; sd_info: string | null }[];
   domain_links: {
     link_name: string;
     link_url: string;
@@ -210,7 +217,7 @@ export function domainsRepo(db: Kysely<Database>) {
         ),
         sub_domains: (byDomain.subdomains.get(row.id) ?? []).map((sub) => ({
           name: sub.name,
-          sd_info: sub.sd_info,
+          sd_info: toJsonString(sub.sd_info),
         })),
         domain_links: (byDomain.links.get(row.id) ?? []).map((link) => ({
           link_name: link.link_name,
@@ -313,6 +320,48 @@ export function domainsRepo(db: Kysely<Database>) {
               .whereRef('domain_statuses.domain_id', '=', 'domains.id')
               .where('domain_statuses.status_code', '=', statusCode)
               .select('domain_statuses.id'),
+          ),
+        )
+        .execute();
+      return withRelations(rows);
+    },
+
+    async listByHostIsp(isp: string, userId = currentUserId()): Promise<DomainRecord[]> {
+      const rows = await baseQuery(userId)
+        .where((eb) =>
+          eb.exists(
+            eb
+              .selectFrom('domain_hosts')
+              .innerJoin('hosts', 'hosts.id', 'domain_hosts.host_id')
+              .whereRef('domain_hosts.domain_id', '=', 'domains.id')
+              .where('hosts.isp', '=', isp)
+              .select('hosts.id'),
+          ),
+        )
+        .execute();
+      return withRelations(rows);
+    },
+
+    async listByRegistrar(
+      name: string,
+      userId = currentUserId(),
+    ): Promise<DomainRecord[]> {
+      const rows = await baseQuery(userId).where('registrars.name', '=', name).execute();
+      return withRelations(rows);
+    },
+
+    async listBySslIssuer(
+      issuer: string,
+      userId = currentUserId(),
+    ): Promise<DomainRecord[]> {
+      const rows = await baseQuery(userId)
+        .where((eb) =>
+          eb.exists(
+            eb
+              .selectFrom('ssl_certificates')
+              .whereRef('ssl_certificates.domain_id', '=', 'domains.id')
+              .where('ssl_certificates.issuer', '=', issuer)
+              .select('ssl_certificates.id'),
           ),
         )
         .execute();

@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { EnvService } from '~/app/services/environment.service';
 import SbDatabaseService from '~/app/services/db-query-services/sb-database.service';
-import PgDatabaseService from '~/app/services/db-query-services/pg-database.service';
+import ApiDatabaseService from '~/app/services/db-query-services/api-database.service';
 import { ErrorHandlerService } from '~/app/services/error-handler.service';
 import { type DatabaseService as IDatabaseService } from '~/app/../types/Database';
 
@@ -18,8 +18,8 @@ export default class DatabaseService {
   public serviceType: 'supabase' | 'postgres' | 'none' | 'error' = 'none';
 
   constructor() {
-    if (this.envService.isPostgresEnabled()) {
-      this.service = inject(PgDatabaseService) as unknown as IDatabaseService;
+    if (this.envService.isSelfHostedDatabase()) {
+      this.service = inject(ApiDatabaseService) as unknown as IDatabaseService;
       this.serviceType = 'postgres';
     } else if (this.envService.isSupabaseEnabled()) {
       try {

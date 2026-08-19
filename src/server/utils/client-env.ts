@@ -24,8 +24,8 @@ export const CLIENT_SAFE_ENV_VARS = [
   'SUPABASE_ANON_KEY',
 ] as const;
 
-/** Set when Postgres is configured, so the client can pick a backend without seeing credentials */
-export const PG_ENABLED_VAR = 'DL_PG_ENABLED';
+/** Tells the client which database the server is using, never how to reach it */
+export const DB_BACKEND_VAR = 'DL_DB_BACKEND';
 
 const PG_REQUIRED_VARS = ['DL_PG_HOST', 'DL_PG_USER', 'DL_PG_PASSWORD', 'DL_PG_NAME'];
 
@@ -33,7 +33,7 @@ export function isPostgresConfigured(env: Record<string, string | undefined>): b
   return PG_REQUIRED_VARS.every((name) => Boolean(env[name]));
 }
 
-/** Picks the allowlisted variables out of an environment, plus the derived Postgres flag */
+/** Picks the allowlisted variables out of an environment, plus the backend name */
 export function pickClientEnv(
   env: Record<string, string | undefined>,
 ): Record<string, string> {
@@ -41,6 +41,8 @@ export function pickClientEnv(
   for (const name of CLIENT_SAFE_ENV_VARS) {
     if (env[name] !== undefined) picked[name] = env[name] as string;
   }
-  if (isPostgresConfigured(env)) picked[PG_ENABLED_VAR] = 'true';
+  if (env['DL_ENV_TYPE'] !== 'managed') {
+    picked[DB_BACKEND_VAR] = isPostgresConfigured(env) ? 'postgres' : 'sqlite';
+  }
   return picked;
 }

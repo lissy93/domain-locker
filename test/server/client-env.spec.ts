@@ -43,11 +43,13 @@ describe('client env allowlist', () => {
     expect(picked['SUPABASE_ANON_KEY']).toBe('anon-key');
   });
 
-  it('signals Postgres with a flag rather than credentials', () => {
-    expect(pickClientEnv(fullEnv)['DL_PG_ENABLED']).toBe('true');
-    expect(pickClientEnv({ DL_ENV_TYPE: 'selfHosted' })).not.toHaveProperty(
-      'DL_PG_ENABLED',
-    );
+  it('names the backend rather than exposing credentials', () => {
+    expect(pickClientEnv(fullEnv)['DL_DB_BACKEND']).toBe('postgres');
+    expect(pickClientEnv({ DL_ENV_TYPE: 'selfHosted' })['DL_DB_BACKEND']).toBe('sqlite');
+  });
+
+  it('names no backend on managed, where data lives in Supabase', () => {
+    expect(pickClientEnv({ DL_ENV_TYPE: 'managed' })).not.toHaveProperty('DL_DB_BACKEND');
   });
 
   it('treats a partially configured Postgres as unconfigured', () => {
@@ -57,7 +59,7 @@ describe('client env allowlist', () => {
   });
 
   it('omits variables that are not set at all', () => {
-    expect(pickClientEnv({})).toEqual({});
+    expect(pickClientEnv({})).toEqual({ DL_DB_BACKEND: 'sqlite' });
   });
 
   it('allowlists only the two keys that are public by design', () => {

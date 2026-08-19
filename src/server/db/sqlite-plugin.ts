@@ -21,7 +21,7 @@ const BOOLEAN_COLUMNS = new Set([
 ]);
 
 /** Columns stored as TEXT in SQLite but exposed as parsed JSON */
-const JSON_COLUMNS = new Set(['notification_channels', 'sd_info']);
+const JSON_COLUMNS = new Set(['notification_channels']);
 
 const toStorage = (value: unknown) => (typeof value === 'boolean' ? +value : value);
 

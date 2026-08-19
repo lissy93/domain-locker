@@ -1,7 +1,7 @@
 import { defineEventHandler } from 'h3';
+import { runQuery } from '../db/raw';
 import https from 'https';
 import { performance } from 'perf_hooks';
-import { getInternalBaseUrl } from '../utils/base-url';
 
 const HTTP_TIMEOUT_MS = 10000;
 const MAX_EXECUTION_TIME_MS = 12 * 60 * 1000;
@@ -10,20 +10,6 @@ const CONCURRENCY_LIMIT = parseInt(process.env['DL_MONITOR_CONCURRENCY'] || '10'
 function getEnvVar(name: string, fallback?: string): string {
   const val = process.env[name] || (import.meta.env && import.meta.env[name]);
   return val || fallback || '';
-}
-
-async function callPgExecutor<T>(
-  endpoint: string,
-  query: string,
-  params: unknown[] = [],
-): Promise<T[]> {
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query, params }),
-  });
-  const data = await res.json();
-  return data.data || [];
 }
 
 async function checkDomainUptime(domainName: string): Promise<{
@@ -87,17 +73,14 @@ async function processBatch<T, R>(
   return results;
 }
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async () => {
   if (getEnvVar('DL_ENV_TYPE') !== 'selfHosted') {
     return { error: 'Only available in self-hosted mode' };
   }
 
   const startTime = Date.now();
-  const baseUrl = getInternalBaseUrl(event);
-  const pgUrl = `${baseUrl}/api/pg-executer`;
 
-  const domains = await callPgExecutor<{ id: string; domain_name: string }>(
-    pgUrl,
+  const domains = await runQuery<{ id: string; domain_name: string }>(
     'SELECT id, domain_name FROM domains ORDER BY domain_name',
   );
 
@@ -114,10 +97,9 @@ export default defineEventHandler(async (event) => {
 
       const uptime = await checkDomainUptime(d.domain_name);
 
-      await callPgExecutor(
-        pgUrl,
+      await runQuery(
         `INSERT INTO uptime (domain_id, is_up, response_code, response_time_ms, dns_lookup_time_ms, ssl_handshake_time_ms)
-       VALUES ($1::uuid, $2, $3, $4, 0, 0)`,
+       VALUES ($1, $2, $3, $4, 0, 0)`,
         [d.id, uptime.is_up, uptime.response_code, uptime.response_time_ms],
       );
 

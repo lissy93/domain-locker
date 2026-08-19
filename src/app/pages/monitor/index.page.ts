@@ -16,6 +16,7 @@ import {
   getPerformanceColor,
 } from './monitor-helpers';
 import { EnvService } from '~/app/services/environment.service';
+import type { UptimeRow as UptimeData } from '~/types/common';
 
 interface DomainSummary {
   domainId: string;
@@ -30,15 +31,6 @@ interface DomainSummary {
   responseCodeSeries: number[];
   responseCodeLabels: string[];
   responseCodeColors: string[];
-}
-
-interface UptimeData {
-  checked_at: string;
-  is_up: boolean;
-  response_code: number;
-  response_time_ms: number;
-  dns_lookup_time_ms: number;
-  ssl_handshake_time_ms: number;
 }
 
 @Component({
@@ -117,71 +109,72 @@ export default class MonitorPage implements OnInit {
     this.domains.forEach((domain) => {
       this.databaseService.instance
         .getDomainUptime(domain.user_id, domain.id, 'day')
-        .then((rawData: unknown) => {
-          const data = rawData as { data?: UptimeData[] } & UptimeData[];
-          if (data && !data.data) data.data = data as unknown as UptimeData[]; // data be data with data has data if data not data and data is data. Got it?
-          if (data.data) {
-            const uptimeData: UptimeData[] = data.data;
+        .then((uptimeData) => {
+          const sparklineData = uptimeData.map((entry: UptimeData) => ({
+            x: entry.checked_at,
+            y: entry.response_time_ms || 0,
+          }));
 
-            const sparklineData = uptimeData.map((entry: UptimeData) => ({
-              x: entry.checked_at,
-              y: entry.response_time_ms || 0,
-            }));
+          const responseCodeSummary = this.getResponseCodeSummary(uptimeData);
 
-            const responseCodeSummary = this.getResponseCodeSummary(uptimeData);
+          const responseCodeSeries = responseCodeSummary.map((item) => item.count);
+          const responseCodeLabels = responseCodeSummary.map((item) => `${item.code}`);
+          const responseCodeColors = responseCodeSummary.map((item) =>
+            this.getResponseCodeColor(item.code),
+          );
 
-            const responseCodeSeries = responseCodeSummary.map((item) => item.count);
-            const responseCodeLabels = responseCodeSummary.map((item) => `${item.code}`);
-            const responseCodeColors = responseCodeSummary.map((item) =>
-              this.getResponseCodeColor(item.code),
-            );
+          const uptimePercentage =
+            uptimeData.length > 0
+              ? (uptimeData.filter((entry: UptimeData) => entry.is_up).length /
+                  uptimeData.length) *
+                100
+              : 0;
 
-            const uptimePercentage =
-              uptimeData.length > 0
-                ? (uptimeData.filter((entry: UptimeData) => entry.is_up).length /
-                    uptimeData.length) *
-                  100
-                : 0;
+          const avgResponseTime =
+            uptimeData.length > 0
+              ? uptimeData.reduce(
+                  (sum, entry) => sum + Number(entry.response_time_ms || 0),
+                  0,
+                ) / uptimeData.length
+              : 0;
 
-            const avgResponseTime =
-              uptimeData.length > 0
-                ? uptimeData.reduce(
-                    (sum, entry) => sum + Number(entry.response_time_ms || 0),
-                    0,
-                  ) / uptimeData.length
-                : 0;
+          const avgDnsTime =
+            uptimeData.length > 0
+              ? uptimeData.reduce(
+                  (sum, entry) => sum + Number(entry.dns_lookup_time_ms || 0),
+                  0,
+                ) / uptimeData.length
+              : 0;
 
-            const avgDnsTime =
-              uptimeData.length > 0
-                ? uptimeData.reduce(
-                    (sum, entry) => sum + Number(entry.dns_lookup_time_ms || 0),
-                    0,
-                  ) / uptimeData.length
-                : 0;
+          const avgSslTime =
+            uptimeData.length > 0
+              ? uptimeData.reduce(
+                  (sum, entry) => sum + Number(entry.ssl_handshake_time_ms || 0),
+                  0,
+                ) / uptimeData.length
+              : 0;
 
-            const avgSslTime =
-              uptimeData.length > 0
-                ? uptimeData.reduce(
-                    (sum, entry) => sum + Number(entry.ssl_handshake_time_ms || 0),
-                    0,
-                  ) / uptimeData.length
-                : 0;
-
-            this.domainSummaries.push({
-              domainId: domain.id,
-              domainName: domain.domain_name,
-              sparklineData,
-              responseCodeSummary,
-              responseCodeSeries,
-              responseCodeLabels,
-              responseCodeColors,
-              uptimePercentage,
-              avgResponseTime,
-              avgDnsTime,
-              avgSslTime,
-            });
-          }
-        });
+          this.domainSummaries.push({
+            domainId: domain.id,
+            domainName: domain.domain_name,
+            sparklineData,
+            responseCodeSummary,
+            responseCodeSeries,
+            responseCodeLabels,
+            responseCodeColors,
+            uptimePercentage,
+            avgResponseTime,
+            avgDnsTime,
+            avgSslTime,
+          });
+        })
+        .catch((error) =>
+          this.errorHandlerService.handleError({
+            error,
+            message: `Failed to load uptime for ${domain.domain_name}`,
+            location: 'Monitor',
+          }),
+        );
     });
   }
 

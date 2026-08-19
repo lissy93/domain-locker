@@ -10,14 +10,12 @@ import type { DomainRow } from '../index';
 import type { FreshDomainInfo } from './fetchInfo';
 
 type UpdateFn = (
-  pgExec: string,
   domainRow: DomainRow,
   freshInfo: FreshDomainInfo,
   changes: string[],
 ) => Promise<void>;
 
 export async function compareAndUpdateDomain(
-  pgExec: string,
   domainRow: DomainRow,
   freshInfo: FreshDomainInfo,
 ) {
@@ -36,7 +34,7 @@ export async function compareAndUpdateDomain(
 
   for (const fn of fns) {
     try {
-      await fn(pgExec, domainRow, freshInfo, changes);
+      await fn(domainRow, freshInfo, changes);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       changes.push(`(⚠️ Error in ${fn.name}: ${msg})`);

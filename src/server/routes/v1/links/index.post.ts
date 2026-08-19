@@ -2,11 +2,8 @@ import { z } from 'zod';
 import { defineApiRoute } from '../../../lib/handler';
 import { linkSchema } from '../../../lib/schemas';
 
-const schema = z.object({
-  link: linkSchema(),
-  domainIds: z.array(z.string().uuid()).min(1),
-});
+const schema = linkSchema().extend({ domains: z.array(z.string().trim().min(1)) });
 
 export default defineApiRoute({ write: true, body: schema }, async ({ db, body }) => ({
-  added: await db.links.addToDomains(body.link, body.domainIds),
+  added: await db.links.add(body),
 }));

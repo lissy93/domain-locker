@@ -1,11 +1,10 @@
-import { callPgExecutor } from '../lib/pgExecutor';
+import { runQuery } from '../../../db/raw';
 import { normalizeStr } from '../lib/utils';
 import { recordDomainUpdate } from '../lib/recordUpdate';
 import type { DomainRow } from '../index';
 import type { FreshDomainInfo } from '../lib/fetchInfo';
 
 export async function updateDomainStatuses(
-  pgExec: string,
   domainRow: DomainRow,
   freshInfo: FreshDomainInfo,
   changes: string[],
@@ -20,8 +19,7 @@ export async function updateDomainStatuses(
     freshStatuses.map((s: string) => normalizeStr(s)).filter(Boolean) as string[],
   );
 
-  const existing = await callPgExecutor<{ id: string; status_code: string }>(
-    pgExec,
+  const existing = await runQuery<{ id: string; status_code: string }>(
     `SELECT id, status_code FROM domain_statuses WHERE domain_id = $1`,
     [domainId],
   );
@@ -33,19 +31,11 @@ export async function updateDomainStatuses(
   // Add new statuses
   for (const status of freshSet) {
     if (!existingSet.has(status)) {
-      await callPgExecutor(
-        pgExec,
+      await runQuery(
         `INSERT INTO domain_statuses (domain_id, status_code) VALUES ($1, $2)`,
         [domainId, status],
       );
-      await recordDomainUpdate(
-        pgExec,
-        domainId,
-        `Status added: ${status}`,
-        'status',
-        '',
-        status,
-      );
+      await recordDomainUpdate(domainId, `Status added: ${status}`, 'status', '', status);
       changes.push(`Status+: ${status}`);
     }
   }
@@ -54,9 +44,8 @@ export async function updateDomainStatuses(
   for (const row of existing) {
     const normalized = normalizeStr(row.status_code);
     if (!freshSet.has(normalized)) {
-      await callPgExecutor(pgExec, `DELETE FROM domain_statuses WHERE id = $1`, [row.id]);
+      await runQuery(`DELETE FROM domain_statuses WHERE id = $1`, [row.id]);
       await recordDomainUpdate(
-        pgExec,
         domainId,
         `Status removed: ${row.status_code}`,
         'status',

@@ -1,18 +1,16 @@
-import { callPgExecutor } from '../lib/pgExecutor';
+import { runQuery } from '../../../db/raw';
 import { recordDomainUpdate } from '../lib/recordUpdate';
 import { normalizeRegistrarName, normalizeStr, removeUrlChars } from '../lib/utils';
 import type { DomainRow } from '../index';
 import type { FreshDomainInfo } from '../lib/fetchInfo';
 
 async function upsertRegistrar(
-  pgExec: string,
   name: string,
   url: string | null,
   userId: string,
 ): Promise<string> {
   const sanitizedName = removeUrlChars(name);
-  const registrars = await callPgExecutor<{ id: string; name: string }>(
-    pgExec,
+  const registrars = await runQuery<{ id: string; name: string }>(
     `SELECT id, name FROM registrars WHERE user_id = $1`,
     [userId],
   );
@@ -22,8 +20,7 @@ async function upsertRegistrar(
   );
   if (existing) return existing.id;
 
-  const res = await callPgExecutor<{ id: string }>(
-    pgExec,
+  const res = await runQuery<{ id: string }>(
     `
     INSERT INTO registrars (name, url, user_id)
     VALUES ($1, $2, $3)
@@ -38,7 +35,6 @@ async function upsertRegistrar(
 }
 
 export async function updateRegistrar(
-  pgExec: string,
   domainRow: DomainRow,
   freshInfo: FreshDomainInfo,
   changes: string[],
@@ -53,14 +49,12 @@ export async function updateRegistrar(
   }
 
   const registrarId = await upsertRegistrar(
-    pgExec,
     freshInfo.registrar.name,
     freshInfo.registrar.url ?? null,
     userId,
   );
 
   await recordDomainUpdate(
-    pgExec,
     domainRow.id,
     'Registrar changed',
     'registrar',
@@ -68,11 +62,10 @@ export async function updateRegistrar(
     newName,
   );
 
-  await callPgExecutor(
-    pgExec,
-    `UPDATE domains SET registrar_id = $1::uuid WHERE id = $2::uuid`,
-    [registrarId, domainRow.id],
-  );
+  await runQuery(`UPDATE domains SET registrar_id = $1 WHERE id = $2`, [
+    registrarId,
+    domainRow.id,
+  ]);
 
   changes.push('Registrar');
 }

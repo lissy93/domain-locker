@@ -1,4 +1,4 @@
-import { callPgExecutor } from '../lib/pgExecutor';
+import { runQuery } from '../../../db/raw';
 import { normalizeStr } from '../lib/utils';
 import { recordDomainUpdate } from '../lib/recordUpdate';
 import type { DomainRow } from '../index';
@@ -7,7 +7,6 @@ import type { FreshDomainInfo } from '../lib/fetchInfo';
 type HostRecord = Record<string, unknown>;
 
 export async function updateHost(
-  pgExec: string,
   domainRow: DomainRow,
   freshInfo: FreshDomainInfo,
   changes: string[],
@@ -63,8 +62,7 @@ export async function updateHost(
   if (!hasChanged) return;
 
   // Find the host for this IP and refresh its details, else insert a new one
-  const existingHost = await callPgExecutor<{ id: string }>(
-    pgExec,
+  const existingHost = await runQuery<{ id: string }>(
     `SELECT id FROM hosts WHERE user_id = $1 AND ip = $2 LIMIT 1`,
     [userId, mappedFresh.ip],
   );
@@ -73,8 +71,7 @@ export async function updateHost(
 
   if (existingHost.length > 0) {
     hostId = existingHost[0].id;
-    await callPgExecutor(
-      pgExec,
+    await runQuery(
       `UPDATE hosts SET lat = $1, lon = $2, isp = $3, org = $4,
          as_number = $5, city = $6, region = $7, country = $8 WHERE id = $9`,
       [
@@ -90,8 +87,7 @@ export async function updateHost(
       ],
     );
   } else {
-    const inserted = await callPgExecutor<{ id: string }>(
-      pgExec,
+    const inserted = await runQuery<{ id: string }>(
       `
       INSERT INTO hosts (ip, lat, lon, isp, org, as_number, city, region, country)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -103,19 +99,16 @@ export async function updateHost(
   }
 
   // Link the host to the domain, replacing any previous host
-  await callPgExecutor(
-    pgExec,
-    `DELETE FROM domain_hosts WHERE domain_id = $1 AND host_id <> $2`,
-    [domainId, hostId],
-  );
-  await callPgExecutor(
-    pgExec,
+  await runQuery(`DELETE FROM domain_hosts WHERE domain_id = $1 AND host_id <> $2`, [
+    domainId,
+    hostId,
+  ]);
+  await runQuery(
     `INSERT INTO domain_hosts (domain_id, host_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
     [domainId, hostId],
   );
 
   await recordDomainUpdate(
-    pgExec,
     domainId,
     'Host changed',
     'host_changed',

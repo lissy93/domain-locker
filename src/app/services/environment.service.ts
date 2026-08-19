@@ -18,7 +18,7 @@ export const KNOWN_ENV_VARS = [
   'DL_PLAUSIBLE_URL', // URL to Plausible instance, for hit counting
   'DL_PLAUSIBLE_SITE', // Plausible site ID /  URL, for hit counting
   'DL_TURNSTILE_KEY', // Cloudflare public site key for Turnstile captcha
-  'DL_PG_ENABLED', // Set by the server when Postgres is configured, never the credentials
+  'DL_DB_BACKEND', // Which database the server uses, never how to reach it
   'DL_DEMO_USER', // Demo user email (for auto-filling on demo instance)
   'DL_DEMO_PASS', // Demo user password (for auto-filling on demo instance)
   'DL_DOMAIN_INFO_API', // API endpoint for /api/domain-info
@@ -88,13 +88,19 @@ export class EnvService {
     return Boolean(supabaseUrl && supabaseKey);
   }
 
-  /** Credentials stay server-side, so the flag (or a legacy local override) is all we check */
-  isPostgresEnabled(): boolean {
+  /**
+   * True when data lives on this server rather than Supabase. The server owns
+   * the credentials and picks Postgres or SQLite itself, so the client only
+   * needs to know which side to talk to.
+   */
+  isSelfHostedDatabase(): boolean {
     if (this.getEnvironmentType() === 'managed') return false;
-    return (
-      this.getEnvVar('DL_PG_ENABLED') === 'true' ||
-      Boolean(this.getValueFromLocalStorage('DL_PG_HOST'))
-    );
+    return Boolean(this.getEnvVar('DL_DB_BACKEND')) || !this.isSupabaseEnabled();
+  }
+
+  /** Which database the server is using, for the diagnostics pages */
+  getDatabaseBackend(): string | null {
+    return this.getEnvVar('DL_DB_BACKEND');
   }
 
   /**
@@ -128,31 +134,6 @@ export class EnvService {
 
   getGlitchTipDsn(): string | null {
     return this.getEnvVar('DL_GLITCHTIP_DSN');
-  }
-
-  getPostgresApiUrl(): string {
-    const endpoint = '/api/pg-executer/';
-    if (isPlatformBrowser(this.platformId)) {
-      // Respect an explicitly configured public origin (DL_BASE_URL), else same-origin
-      const configured = this.getEnvVar('DL_BASE_URL', '');
-      return configured ? `${configured}${endpoint}` : endpoint;
-    }
-    // SSR: call ourselves on the loopback, never the public host (see issue #102)
-    return `${this.getInternalApiBase()}${endpoint}`;
-  }
-
-  /* SSR self-call base: dev reuses the request host (0.0.0.0 normalized), prod localhost:<port> */
-  private getInternalApiBase(): string {
-    const env = (globalThis as { process?: { env?: Record<string, string | undefined> } })
-      .process?.env;
-    if (env?.['DL_INTERNAL_BASE_URL']) {
-      return env['DL_INTERNAL_BASE_URL'];
-    }
-    const host = this.request?.headers?.['host'];
-    if (env?.['NODE_ENV'] === 'development' && host) {
-      return `http://${host.replace(/^0\.0\.0\.0/, '127.0.0.1')}`;
-    }
-    return `http://localhost:${env?.['NITRO_PORT'] || env?.['PORT'] || '3000'}`;
   }
 
   getPlausibleConfig(): { site: string; url: string; isConfigured: boolean } {

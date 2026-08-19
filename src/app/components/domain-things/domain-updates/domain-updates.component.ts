@@ -10,7 +10,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { CHANGE_CATEGORIES } from '~/app/constants/change-categories';
 import { ErrorHandlerService } from '~/app/services/error-handler.service';
-import { DomainUpdateRow } from '~/app/services/db-query-services/pg/db-history.service';
+import { DomainUpdateRow } from '~/app/services/db-query-services/sb/db-history.service';
 
 @Component({
   standalone: true,

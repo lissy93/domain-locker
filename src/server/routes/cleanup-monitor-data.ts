@@ -1,5 +1,6 @@
 import { defineEventHandler } from 'h3';
-import { getInternalBaseUrl } from '../utils/base-url';
+import { runQuery } from '../db/raw';
+import { currentBackend } from '../db/client';
 
 const RETENTION_DAYS = 7;
 
@@ -8,33 +9,22 @@ function getEnvVar(name: string, fallback?: string): string {
   return val || fallback || '';
 }
 
-async function callPgExecutor<T>(
-  endpoint: string,
-  query: string,
-  params: unknown[] = [],
-): Promise<T[]> {
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query, params }),
-  });
-  const data = await res.json();
-  return data.data || [];
-}
-
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async () => {
   if (getEnvVar('DL_ENV_TYPE') !== 'selfHosted') {
     return { error: 'Only available in self-hosted mode' };
   }
 
-  const baseUrl = getInternalBaseUrl(event);
-  const pgUrl = `${baseUrl}/api/pg-executer`;
+  // The aggregation uses data-modifying CTEs, which SQLite has no equivalent
+  // for. Phase 3 moves this onto the repository layer and lifts the limit.
+  if (currentBackend() !== 'postgres') {
+    return { skipped: 'Uptime aggregation currently requires Postgres' };
+  }
+
   const cutoff = new Date(
     Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000,
   ).toISOString();
 
-  const domains = await callPgExecutor<{ domain_id: string; domain_name: string }>(
-    pgUrl,
+  const domains = await runQuery<{ domain_id: string; domain_name: string }>(
     `SELECT DISTINCT u.domain_id, d.domain_name
      FROM uptime u
      JOIN domains d ON u.domain_id = d.id
@@ -51,8 +41,7 @@ export default defineEventHandler(async (event) => {
 
   for (const { domain_id, domain_name } of domains) {
     try {
-      const result = await callPgExecutor<{ aggregated: number; deleted: number }>(
-        pgUrl,
+      const result = await runQuery<{ aggregated: number; deleted: number }>(
         `WITH daily_stats AS (
           SELECT
             date_trunc('day', checked_at)::date as day,

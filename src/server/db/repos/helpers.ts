@@ -31,3 +31,9 @@ export function toNumber(value: unknown): number | null {
   const parsed = Number(value);
   return Number.isNaN(parsed) ? null : parsed;
 }
+
+/** sd_info is stored as JSON text but Postgres hands back a parsed value */
+export function toJsonString(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  return typeof value === 'string' ? value : JSON.stringify(value);
+}
