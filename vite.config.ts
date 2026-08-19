@@ -1,10 +1,29 @@
 /// <reference types="vitest" />
 import analog, { PrerenderContentFile } from '@analogjs/platform';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig, loadEnv, type PluginOption } from 'vite';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import packageJson from './package.json';
 import * as path from 'node:path';
 import { pickClientEnv } from './src/server/utils/client-env';
+
+/**
+ * Analog's dev server only forwards `/api` requests to Nitro, so `/v1` calls
+ * would fall through to the app and render its 404 page. Re-prefixing them
+ * gets them forwarded, and Nitro strips the prefix again, leaving it with the
+ * same URL it serves directly in production.
+ */
+function serveApiInDev(): PluginOption {
+  return {
+    name: 'domain-locker-dev-api',
+    apply: 'serve',
+    configureServer(server) {
+      server.middlewares.use((req, _res, next) => {
+        if (req.url?.startsWith('/v1/')) req.url = `/api${req.url}`;
+        next();
+      });
+    },
+  };
+}
 
 const themeTargets = [
   {
@@ -94,6 +113,7 @@ export default defineConfig( ({ mode }) => {
       },
     },
     plugins: [
+      serveApiInDev(),
       analog({
         prerender: {
           routes: [ // Unauthenticated SSG routes

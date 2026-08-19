@@ -78,6 +78,65 @@ export async function startServer(
   throw new Error(`Server did not start within 15s:\n${output}`);
 }
 
+/**
+ * Boots the Vite dev server the same way `npm run dev` does. The dev server
+ * routes requests to Nitro differently from the built one, so the API needs
+ * covering on both.
+ */
+export async function startDevServer(): Promise<RunningServer> {
+  const port = await freePort();
+  const dataDir = mkdtempSync(join(tmpdir(), 'dl-dev-test-'));
+  let output = '';
+
+  const child: ChildProcess = spawn(
+    'node_modules/.bin/ng',
+    ['serve', '--port', String(port)],
+    {
+      env: {
+        ...process.env,
+        // Analog skips its Nitro dev server when it detects a test run, and
+        // the API would then be missing for the very reason we are here
+        VITEST: '',
+        NODE_ENV: 'development',
+        DL_ENV_TYPE: 'selfHosted',
+        DL_SQLITE_PATH: join(dataDir, 'test.db'),
+        DL_DISABLE_SCHEDULER: 'true',
+        DL_PG_HOST: '',
+        DL_PG_USER: '',
+        DL_PG_PASSWORD: '',
+        DL_PG_NAME: '',
+      },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    },
+  );
+  child.stdout?.on('data', (chunk) => (output += chunk));
+  child.stderr?.on('data', (chunk) => (output += chunk));
+
+  // The dev server binds the hostname, not the address, so ask for it by name
+  const url = `http://localhost:${port}`;
+  const stop = async () => {
+    child.kill('SIGTERM');
+    await new Promise((resolve) => child.once('exit', resolve));
+    rmSync(dataDir, { recursive: true, force: true });
+  };
+
+  for (let attempt = 0; attempt < 480; attempt++) {
+    if (child.exitCode !== null) {
+      throw new Error(`Dev server exited early:\n${output}`);
+    }
+    try {
+      const response = await fetch(`${url}/api/health`);
+      if (response.ok) return { url, stop, logs: () => output };
+    } catch {
+      // Still compiling
+    }
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+
+  await stop();
+  throw new Error(`Dev server did not start within 2m:\n${output}`);
+}
+
 export interface ApiResponse<T> {
   status: number;
   body: T;
