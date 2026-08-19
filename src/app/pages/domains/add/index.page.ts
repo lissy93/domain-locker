@@ -11,7 +11,7 @@ import { PrimeNgModule } from '~/app/prime-ng.module';
 import { ConfirmationService, MessageService, MenuItem } from 'primeng/api';
 import { ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { catchError, throwError, Subject } from 'rxjs';
+import { catchError, firstValueFrom, throwError, Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import DatabaseService from '~/app/services/database.service';
 import { SaveDomainData } from '~/app/../types/Database';
@@ -427,7 +427,7 @@ export default class AddDomainComponent implements OnInit, OnDestroy {
           domainData.domain.registrar = formValue.registrar;
         }
 
-        await this.databaseService.instance.saveDomain(domainData);
+        await firstValueFrom(this.databaseService.instance.saveDomain(domainData));
         const name = domainData.domain.domain_name;
         this.hitCountingService.trackEvent('add_domain', { location: 'full' });
         this.messageService.add({

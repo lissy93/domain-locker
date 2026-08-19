@@ -1,5 +1,14 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { catchError, from, map, Observable, of, switchMap, throwError } from 'rxjs';
+import {
+  catchError,
+  firstValueFrom,
+  from,
+  map,
+  Observable,
+  of,
+  switchMap,
+  throwError,
+} from 'rxjs';
 import { GlobalMessageService } from '../../messaging.service';
 
 interface SubdomainRow {
@@ -124,7 +133,7 @@ export class SubdomainsQueries {
 
   async deleteSubdomainsByDomain(domain: string): Promise<void> {
     try {
-      const domainId = await this.fetchDomainId(domain);
+      const domainId = await firstValueFrom(this.fetchDomainId(domain));
 
       const { error: deleteError } = await this.supabase
         .from('sub_domains')

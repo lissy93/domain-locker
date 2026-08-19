@@ -175,7 +175,7 @@ export default class QuickAddDomain {
 
       // Construct and save domain data
       const domainData = this.constructDomainData(domainInfo);
-      await this.databaseService.instance.saveDomain(domainData);
+      await firstValueFrom(this.databaseService.instance.saveDomain(domainData));
 
       this.messagingService.showSuccess(
         'Domain added successfully.',

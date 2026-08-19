@@ -98,7 +98,7 @@ export default class BulkNotificationPreferencesPage implements OnInit {
       });
 
       // Update preferences in the database
-      await this.databaseService.instance.notificationQueries
+      this.databaseService.instance.notificationQueries
         .updateBulkNotificationPreferences(preferences)
         .subscribe({
           next: () => {

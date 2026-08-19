@@ -540,7 +540,7 @@ export class SupabaseService {
   async deleteAccount(): Promise<void> {
     // Get the user ID and token, and check
     const currentUser = await this.getCurrentUser();
-    const token = this.token || (await this.getToken());
+    const token = this.token || this.getToken();
     if (!currentUser) throw new Error('Not authenticated');
 
     // Delete everything the user added (required before we can remove their account). Bye bye data.
