@@ -310,10 +310,35 @@ jobs:
           fi
           echo "✅ SSR renders homepage"
 
+      - name: 🪶 Start app with no database configured
+        run: |
+          # The default install is one container with SQLite and no config
+          docker rm -f dl-ci-app >/dev/null 2>&1 || true
+          docker run -d --name dl-ci-sqlite -p 3001:3000 \
+            -e DL_ENV_TYPE=selfHosted \
+            domain-locker:ci
+          for i in $(seq 1 60); do
+            CODE=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3001/api/health || echo 000)
+            if [ "$CODE" = "200" ]; then break; fi
+            sleep 2
+          done
+          if [ "$CODE" != "200" ]; then
+            echo "::error::Zero-config SQLite install did not become healthy"
+            docker logs dl-ci-sqlite
+            exit 1
+          fi
+          BODY=$(curl -s http://localhost:3001/v1/domains)
+          if [ "$BODY" != "[]" ]; then
+            echo "::error::Expected an empty portfolio, got: $BODY"
+            docker logs dl-ci-sqlite
+            exit 1
+          fi
+          echo "✅ Zero-config SQLite install works"
+
       - name: 🧹 Tear down
         if: always()
         run: |
-          docker rm -f dl-ci-app dl-ci-pg 2>/dev/null || true
+          docker rm -f dl-ci-app dl-ci-pg dl-ci-sqlite 2>/dev/null || true
           docker network rm dl-ci 2>/dev/null || true
 
   actionlint:

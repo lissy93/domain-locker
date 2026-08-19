@@ -1,23 +1,36 @@
+{{- if .Values.updater.enabled }}
+# Deprecated. The app now schedules these jobs itself, so this is off by
+# default. It remains for clusters that would rather drive the jobs externally.
+# Triggers are idempotent: a job already running is skipped, not repeated.
 apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: domain-locker-updater
 spec:
-  schedule: "0 3 * * *"
+  schedule: {{ .Values.updater.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 2
   jobTemplate:
     spec:
+      backoffLimit: 1
       template:
         spec:
+          restartPolicy: OnFailure
           containers:
             - name: updater
-              image: alpine:3.20
+              image: {{ .Values.updater.image | quote }}
               command: ["/bin/sh", "-c"]
               args:
-                - >
-                  apk add --no-cache curl &&
-                  echo "0 3 * * * /usr/bin/curl -s -X POST http://domain-locker-app:3000/api/domain-updater" > /etc/crontabs/root &&
-                  echo "0 4 * * * /usr/bin/curl -s -X POST http://domain-locker-app:3000/api/expiration-reminders" >> /etc/crontabs/root &&
-                  echo "*/15 * * * * /usr/bin/curl -s -X POST http://domain-locker-app:3000/api/domain-monitor" >> /etc/crontabs/root &&
-                  echo "0 2 * * 0 /usr/bin/curl -s -X POST http://domain-locker-app:3000/api/cleanup-monitor-data" >> /etc/crontabs/root &&
-                  crond -f -L /dev/stdout
-          restartPolicy: OnFailure
+                # One pass, then exit. The previous version started crond in the
+                # foreground, so every scheduled run left a pod running forever.
+                - |
+                  set -e
+                  for job in domain-updater expiration-reminders domain-monitor cleanup-monitor-data; do
+                    echo "Triggering $job"
+                    wget -q -O- --post-data='' \
+                      {{- if .Values.updater.apiKey }} --header='x-api-key: {{ .Values.updater.apiKey }}' {{ end }} \
+                      "http://domain-locker-app:3000/api/$job" || \
+                      echo "WARN: $job trigger failed"
+                  done
+{{- end }}

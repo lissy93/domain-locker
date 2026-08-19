@@ -25,7 +25,8 @@
     "typecheck:server": "tsc --noEmit -p tsconfig.server.json",
     "format": "prettier --write 'src/**/*.{ts,html,scss,css,json}'",
     "format:check": "prettier --check 'src/**/*.{ts,html,scss,css,json}'",
-    "hold-my-beer": "npm run format && npm run typecheck && npm run lint"
+    "hold-my-beer": "npm run format && npm run typecheck && npm run lint",
+    "migrate:pg-to-sqlite": "vite-node -c scripts/vite.config.ts scripts/migrate-pg-to-sqlite.ts"
   },
   "private": true,
   "dependencies": {

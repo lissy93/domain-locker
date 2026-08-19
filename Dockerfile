@@ -47,9 +47,14 @@ COPY --chown=appuser:appgroup --from=builder /app/package.json  ./package.json
 COPY --chown=appuser:appgroup --from=builder /app/db/schema.sql ./schema.sql
 COPY --chown=appuser:appgroup --from=builder /app/start.sh      ./start.sh
 
+# Default home for the SQLite database when no Postgres is configured
+RUN mkdir -p /data && chown appuser:appgroup /data
+VOLUME ["/data"]
+
 USER appuser
 EXPOSE 3000
 ENV DL_ENV_TYPE="selfHosted"
+ENV DL_SQLITE_PATH="/data/domain-locker.db"
 
 HEALTHCHECK --interval=15s --timeout=2s --start-period=5s --retries=5 \
   CMD wget --spider -q http://localhost:3000/api/health || exit 1
