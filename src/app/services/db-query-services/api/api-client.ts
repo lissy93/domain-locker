@@ -3,7 +3,6 @@ import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { REQUEST } from '@analogjs/router/tokens';
 import { Observable, catchError, map, throwError } from 'rxjs';
-import { EnvService } from '~/app/services/environment.service';
 
 interface ApiErrorBody {
   error?: { code?: string; message?: string; details?: unknown };
@@ -28,7 +27,6 @@ export class ApiRequestError extends Error {
 @Injectable({ providedIn: 'root' })
 export class ApiClient {
   private http = inject(HttpClient);
-  private envService = inject(EnvService);
   private platformId = inject<object>(PLATFORM_ID);
   private request = inject(REQUEST, { optional: true });
 
@@ -58,6 +56,7 @@ export class ApiClient {
       .request<T>(method, `${this.baseUrl()}${path}`, {
         body,
         params: params ? new HttpParams({ fromObject: params }) : undefined,
+        headers: this.forwardedHeaders(),
         withCredentials: true,
       })
       .pipe(
@@ -66,11 +65,24 @@ export class ApiClient {
       );
   }
 
-  /** Same origin in the browser; the loopback during server rendering */
+  /**
+   * Rendering happens in a fresh context with no cookies of its own, so the
+   * visitor's session is passed along. Without it a password-protected instance
+   * renders every page empty and only fills in once the browser takes over.
+   */
+  private forwardedHeaders(): Record<string, string> | undefined {
+    if (isPlatformBrowser(this.platformId)) return undefined;
+    const cookie = this.request?.headers?.['cookie'];
+    return cookie ? { cookie } : undefined;
+  }
+
+  /**
+   * The browser always calls the page's own origin, since the API is served by
+   * the same app. Anything absolute would be cross-origin and blocked. Server
+   * rendering has no origin of its own, so it goes over the loopback.
+   */
   private baseUrl(): string {
-    if (isPlatformBrowser(this.platformId)) {
-      return this.envService.getEnvVar('DL_BASE_URL', '') || '';
-    }
+    if (isPlatformBrowser(this.platformId)) return '';
     const env = (globalThis as { process?: { env?: Record<string, string | undefined> } })
       .process?.env;
     if (env?.['DL_INTERNAL_BASE_URL']) return env['DL_INTERNAL_BASE_URL'];
