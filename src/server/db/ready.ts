@@ -22,6 +22,9 @@ export function resetMigrationState(): void {
 }
 
 async function runMigrations(): Promise<void> {
+  if (process.env['DL_ENV_TYPE'] === 'managed') {
+    throw new Error('The self-hosted data core is not used on managed instances');
+  }
   if (process.env['DL_SKIP_MIGRATIONS'] === 'true') {
     log.warn('DL_SKIP_MIGRATIONS is set, leaving the database untouched');
     return;

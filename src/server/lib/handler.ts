@@ -48,6 +48,13 @@ export function defineApiRoute<Result, Body = undefined, Query = undefined>(
 ) {
   return defineEventHandler(async (event): Promise<Result | ApiErrorBody> => {
     try {
+      // Managed instances serve their data through Supabase, never from here
+      if (process.env['DL_ENV_TYPE'] === 'managed') {
+        throw new ApiError(
+          'forbidden',
+          'This API is only served by self-hosted instances',
+        );
+      }
       if (!isSameOrigin(event)) {
         throw new ApiError('forbidden', 'Cross-origin requests are not allowed');
       }
