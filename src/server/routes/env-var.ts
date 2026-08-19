@@ -1,14 +1,14 @@
-import { defineEventHandler, getQuery } from 'h3';
+import { defineEventHandler } from 'h3';
+import { pickClientEnv } from '../utils/client-env';
 
 /**
  * GET /api/env-var
- *   => returns all environment variables that begin with "DL_" or "SUPABASE_"
- * GET /api/env-var?key=DL_PG_HOST
- *   => returns a single environment variable
+ *   => the allowlisted, client-safe environment variables for self-hosted runtime config
  */
 export default defineEventHandler((event) => {
-  const environmentVariables = process.env || import.meta.env || {};
+  const environmentVariables = process.env || {};
   const envType = environmentVariables['DL_ENV_TYPE'] || 'selfHosted';
+
   if (envType !== 'selfHosted') {
     return {
       error: true,
@@ -16,31 +16,6 @@ export default defineEventHandler((event) => {
     };
   }
 
-  // Check if user requested a specific key
-  const { key } = getQuery(event) as { key?: string };
-
-  if (!key) {
-    // No key param => return all env vars beginning with DL_ or SUPABASE_
-    const envVars: Record<string, string> = {};
-    for (const [envKey, envValue] of Object.entries(environmentVariables)) {
-      if (
-        (envKey.startsWith('DL_') || envKey.startsWith('SUPABASE_')) &&
-        !envKey.includes('_POSTGRES')
-      ) {
-        envVars[envKey] = envValue || '';
-      }
-    }
-    return {
-      error: false,
-      env: envVars,
-    };
-  } else {
-    // Single key fetch
-    const value = environmentVariables[key] || '';
-    return {
-      error: false,
-      key,
-      value,
-    };
-  }
+  event.node.res.setHeader('Cache-Control', 'no-store');
+  return { error: false, env: pickClientEnv(environmentVariables) };
 });

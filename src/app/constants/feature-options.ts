@@ -5,6 +5,7 @@
  */
 
 import { BillingPlans } from '~/app/services/billing.service';
+import { BUILD_ENV } from '~/app/utils/client-env';
 
 export interface FeatureConfig<T> {
   default: T;
@@ -98,7 +99,7 @@ export const features: FeatureDefinitions = {
     default: true,
   },
   writePermissions: {
-    default: import.meta.env['DL_DISABLE_WRITE_METHODS'] ? false : true,
+    default: BUILD_ENV['DL_DISABLE_WRITE_METHODS'] ? false : true,
     demo: false,
   },
   enableDocs: {
@@ -135,7 +136,7 @@ export const features: FeatureDefinitions = {
     default: true,
   },
   enableDeletionTool: {
-    default: import.meta.env['DL_DISABLE_WRITE_METHODS'] ? false : true,
+    default: BUILD_ENV['DL_DISABLE_WRITE_METHODS'] ? false : true,
   },
 };
 

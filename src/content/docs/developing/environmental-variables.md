@@ -102,7 +102,7 @@ In addition to `getEnvVar`, the `EnvService` provides **specific functions** for
 ```typescript
 const envType = this.environmentService.getEnvironmentType(); // 'dev', 'managed', etc.
 const isSupabaseEnabled = this.environmentService.isSupabaseEnabled(); // true/false
-const postgresConfig = this.environmentService.getPostgresConfig(); // { host, port, user, password }
+const isPostgresEnabled = this.environmentService.isPostgresEnabled(); // true/false
 const plausibleConfig = this.environmentService.getPlausibleConfig(); // { site, url, isConfigured }
 ```
 

@@ -1,8 +1,7 @@
 import { callPgExecutor } from './pgExecutor';
 import { notifyUser } from './notify';
 
-const DEFAULT_USER_ID = 'a0000000-aaaa-42a0-a0a0-00a000000a69';
-
+/** Records a change against the domain's real owner, not a hardcoded user */
 export async function recordDomainUpdate(
   pgExec: string,
   domainId: string,
@@ -11,17 +10,25 @@ export async function recordDomainUpdate(
   oldValue: string,
   newValue: string,
 ): Promise<void> {
+  const owners = await callPgExecutor<{ user_id: string }>(
+    pgExec,
+    `SELECT user_id FROM domains WHERE id = $1::uuid`,
+    [domainId],
+  );
+  const userId = owners[0]?.user_id;
+  if (!userId) return;
+
   await callPgExecutor(
     pgExec,
     `INSERT INTO domain_updates (domain_id, user_id, change, change_type, old_value, new_value)
      VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6)`,
-    [domainId, DEFAULT_USER_ID, changeDescription, changeType, oldValue, newValue],
+    [domainId, userId, changeDescription, changeType, oldValue, newValue],
   );
 
   await notifyUser(
     pgExec,
     domainId,
-    DEFAULT_USER_ID,
+    userId,
     changeType,
     `${changeDescription}: ${oldValue} → ${newValue}`,
   );

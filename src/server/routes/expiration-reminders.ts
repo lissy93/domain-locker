@@ -1,54 +1,64 @@
-import { defineEventHandler } from 'h3';
+import { createError, defineEventHandler } from 'h3';
 import { getInternalBaseUrl } from '../utils/base-url';
 import { sendWebhookNotification } from '../utils/webhook';
+import Logger from '../utils/logger';
+
+const log = new Logger('expiration-reminders');
+
+interface ExpiringDomain {
+  id: string;
+  domain_name: string;
+  expiry_date: string;
+  user_id: string;
+}
 
 export default defineEventHandler(async (event) => {
   const { DL_ENV_TYPE, DL_EXPIRATION_REMINDER_DAYS } = process.env;
 
   if (DL_ENV_TYPE !== 'selfHosted') {
-    return new Response('Disabled in managed environment', { status: 403 });
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'Disabled in managed environment',
+    });
   }
 
   const rawThresholds = DL_EXPIRATION_REMINDER_DAYS || '90,30,7,2';
   const defaultThresholds = [90, 30, 7, 2];
 
-  let thresholds: number[] = [];
-  try {
-    thresholds = rawThresholds
-      .split(',')
-      .map((v: string) => parseInt(v.trim(), 10))
-      .filter((v: number) => Number.isFinite(v) && v > 0);
-    if (thresholds.length === 0) {
-      thresholds = defaultThresholds;
-    }
-  } catch (err) {
-    console.error(
-      'Invalid DL_EXPIRATION_REMINDER_DAYS format, returning to default',
-      err,
-    );
-    thresholds = defaultThresholds;
-  }
+  const parsed = rawThresholds
+    .split(',')
+    .map((value: string) => parseInt(value.trim(), 10))
+    .filter((value: number) => Number.isFinite(value) && value > 0);
+  const thresholds = parsed.length ? parsed : defaultThresholds;
 
   const baseUrl = getInternalBaseUrl(event);
   const pgExecUrl = `${baseUrl}/api/pg-executer`;
   const today = new Date().toISOString().split('T')[0];
 
-  const res = await fetch(pgExecUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      query: `
+  let domains: ExpiringDomain[] = [];
+  try {
+    const res = await fetch(pgExecUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query: `
         SELECT id, domain_name, expiry_date, user_id
         FROM domains
         WHERE expiry_date IS NOT NULL
       `,
-    }),
-  }).catch((err) => {
-    console.error('Failed to fetch domains:', err);
-    return new Response('Failed to fetch domains', { status: 500 });
-  });
-
-  const { data: domains = [] } = await res.json();
+      }),
+    });
+    if (!res.ok) {
+      throw new Error(`pg-executer responded ${res.status}`);
+    }
+    domains = (await res.json()).data ?? [];
+  } catch (err) {
+    log.error(`Failed to fetch domains: ${(err as Error)?.message}`);
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'Failed to fetch domains for expiration reminders',
+    });
+  }
 
   const results = [];
 
@@ -69,7 +79,7 @@ export default defineEventHandler(async (event) => {
     const title = `Domain expires in ${days} days`;
 
     try {
-      await fetch(pgExecUrl, {
+      const inserted = await fetch(pgExecUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -80,8 +90,13 @@ export default defineEventHandler(async (event) => {
           params: [d.user_id, d.id, msg],
         }),
       });
-    } catch (e) {
-      console.error('Failed to insert notification:', e);
+      if (!inserted.ok) {
+        throw new Error(`pg-executer responded ${inserted.status}`);
+      }
+    } catch (err) {
+      log.error(
+        `Failed to insert reminder for ${d.domain_name}: ${(err as Error)?.message}`,
+      );
       continue;
     }
 

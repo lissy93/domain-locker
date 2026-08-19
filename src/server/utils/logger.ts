@@ -15,6 +15,9 @@ const DL_DISABLE_LOGGING = process.env['DL_DISABLE_LOGGING'] === 'true';
 const DL_DEBUG = process.env['DL_DEBUG'] === 'true';
 const CENTRAL_LOG_URL = process.env['DL_CENTRAL_LOG_URL'];
 
+// Loggers are long-lived, so the in-memory buffer must not grow without bound
+const MAX_BUFFERED_LOGS = 500;
+
 class Logger {
   private prefix: string;
   private logs: { level: LogLevel; message: string; timestamp: string }[] = [];
@@ -33,6 +36,9 @@ class Logger {
     const timestamp = new Date().toISOString();
     const line = `${COLORS[level]} ${this.prefix} ${msg}`;
     this.logs.push({ level, message: msg, timestamp });
+    if (this.logs.length > MAX_BUFFERED_LOGS) {
+      this.logs.splice(0, this.logs.length - MAX_BUFFERED_LOGS);
+    }
 
     if (!this.shouldLog(level)) return;
 

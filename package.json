@@ -18,6 +18,7 @@
     "build:netlify": "NITRO_PRESET=netlify NODE_OPTIONS=--max-old-space-size=4096  ng build --configuration production",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
+    "test:server": "vitest run --config test/vitest.config.ts",
     "lint": "eslint 'src/**/*.{ts,html}'",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "format": "prettier --write 'src/**/*.{ts,html,scss,css,json}'",

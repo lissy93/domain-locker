@@ -30,6 +30,7 @@ jobs:
             app:
               - 'src/**'
               - 'db/**'
+              - 'test/**'
               - 'Dockerfile'
               - 'start.sh'
               - 'index.html'
@@ -131,6 +132,31 @@ jobs:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup
       - run: npm test
+
+  server-tests:
+    name: 🗄️ Server & Schema Tests
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+      - uses: ./.github/actions/setup
+      - run: npm run test:server
 
   deps-review:
     name: ⛓️‍💥 Dependency Review
@@ -301,7 +327,7 @@ jobs:
   summary:
     name: 📣 Summary
     runs-on: ubuntu-latest
-    needs: [pr-title, lint, typecheck, format, test, deps-review, build, docker-smoke, actionlint]
+    needs: [pr-title, lint, typecheck, format, test, server-tests, deps-review, build, docker-smoke, actionlint]
     if: always()
     steps:
       - name: Write run summary
@@ -311,6 +337,7 @@ jobs:
           TYPECHECK: ${{ needs.typecheck.result }}
           FORMAT: ${{ needs.format.result }}
           TEST: ${{ needs.test.result }}
+          SERVER_TEST: ${{ needs.server-tests.result }}
           DEPS: ${{ needs.deps-review.result }}
           BUILD: ${{ needs.build.result }}
           DOCKER: ${{ needs.docker-smoke.result }}
@@ -327,7 +354,7 @@ jobs:
             esac
           }
           overall="✅ All checks passed"
-          for r in "$PR_TITLE" "$LINT" "$TYPECHECK" "$FORMAT" "$TEST" "$DEPS" \
+          for r in "$PR_TITLE" "$LINT" "$TYPECHECK" "$FORMAT" "$TEST" "$SERVER_TEST" "$DEPS" \
                    "$BUILD" "$DOCKER" "$ACTIONLINT"; do
             [ "$r" = "failure" ] && overall="❌ One or more checks failed"
           done
@@ -343,6 +370,7 @@ jobs:
             echo "| 🦴 Typecheck | $(icon "$TYPECHECK") $TYPECHECK |"
             echo "| 🧼 Format | $(icon "$FORMAT") $FORMAT |"
             echo "| 🧪 Test | $(icon "$TEST") $TEST |"
+            echo "| 🗄️ Server \& Schema Tests | $(icon "$SERVER_TEST") $SERVER_TEST |"
             echo "| ⛓️‍💥 Dependency Review | $(icon "$DEPS") $DEPS |"
             echo "| 🏗️ Build | $(icon "$BUILD") $BUILD |"
             echo "| 🐳 Docker Smoke | $(icon "$DOCKER") $DOCKER |"

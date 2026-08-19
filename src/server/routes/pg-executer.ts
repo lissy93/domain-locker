@@ -1,114 +1,88 @@
-import { createError, defineEventHandler, readBody, sendError, type H3Event } from 'h3';
-import pkg from 'pg';
-const { Client, types } = pkg;
-// Keep DATE columns as YYYY-MM-DD strings (avoid node-pg's local-midnight UTC day-shift)
-types.setTypeParser(1082, (val) => val);
+import { createError, defineEventHandler, readBody, sendError } from 'h3';
+import { createPool, getPgPool, type PgCredentials } from '../utils/pg-pool';
+import { isSameOrigin } from '../utils/same-origin';
+import Logger from '../utils/logger';
 
-interface PgCredentials {
-  host?: string;
-  port?: string | number;
-  user?: string;
-  password?: string;
-  database?: string;
-}
+const logger = new Logger('pg-executer');
 
-function handleCors(event: H3Event) {
-  const req = event.node.req;
-  const res = event.node.res;
-  const origin = req.headers['origin'] || '*';
+/**
+ * Runs a parameterised query against the configured Postgres database.
+ * Superseded by /api/v1 and kept only while the legacy client data layer exists.
+ */
 
-  res.setHeader('Access-Control-Allow-Origin', origin);
-  res.setHeader('Vary', 'Origin');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
+// Opt-in escape hatch for instances still configuring the database from the browser
+const allowsClientCredentials = () =>
+  process.env['DL_ALLOW_CLIENT_DB_CREDENTIALS'] === 'true';
 
-  if (req.method === 'OPTIONS') {
-    res.statusCode = 204;
-    res.end();
-    return true;
-  }
-
-  return false;
-}
-
-async function getPostgresClient(credentials?: PgCredentials) {
-  const host = credentials?.host || process.env['DL_PG_HOST'];
-  const port = +(credentials?.port || process.env['DL_PG_PORT'] || '5432');
-  const user = credentials?.user || process.env['DL_PG_USER'];
-  const password = credentials?.password || process.env['DL_PG_PASSWORD'];
-  const database = credentials?.database || process.env['DL_PG_NAME'];
-
-  if (!host || !user || !password || !database) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Missing Postgres credentials',
-    });
-  }
-
-  const client = new Client({ host, port, user, password, database });
-  try {
-    await client.connect();
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Unable to connect to Postgres',
-      data: { error: msg },
-    });
-  }
-
-  return client;
-}
+const clientPools = new Map<string, ReturnType<typeof createPool>>();
+let warnedAboutClientCredentials = false;
 
 export default defineEventHandler(async (event) => {
-  if (handleCors(event)) return;
+  if (event.node.req.method === 'OPTIONS') {
+    event.node.res.statusCode = 204;
+    event.node.res.end();
+    return;
+  }
 
-  try {
-    const body = await readBody(event);
-    if (!body?.query) {
-      return sendError(
-        event,
-        createError({ statusCode: 400, statusMessage: 'Missing query in request body' }),
-      );
-    }
-
-    const { query, params, credentials } = body;
-
-    const client = await getPostgresClient(credentials);
-
-    try {
-      const result = await client.query(query, params || []);
-      return { data: result.rows };
-    } catch (queryErr) {
-      console.error('❌ Query execution error:', queryErr);
-      const msg = queryErr instanceof Error ? queryErr.message : String(queryErr);
-      return sendError(
-        event,
-        createError({
-          statusCode: 500,
-          statusMessage: 'Error executing query',
-          data: { error: msg },
-        }),
-      );
-    } finally {
-      await client.end();
-    }
-  } catch (err) {
-    console.error('❌ Unexpected error in Postgres executer:', err);
-    const e = err as {
-      statusCode?: number;
-      statusMessage?: string;
-      data?: { error?: string };
-      message?: string;
-    };
+  if (!isSameOrigin(event)) {
     return sendError(
       event,
       createError({
-        statusCode: e.statusCode || 500,
-        statusMessage: e.statusMessage || 'Unexpected server error',
-        data: { error: e.data?.error || e.message },
+        statusCode: 403,
+        statusMessage: 'Cross-origin requests are not allowed',
       }),
     );
   }
+
+  const body = await readBody(event);
+  if (!body?.query || typeof body.query !== 'string') {
+    return sendError(
+      event,
+      createError({ statusCode: 400, statusMessage: 'Missing query in request body' }),
+    );
+  }
+
+  const pool = resolvePool(body.credentials);
+  if (!pool) {
+    return sendError(
+      event,
+      createError({ statusCode: 500, statusMessage: 'Postgres is not configured' }),
+    );
+  }
+
+  try {
+    const result = await pool.query(body.query, body.params || []);
+    return { data: result.rows };
+  } catch (err) {
+    logger.error(`Query execution failed: ${(err as Error)?.message}`);
+    return sendError(
+      event,
+      createError({ statusCode: 500, statusMessage: 'Error executing query' }),
+    );
+  }
 });
+
+/** Server credentials by default; browser-supplied ones only behind the escape hatch */
+function resolvePool(credentials?: Partial<PgCredentials>) {
+  if (!credentials || !allowsClientCredentials()) return getPgPool();
+
+  const { host, port, user, password, database } = credentials;
+  if (!host || !user || !password || !database) return getPgPool();
+
+  if (!warnedAboutClientCredentials) {
+    warnedAboutClientCredentials = true;
+    logger.warn(
+      'DL_ALLOW_CLIENT_DB_CREDENTIALS is enabled. Browser-supplied database ' +
+        'credentials are deprecated and will be removed in a future release.',
+    );
+  }
+
+  const resolved = { host, port: Number(port || 5432), user, password, database };
+  const key = `${resolved.user}@${resolved.host}:${resolved.port}/${resolved.database}`;
+  let pool = clientPools.get(key);
+  if (!pool) {
+    pool = createPool(resolved);
+    clientPools.set(key, pool);
+  }
+  return pool;
+}
