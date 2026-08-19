@@ -120,6 +120,14 @@ describe.skipIf(!built)('/v1 API over HTTP', () => {
     expect(body.error.code).toBe('not_found');
   });
 
+  it('rejects a malformed id rather than letting the driver fail on it', async () => {
+    for (const path of ['/v1/domains/not-a-uuid', '/v1/domains/12345/uptime']) {
+      const { status, body } = await api<{ error: { code: string } }>(server, path);
+      expect(status).toBe(400);
+      expect(body.error.code).toBe('bad_request');
+    }
+  });
+
   it('refuses requests from another origin', async () => {
     const { status, body } = await api<{ error: { code: string } }>(
       server,

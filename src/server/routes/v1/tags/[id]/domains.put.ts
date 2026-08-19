@@ -5,8 +5,8 @@ const schema = z.object({ domainIds: z.array(z.string().uuid()) });
 
 export default defineApiRoute(
   { write: true, body: schema },
-  async ({ db, body, param }) => {
-    await db.tags.setDomainsForTag(param('id'), body.domainIds);
+  async ({ db, body, uuidParam }) => {
+    await db.tags.setDomainsForTag(uuidParam('id'), body.domainIds);
     return { updated: body.domainIds.length };
   },
 );

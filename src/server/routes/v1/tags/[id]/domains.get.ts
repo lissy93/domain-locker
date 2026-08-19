@@ -1,3 +1,5 @@
 import { defineApiRoute } from '../../../../lib/handler';
 
-export default defineApiRoute({}, ({ db, param }) => db.tags.domainsForTag(param('id')));
+export default defineApiRoute({}, ({ db, uuidParam }) =>
+  db.tags.domainsForTag(uuidParam('id')),
+);

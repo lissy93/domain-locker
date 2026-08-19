@@ -22,6 +22,8 @@ export interface ApiContext<Body, Query> {
   body: Body;
   query: Query;
   param: (name: string) => string;
+  /** For id segments, so a malformed one is a bad request rather than a driver error */
+  uuidParam: (name: string) => string;
 }
 
 interface RouteOptions<Body, Query> {
@@ -36,6 +38,8 @@ export interface ApiErrorBody {
 }
 
 const isReadOnly = () => process.env['DL_DISABLE_WRITE_METHODS'] === 'true';
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Wraps a route with the concerns every endpoint shares: origin and auth
@@ -71,17 +75,25 @@ export function defineApiRoute<Result, Body = undefined, Query = undefined>(
         ? parse(options.query, getQuery(event), 'query')
         : (undefined as Query);
 
+      const param = (name: string) => {
+        const value = getRouterParam(event, name);
+        if (!value) throw new ApiError('bad_request', `Missing route parameter: ${name}`);
+        return decodeURIComponent(value);
+      };
+
       await ensureMigrated();
       return await handle({
         event,
         db: repos(),
         body,
         query,
-        param: (name) => {
-          const value = getRouterParam(event, name);
-          if (!value)
-            throw new ApiError('bad_request', `Missing route parameter: ${name}`);
-          return decodeURIComponent(value);
+        param,
+        uuidParam: (name) => {
+          const value = param(name);
+          if (!UUID_PATTERN.test(value)) {
+            throw new ApiError('bad_request', `Route parameter is not an id: ${name}`);
+          }
+          return value;
         },
       });
     } catch (err) {

@@ -4,8 +4,8 @@ import { tagSchema } from '../../../lib/schemas';
 
 export default defineApiRoute(
   { write: true, body: tagSchema },
-  async ({ db, body, param }) => {
-    const updated = await db.tags.update(param('id'), body);
+  async ({ db, body, uuidParam }) => {
+    const updated = await db.tags.update(uuidParam('id'), body);
     if (!updated) throw notFound('Tag');
     return updated;
   },
