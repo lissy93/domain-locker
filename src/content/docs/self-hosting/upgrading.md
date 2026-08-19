@@ -2,7 +2,7 @@
 slug: upgrading
 title: Upgrading
 description: What changes when you pull a newer image, and what you can tidy up
-index: 2
+index: 9
 coverImage:
 ---
 
@@ -81,7 +81,7 @@ it takes to switch again.
 
 | Variable | What it does |
 |---|---|
-| `DL_SQLITE_PATH` | Where the SQLite file lives (default `/data/domain-locker.db`) |
+| `DL_SQLITE_PATH` | Where the SQLite file lives (`/data/domain-locker.db` in Docker, `./data/domain-locker.db` otherwise) |
 | `DL_AUTH_PASSWORD` | Require a password to use the app. Off by default |
 | `DL_API_KEY` | Lets an external scheduler trigger jobs when a password is set |
 | `DL_DISABLE_SCHEDULER` | Turn off the internal scheduler and drive jobs yourself |
