@@ -76,20 +76,32 @@ export async function updateDomain(
     if (!owned) return false;
 
     const registrarId = await upsertRegistrar(trx, input.domain.registrar, userId);
-    await trx
-      .updateTable('domains')
-      .set({
-        expiry_date: input.domain.expiry_date ?? null,
-        notes: input.domain.notes ?? null,
-        ...(registrarId ? { registrar_id: registrarId } : {}),
-      })
-      .where('id', '=', domainId)
-      .execute();
+    const changes = editableChanges(input.domain, registrarId);
+    if (Object.keys(changes).length) {
+      await trx.updateTable('domains').set(changes).where('id', '=', domainId).execute();
+    }
 
     await clearReplacedRelations(trx, domainId, input);
     await writeRelations(trx, domainId, input, userId);
     return true;
   });
+}
+
+const EDITABLE_COLUMNS = [
+  'expiry_date',
+  'registration_date',
+  'updated_date',
+  'notes',
+] as const;
+
+/** Omitted columns keep their value, so an edit cannot wipe a date it never carried */
+function editableChanges(domain: SaveDomainInput['domain'], registrarId: string | null) {
+  const changes: Record<string, string | null> = {};
+  for (const column of EDITABLE_COLUMNS) {
+    if (domain[column] !== undefined) changes[column] = domain[column] ?? null;
+  }
+  if (registrarId) changes['registrar_id'] = registrarId;
+  return changes;
 }
 
 /** Only relations the caller supplied are cleared, so a partial edit keeps the rest */

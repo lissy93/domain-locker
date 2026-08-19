@@ -198,6 +198,16 @@ describe.each(BACKENDS)('domain writes (%s)', (backend) => {
       expect(updated?.statusCodes).toEqual(['clientTransferProhibited']);
     });
 
+    it('keeps dates the edit did not carry, rather than clearing them', async () => {
+      const saved = await repo.save(FULL_INPUT);
+
+      const updated = await repo.update(saved!.id, {
+        domain: { domain_name: 'written.com', notes: 'Only notes' },
+      });
+
+      expect(updated?.expiry_date).toBe('2027-06-01');
+    });
+
     it('keeps the registrar when the edit omits one', async () => {
       const saved = await repo.save(FULL_INPUT);
 
