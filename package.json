@@ -53,6 +53,7 @@
     "better-sqlite3": "^12.11.1",
     "d3-cloud": "^1.2.7",
     "d3-selection": "^3.0.0",
+    "dotenv": "^16.6.1",
     "file-saver": "^2.0.5",
     "front-matter": "^4.0.2",
     "fuse.js": "^7.3.0",
