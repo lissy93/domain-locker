@@ -1,4 +1,5 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { DestroyRef, Component, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { ActivatedRoute } from '@angular/router';
 import { PrimeNgModule } from '~/app/prime-ng.module';
@@ -51,6 +52,7 @@ import { ErrorHandlerService } from '~/app/services/error-handler.service';
   `,
 })
 export default class StatusDomainsPageComponent implements OnInit {
+  private destroyRef = inject(DestroyRef);
   private route = inject(ActivatedRoute);
   private databaseService = inject(DatabaseService);
   private messageService = inject(MessageService);
@@ -62,7 +64,7 @@ export default class StatusDomainsPageComponent implements OnInit {
   statusInfo: SecurityCategory | undefined;
 
   ngOnInit() {
-    this.route.params.subscribe((params) => {
+    this.route.params.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       this.statusCode = params['status'];
       this.statusInfo = getByEppCode(this.statusCode);
       this.loadDomains();

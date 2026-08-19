@@ -93,6 +93,49 @@ export function uptimeRepo(db: Kysely<Database>, backend: Backend) {
       }));
     },
 
+    /** History for many domains at once, so the monitor page makes one request */
+    async historyFor(
+      domainIds: string[],
+      timeframe: string,
+      userId = currentUserId(),
+    ): Promise<Record<string, UptimeRow[]>> {
+      const grouped = Object.fromEntries(domainIds.map((id) => [id, []])) as Record<
+        string,
+        UptimeRow[]
+      >;
+      if (!domainIds.length) return grouped;
+
+      const rows = await db
+        .selectFrom('uptime')
+        .innerJoin('domains', 'domains.id', 'uptime.domain_id')
+        .where('domains.user_id', '=', userId)
+        .where('uptime.domain_id', 'in', domainIds)
+        .where('uptime.checked_at', '>=', timeframeCutoff(timeframe))
+        .select([
+          'uptime.domain_id',
+          'uptime.checked_at',
+          'uptime.is_up',
+          'uptime.response_code',
+          'uptime.response_time_ms',
+          'uptime.dns_lookup_time_ms',
+          'uptime.ssl_handshake_time_ms',
+        ])
+        .orderBy('uptime.checked_at')
+        .execute();
+
+      for (const row of rows) {
+        grouped[row.domain_id]?.push({
+          checked_at: row.checked_at,
+          is_up: toBoolean(row.is_up),
+          response_code: toNumber(row.response_code),
+          response_time_ms: toNumber(row.response_time_ms),
+          dns_lookup_time_ms: toNumber(row.dns_lookup_time_ms),
+          ssl_handshake_time_ms: toNumber(row.ssl_handshake_time_ms),
+        });
+      }
+      return grouped;
+    },
+
     /** Latest check for each of the given domains, for the monitor list */
     async latestFor(
       domainIds: string[],

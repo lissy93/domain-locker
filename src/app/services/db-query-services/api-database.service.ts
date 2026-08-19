@@ -189,6 +189,18 @@ export default class ApiDatabaseService extends DatabaseService {
     );
   }
 
+  override getDomainUptimeBatch(
+    domainIds: string[],
+    timeframe: string,
+  ): Promise<Record<string, UptimeRow[]>> {
+    return this.promise(
+      this.api.post<Record<string, UptimeRow[]>>('/v1/uptime/history', {
+        domainIds,
+        timeframe,
+      }),
+    );
+  }
+
   getDomainUptimeDaily(
     _userId: string,
     domainId: string,

@@ -1,4 +1,5 @@
 import {
+  DestroyRef,
   Component,
   OnInit,
   OnDestroy,
@@ -9,6 +10,7 @@ import {
   inject,
   AfterViewInit,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router, NavigationEnd } from '@angular/router';
 import { PrimeNgModule } from '~/app/prime-ng.module';
@@ -30,6 +32,7 @@ import { FeatureNotEnabledComponent } from '~/app/components/misc/feature-not-en
   ],
 })
 export default class StatsIndexPage implements OnInit, OnDestroy, AfterViewInit {
+  private destroyRef = inject(DestroyRef);
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
   private featureService = inject(FeatureService);
@@ -56,7 +59,7 @@ export default class StatsIndexPage implements OnInit, OnDestroy, AfterViewInit 
     this.hideSideBar = this.router.url === '/stats';
 
     // If route changes, update whether sidebar is hidden
-    this.router.events.subscribe((event) => {
+    this.router.events.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((event) => {
       if (event instanceof NavigationEnd) {
         this.hideSideBar = event.urlAfterRedirects === '/stats';
         this.cdr.detectChanges();

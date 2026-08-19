@@ -1,4 +1,12 @@
-import { ChangeDetectorRef, Component, NgZone, OnInit, inject } from '@angular/core';
+import {
+  DestroyRef,
+  ChangeDetectorRef,
+  Component,
+  NgZone,
+  OnInit,
+  inject,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PrimeNgModule } from '../../prime-ng.module';
@@ -70,6 +78,7 @@ interface PreviewDomainInfo {
   // styleUrl: './domain-name.page.scss',
 })
 export default class DomainDetailsPage implements OnInit {
+  private destroyRef = inject(DestroyRef);
   private route = inject(ActivatedRoute);
   domainUtils = inject(DomainUtils);
   private router = inject(Router);
@@ -88,7 +97,7 @@ export default class DomainDetailsPage implements OnInit {
   enablePreviewDomain$ = this.featureService.isFeatureEnabled('enablePreviewDomain');
 
   ngOnInit() {
-    this.route.params.subscribe((params) => {
+    this.route.params.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       this.name = params['domain'] ?? null;
       this.fetchDomainInfo();
     });

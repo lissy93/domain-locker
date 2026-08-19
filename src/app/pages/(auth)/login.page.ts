@@ -1,4 +1,5 @@
 import {
+  DestroyRef,
   Component,
   OnInit,
   ChangeDetectorRef,
@@ -7,6 +8,7 @@ import {
   inject,
   OnDestroy,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   FormBuilder,
   FormGroup,
@@ -53,6 +55,7 @@ import { NgxTurnstileModule, NgxTurnstileComponent } from 'ngx-turnstile';
   ],
 })
 export default class LoginPageComponent implements OnInit, OnDestroy {
+  private destroyRef = inject(DestroyRef);
   private fb = inject(FormBuilder);
   private supabaseService = inject(SupabaseService);
   private router = inject(Router);
@@ -138,23 +141,25 @@ export default class LoginPageComponent implements OnInit, OnDestroy {
       this.showNewPasswordSetForm = true;
     }
 
-    this.route.queryParams.subscribe(async (params) => {
-      if (params['requireMFA'] === 'true') {
-        // User needs to complete MFA
-        const { data: factors } =
-          await this.supabaseService.supabase.auth.mfa.listFactors();
-        if (factors && factors.totp.length > 0) {
-          this.requireMFA = true;
-          this.factorId = factors.totp[0].id;
-          this.form
-            .get('mfaCode')
-            ?.setValidators([Validators.required, Validators.pattern(/^\d{6}$/)]);
-          this.form.get('mfaCode')?.updateValueAndValidity();
-          this.successMessage = 'Please enter your 2FA code to continue';
-          this.cdr.detectChanges();
+    this.route.queryParams
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(async (params) => {
+        if (params['requireMFA'] === 'true') {
+          // User needs to complete MFA
+          const { data: factors } =
+            await this.supabaseService.supabase.auth.mfa.listFactors();
+          if (factors && factors.totp.length > 0) {
+            this.requireMFA = true;
+            this.factorId = factors.totp[0].id;
+            this.form
+              .get('mfaCode')
+              ?.setValidators([Validators.required, Validators.pattern(/^\d{6}$/)]);
+            this.form.get('mfaCode')?.updateValueAndValidity();
+            this.successMessage = 'Please enter your 2FA code to continue';
+            this.cdr.detectChanges();
+          }
         }
-      }
-    });
+      });
   }
 
   ngOnDestroy() {

@@ -142,6 +142,12 @@ export abstract class DatabaseService {
     domainId: string,
     timeframe: string,
   ): Promise<UptimeRow[]>;
+  /** Batched history, where the backend supports it. Falls back to one call per domain */
+  getDomainUptimeBatch?(
+    domainIds: string[],
+    timeframe: string,
+  ): Promise<Record<string, UptimeRow[]>>;
+
   abstract getDomainUptimeDaily(
     userId: string,
     domainId: string,

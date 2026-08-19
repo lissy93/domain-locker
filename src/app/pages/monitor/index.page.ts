@@ -87,7 +87,7 @@ export default class MonitorPage implements OnInit {
 
   loadDomains(): void {
     this.loading = true;
-    this.databaseService.instance.listDomains().subscribe({
+    this.databaseService.domains$.subscribe({
       next: (domains) => {
         this.domains = domains;
         this.loadDomainSummaries();
@@ -106,9 +106,23 @@ export default class MonitorPage implements OnInit {
   }
 
   loadDomainSummaries(): void {
+    const service = this.databaseService.instance;
+    const histories = service.getDomainUptimeBatch
+      ? service.getDomainUptimeBatch(
+          this.domains.map((domain) => domain.id),
+          'day',
+        )
+      : Promise.all(
+          this.domains.map((domain) =>
+            service
+              .getDomainUptime(domain.user_id, domain.id, 'day')
+              .then((rows) => [domain.id, rows] as const),
+          ),
+        ).then((entries) => Object.fromEntries(entries));
+
     this.domains.forEach((domain) => {
-      this.databaseService.instance
-        .getDomainUptime(domain.user_id, domain.id, 'day')
+      histories
+        .then((byDomain) => byDomain[domain.id] ?? [])
         .then((uptimeData) => {
           const sparklineData = uptimeData.map((entry: UptimeData) => ({
             x: entry.checked_at,
