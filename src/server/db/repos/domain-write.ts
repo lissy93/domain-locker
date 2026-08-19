@@ -212,7 +212,7 @@ async function writeRelations(
       .execute();
   }
 
-  if (input.host?.['ip']) {
+  if (input.host && hostColumns(input.host).ip) {
     await linkHost(trx, domainId, input.host, userId);
   }
 
@@ -316,27 +316,37 @@ export async function linkTags(
     .execute();
 }
 
+/**
+ * The lookup API names these differently from the columns, and callers may
+ * already have mapped them, so accept either spelling
+ */
+function hostColumns(host: Record<string, unknown>) {
+  return {
+    ip: stringOrNull(host['ip'] ?? host['query']),
+    lat: numberOrNull(host['lat']),
+    lon: numberOrNull(host['lon']),
+    isp: stringOrNull(host['isp']),
+    org: stringOrNull(host['org']),
+    as_number: stringOrNull(host['as_number'] ?? host['asNumber'] ?? host['as']),
+    city: stringOrNull(host['city']),
+    region: stringOrNull(host['region'] ?? host['regionName']),
+    country: stringOrNull(host['country']),
+  };
+}
+
 async function linkHost(
   db: Db,
   domainId: string,
   host: Record<string, unknown>,
   userId: string,
 ): Promise<void> {
-  const ip = String(host['ip']);
+  const columns = hostColumns(host);
+  const ip = columns.ip;
+  if (!ip) return;
+
   await db
     .insertInto('hosts')
-    .values({
-      ip,
-      lat: numberOrNull(host['lat']),
-      lon: numberOrNull(host['lon']),
-      isp: stringOrNull(host['isp']),
-      org: stringOrNull(host['org']),
-      as_number: stringOrNull(host['as_number']),
-      city: stringOrNull(host['city']),
-      region: stringOrNull(host['region']),
-      country: stringOrNull(host['country']),
-      user_id: userId,
-    })
+    .values({ ...columns, ip, user_id: userId })
     .onConflict((conflict) => conflict.columns(['user_id', 'ip']).doNothing())
     .execute();
 

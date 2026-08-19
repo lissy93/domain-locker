@@ -82,6 +82,31 @@ describe.each(BACKENDS)('domain writes (%s)', (backend) => {
     expect(www?.sd_info).toBeNull();
   });
 
+  it('saves the host straight from the lookup API, whose field names differ', async () => {
+    const saved = await repo.save({
+      domain: { domain_name: 'looked-up.com' },
+      host: {
+        query: '9.9.9.9',
+        isp: 'Quad9',
+        org: 'Quad9 Foundation',
+        as: 'AS19281 Quad9',
+        city: 'Zurich',
+        regionName: 'Zurich',
+        country: 'Switzerland',
+        lat: 47.36,
+        lon: 8.55,
+      },
+    });
+
+    expect(saved?.host).toMatchObject({
+      ip: '9.9.9.9',
+      isp: 'Quad9',
+      as_number: 'AS19281 Quad9',
+      region: 'Zurich',
+      country: 'Switzerland',
+    });
+  });
+
   it('saves a bare domain without inventing relations', async () => {
     const saved = await repo.save({ domain: { domain_name: 'bare.com' } });
 
