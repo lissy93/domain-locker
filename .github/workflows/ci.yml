@@ -214,6 +214,10 @@ jobs:
           echo "::error::SSR server did not respond on /api/health within 20s"
           exit 1
 
+      - name: API integration tests
+        # Runs against the freshly built server on a throwaway SQLite database
+        run: npx vitest run --config test/vitest.config.ts test/api
+
       - name: Archive bundle
         run: tar -czf dl-bundle.tar.gz dist/
 

@@ -1,0 +1,399 @@
+import type { Kysely, Transaction } from 'kysely';
+import type { Database } from '../schema';
+import { currentUserId } from './helpers';
+
+type Db = Kysely<Database> | Transaction<Database>;
+
+export interface SaveDomainInput {
+  domain: {
+    domain_name: string;
+    expiry_date?: string | null;
+    registration_date?: string | null;
+    updated_date?: string | null;
+    notes?: string | null;
+    registrar?: string | { name?: string; url?: string | null } | null;
+  };
+  tags?: string[];
+  notifications?: { type: string; isEnabled: boolean }[];
+  statuses?: string[];
+  ipAddresses?: { ipAddress: string; isIpv6: boolean }[];
+  ssl?: Record<string, unknown> | null;
+  whois?: Record<string, unknown> | null;
+  dns?: { mxRecords?: string[]; txtRecords?: string[]; nameServers?: string[] } | null;
+  host?: Record<string, unknown> | null;
+  subdomains?: { name: string; sd_info?: unknown }[];
+  links?: { link_name: string; link_url: string; link_description?: string | null }[];
+}
+
+const DNS_TYPES = {
+  mxRecords: 'MX',
+  txtRecords: 'TXT',
+  nameServers: 'NS',
+} as const;
+
+/** Creates a domain and every relation it arrived with, in one transaction */
+export async function insertDomain(
+  db: Kysely<Database>,
+  input: SaveDomainInput,
+  userId = currentUserId(),
+): Promise<string> {
+  return db.transaction().execute(async (trx) => {
+    const registrarId = await upsertRegistrar(trx, input.domain.registrar, userId);
+
+    const domain = await trx
+      .insertInto('domains')
+      .values({
+        user_id: userId,
+        domain_name: input.domain.domain_name,
+        expiry_date: input.domain.expiry_date ?? null,
+        registration_date: input.domain.registration_date ?? null,
+        updated_date: input.domain.updated_date ?? null,
+        notes: input.domain.notes ?? null,
+        registrar_id: registrarId,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+
+    await writeRelations(trx, domain.id, input, userId);
+    return domain.id;
+  });
+}
+
+/** Replaces the domain's editable fields and the relations present in the input */
+export async function updateDomain(
+  db: Kysely<Database>,
+  domainId: string,
+  input: SaveDomainInput,
+  userId = currentUserId(),
+): Promise<boolean> {
+  return db.transaction().execute(async (trx) => {
+    const owned = await trx
+      .selectFrom('domains')
+      .where('id', '=', domainId)
+      .where('user_id', '=', userId)
+      .select('id')
+      .executeTakeFirst();
+    if (!owned) return false;
+
+    const registrarId = await upsertRegistrar(trx, input.domain.registrar, userId);
+    await trx
+      .updateTable('domains')
+      .set({
+        expiry_date: input.domain.expiry_date ?? null,
+        notes: input.domain.notes ?? null,
+        ...(registrarId ? { registrar_id: registrarId } : {}),
+      })
+      .where('id', '=', domainId)
+      .execute();
+
+    await clearReplacedRelations(trx, domainId, input);
+    await writeRelations(trx, domainId, input, userId);
+    return true;
+  });
+}
+
+/** Only relations the caller supplied are cleared, so a partial edit keeps the rest */
+async function clearReplacedRelations(
+  trx: Transaction<Database>,
+  domainId: string,
+  input: SaveDomainInput,
+) {
+  const clears: Promise<unknown>[] = [];
+  if (input.tags) {
+    clears.push(
+      trx.deleteFrom('domain_tags').where('domain_id', '=', domainId).execute(),
+    );
+  }
+  if (input.notifications) {
+    clears.push(
+      trx
+        .deleteFrom('notification_preferences')
+        .where('domain_id', '=', domainId)
+        .execute(),
+    );
+  }
+  if (input.subdomains) {
+    clears.push(
+      trx.deleteFrom('sub_domains').where('domain_id', '=', domainId).execute(),
+    );
+  }
+  if (input.links) {
+    clears.push(
+      trx.deleteFrom('domain_links').where('domain_id', '=', domainId).execute(),
+    );
+  }
+  if (input.statuses) {
+    clears.push(
+      trx.deleteFrom('domain_statuses').where('domain_id', '=', domainId).execute(),
+    );
+  }
+  if (input.ipAddresses) {
+    clears.push(
+      trx.deleteFrom('ip_addresses').where('domain_id', '=', domainId).execute(),
+    );
+  }
+  if (input.dns) {
+    clears.push(
+      trx.deleteFrom('dns_records').where('domain_id', '=', domainId).execute(),
+    );
+  }
+  await Promise.all(clears);
+}
+
+async function writeRelations(
+  trx: Transaction<Database>,
+  domainId: string,
+  input: SaveDomainInput,
+  userId: string,
+) {
+  if (input.ipAddresses?.length) {
+    await trx
+      .insertInto('ip_addresses')
+      .values(
+        input.ipAddresses.map((ip) => ({
+          domain_id: domainId,
+          ip_address: ip.ipAddress,
+          is_ipv6: ip.isIpv6,
+        })),
+      )
+      .execute();
+  }
+
+  if (input.tags?.length) {
+    await linkTags(trx, domainId, input.tags, userId);
+  }
+
+  if (input.notifications?.length) {
+    await trx
+      .insertInto('notification_preferences')
+      .values(
+        input.notifications.map((notification) => ({
+          domain_id: domainId,
+          notification_type: notification.type,
+          is_enabled: notification.isEnabled,
+        })),
+      )
+      .onConflict((conflict) =>
+        conflict
+          .columns(['domain_id', 'notification_type'])
+          .doUpdateSet((eb) => ({ is_enabled: eb.ref('excluded.is_enabled') })),
+      )
+      .execute();
+  }
+
+  const dnsRows = Object.entries(DNS_TYPES).flatMap(([key, recordType]) =>
+    (input.dns?.[key as keyof typeof DNS_TYPES] ?? []).map((value) => ({
+      domain_id: domainId,
+      record_type: recordType,
+      record_value: value,
+    })),
+  );
+  if (dnsRows.length) {
+    await trx
+      .insertInto('dns_records')
+      .values(dnsRows)
+      .onConflict((conflict) =>
+        conflict.columns(['domain_id', 'record_type', 'record_value']).doNothing(),
+      )
+      .execute();
+  }
+
+  if (input.ssl && Object.keys(input.ssl).length) {
+    await trx
+      .insertInto('ssl_certificates')
+      .values({ domain_id: domainId, ...pickSslFields(input.ssl) })
+      .execute();
+  }
+
+  if (input.whois && Object.keys(input.whois).length) {
+    await trx
+      .insertInto('whois_info')
+      .values({ domain_id: domainId, ...pickWhoisFields(input.whois) })
+      .execute();
+  }
+
+  if (input.host?.['ip']) {
+    await linkHost(trx, domainId, input.host, userId);
+  }
+
+  if (input.statuses?.length) {
+    await trx
+      .insertInto('domain_statuses')
+      .values(
+        input.statuses.map((statusCode) => ({
+          domain_id: domainId,
+          status_code: statusCode,
+        })),
+      )
+      .execute();
+  }
+
+  if (input.subdomains?.length) {
+    await trx
+      .insertInto('sub_domains')
+      .values(
+        input.subdomains.map((subdomain) => ({
+          domain_id: domainId,
+          name: subdomain.name,
+          sd_info:
+            subdomain.sd_info === undefined || subdomain.sd_info === null
+              ? null
+              : JSON.stringify(subdomain.sd_info),
+        })),
+      )
+      .execute();
+  }
+
+  if (input.links?.length) {
+    await trx
+      .insertInto('domain_links')
+      .values(
+        input.links.map((link) => ({
+          domain_id: domainId,
+          link_name: link.link_name,
+          link_url: link.link_url,
+          link_description: link.link_description ?? null,
+        })),
+      )
+      .execute();
+  }
+}
+
+/** Finds or creates the user's registrar, returning null when none was given */
+export async function upsertRegistrar(
+  db: Db,
+  registrar: SaveDomainInput['domain']['registrar'],
+  userId: string,
+): Promise<string | null> {
+  const name = typeof registrar === 'string' ? registrar : registrar?.name;
+  if (!name) return null;
+  const url = typeof registrar === 'string' ? null : (registrar?.url ?? null);
+
+  const existing = await db
+    .selectFrom('registrars')
+    .where('user_id', '=', userId)
+    .where('name', '=', name)
+    .select('id')
+    .executeTakeFirst();
+  if (existing) return existing.id;
+
+  const inserted = await db
+    .insertInto('registrars')
+    .values({ name, url, user_id: userId })
+    .returning('id')
+    .executeTakeFirstOrThrow();
+  return inserted.id;
+}
+
+/** Creates any missing tags, then links all of them to the domain */
+export async function linkTags(
+  db: Db,
+  domainId: string,
+  tagNames: string[],
+  userId: string,
+): Promise<void> {
+  const names = [...new Set(tagNames.filter(Boolean))];
+  if (!names.length) return;
+
+  await db
+    .insertInto('tags')
+    .values(names.map((name) => ({ name, user_id: userId })))
+    .onConflict((conflict) => conflict.columns(['user_id', 'name']).doNothing())
+    .execute();
+
+  const tags = await db
+    .selectFrom('tags')
+    .where('user_id', '=', userId)
+    .where('name', 'in', names)
+    .select('id')
+    .execute();
+
+  if (!tags.length) return;
+  await db
+    .insertInto('domain_tags')
+    .values(tags.map((tag) => ({ domain_id: domainId, tag_id: tag.id })))
+    .onConflict((conflict) => conflict.columns(['domain_id', 'tag_id']).doNothing())
+    .execute();
+}
+
+async function linkHost(
+  db: Db,
+  domainId: string,
+  host: Record<string, unknown>,
+  userId: string,
+): Promise<void> {
+  const ip = String(host['ip']);
+  await db
+    .insertInto('hosts')
+    .values({
+      ip,
+      lat: numberOrNull(host['lat']),
+      lon: numberOrNull(host['lon']),
+      isp: stringOrNull(host['isp']),
+      org: stringOrNull(host['org']),
+      as_number: stringOrNull(host['as_number']),
+      city: stringOrNull(host['city']),
+      region: stringOrNull(host['region']),
+      country: stringOrNull(host['country']),
+      user_id: userId,
+    })
+    .onConflict((conflict) => conflict.columns(['user_id', 'ip']).doNothing())
+    .execute();
+
+  const saved = await db
+    .selectFrom('hosts')
+    .where('user_id', '=', userId)
+    .where('ip', '=', ip)
+    .select('id')
+    .executeTakeFirst();
+  if (!saved) return;
+
+  await db
+    .insertInto('domain_hosts')
+    .values({ domain_id: domainId, host_id: saved.id })
+    .onConflict((conflict) => conflict.columns(['domain_id', 'host_id']).doNothing())
+    .execute();
+}
+
+const SSL_FIELDS = [
+  'issuer',
+  'issuer_country',
+  'subject',
+  'valid_from',
+  'valid_to',
+  'fingerprint',
+  'signature_algorithm',
+] as const;
+
+function pickSslFields(ssl: Record<string, unknown>) {
+  return {
+    ...Object.fromEntries(SSL_FIELDS.map((field) => [field, stringOrNull(ssl[field])])),
+    key_size: numberOrNull(ssl['key_size']),
+  };
+}
+
+const WHOIS_FIELDS = [
+  'name',
+  'organization',
+  'country',
+  'street',
+  'city',
+  'state',
+  'postal_code',
+] as const;
+
+function pickWhoisFields(whois: Record<string, unknown>) {
+  return Object.fromEntries(
+    WHOIS_FIELDS.map((field) => [field, stringOrNull(whois[field])]),
+  );
+}
+
+function stringOrNull(value: unknown): string | null {
+  return value === undefined || value === null || value === '' ? null : String(value);
+}
+
+function numberOrNull(value: unknown): number | null {
+  if (value === undefined || value === null || value === '') return null;
+  const parsed = Number(value);
+  return Number.isNaN(parsed) ? null : parsed;
+}

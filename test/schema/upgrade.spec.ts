@@ -1,34 +1,34 @@
-import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { beforeAll, afterAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { Pool } from 'pg';
 import { isPostgresAvailable, resetTestDatabase, testPool } from '../helpers/postgres';
 
-/** The schema as shipped in the last release, to simulate an existing install */
-function releasedSchema(): string | null {
-  try {
-    return execFileSync('git', ['show', 'HEAD:db/schema.sql'], { encoding: 'utf8' });
-  } catch {
-    return null;
-  }
-}
+/**
+ * delete_domain as it shipped before 0.2.5: the parameter shadows the column,
+ * so every call failed with "column reference domain_id is ambiguous".
+ * Pinned here rather than read from git, so this stays a fixed starting point.
+ */
+const LEGACY_DELETE_DOMAIN = `
+CREATE OR REPLACE FUNCTION "public"."delete_domain"("domain_id" uuid) RETURNS void
+    LANGUAGE plpgsql
+AS $$
+BEGIN
+  DELETE FROM notifications WHERE domain_id = $1;
+  DELETE FROM domains WHERE id = $1;
+END;
+$$;`;
 
-const previousSchema = releasedSchema();
 const available = await isPostgresAvailable();
 
-describe.skipIf(!available || !previousSchema)('upgrading an existing database', () => {
+describe.skipIf(!available)('upgrading an existing database', () => {
   let pool: Pool;
 
   beforeAll(async () => {
-    const config = await resetTestDatabase('dl_test_upgrade');
-    pool = testPool(config);
-    await pool.query('DROP SCHEMA public CASCADE; CREATE SCHEMA public;');
-    await pool.query(previousSchema as string);
+    pool = testPool(await resetTestDatabase('dl_test_upgrade'));
+    await pool.query(LEGACY_DELETE_DOMAIN);
   });
 
-  afterAll(async () => {
-    await pool?.end();
-  });
+  afterAll(() => pool?.end());
 
   it('starts from a database where delete_domain is broken', async () => {
     const domainId = await seedDomain(pool);
@@ -42,16 +42,14 @@ describe.skipIf(!available || !previousSchema)('upgrading an existing database',
 
     await pool.query(readFileSync('db/schema.sql', 'utf8'));
 
-    const { rows: kept } = await pool.query('SELECT 1 FROM domains WHERE id = $1', [
-      domainId,
-    ]);
-    expect(kept).toHaveLength(1);
+    const kept = await pool.query('SELECT 1 FROM domains WHERE id = $1', [domainId]);
+    expect(kept.rows).toHaveLength(1);
 
     await expect(
       pool.query('SELECT delete_domain($1)', [domainId]),
     ).resolves.toBeDefined();
-    const { rows } = await pool.query('SELECT 1 FROM domains WHERE id = $1', [domainId]);
-    expect(rows).toHaveLength(0);
+    const remaining = await pool.query('SELECT 1 FROM domains WHERE id = $1', [domainId]);
+    expect(remaining.rows).toHaveLength(0);
   });
 });
 

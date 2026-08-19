@@ -5,6 +5,9 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Toolchain for native modules (better-sqlite3 has no musl prebuilds)
+RUN apk add --no-cache python3 make g++
+
 # Copy manifests + npm config for reproducible installs
 COPY package.json package-lock.json .npmrc ./
 
