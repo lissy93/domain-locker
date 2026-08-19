@@ -128,6 +128,28 @@ describe.each(BACKENDS)('domain writes (%s)', (backend) => {
     expect(registrars).toHaveLength(1);
   });
 
+  it('treats registrar names differing only by case as the same one', async () => {
+    await repo.save(FULL_INPUT);
+    await repo.save({
+      domain: { domain_name: 'second.com', registrar: { name: 'NAMECHEAP' } },
+    });
+    await repo.save({
+      domain: { domain_name: 'third.com', registrar: { name: 'Name Cheap' } },
+    });
+
+    const registrars = await db.selectFrom('registrars').selectAll().execute();
+    expect(registrars).toHaveLength(1);
+    expect(registrars[0].name).toBe('Namecheap');
+  });
+
+  it('strips characters that would break registrar links', async () => {
+    const saved = await repo.save({
+      domain: { domain_name: 'slashes.com', registrar: { name: 'Foo/Bar#1' } },
+    });
+
+    expect(saved?.registrar?.name).toBe('FooBar1');
+  });
+
   it('reuses tags and hosts across domains', async () => {
     await repo.save(FULL_INPUT);
     await repo.save({

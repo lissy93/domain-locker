@@ -1,5 +1,6 @@
 import type { Kysely, Transaction } from 'kysely';
 import type { Database } from '../schema';
+import { normalizeRegistrarName, removeUrlChars } from '../../jobs/updater/utils';
 import { currentUserId } from './helpers';
 
 type Db = Kysely<Database> | Transaction<Database>;
@@ -277,16 +278,20 @@ export async function upsertRegistrar(
   registrar: SaveDomainInput['domain']['registrar'],
   userId: string,
 ): Promise<string | null> {
-  const name = typeof registrar === 'string' ? registrar : registrar?.name;
+  const name = removeUrlChars(
+    typeof registrar === 'string' ? registrar : registrar?.name,
+  );
   if (!name) return null;
   const url = typeof registrar === 'string' ? null : (registrar?.url ?? null);
 
-  const existing = await db
+  // Loose match, so NameCheap and Namecheap don't become two registrars
+  const target = normalizeRegistrarName(name);
+  const rows = await db
     .selectFrom('registrars')
     .where('user_id', '=', userId)
-    .where('name', '=', name)
-    .select('id')
-    .executeTakeFirst();
+    .select(['id', 'name'])
+    .execute();
+  const existing = rows.find((row) => normalizeRegistrarName(row.name) === target);
   if (existing) return existing.id;
 
   const inserted = await db
