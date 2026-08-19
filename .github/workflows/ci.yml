@@ -54,7 +54,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Validate PR title (conventional commits)
-        uses: amannn/action-semantic-pull-request@v5
+        uses: amannn/action-semantic-pull-request@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -168,7 +168,7 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/dependency-review-action@v4
+      - uses: actions/dependency-review-action@v5
         with:
           fail-on-severity: moderate
           comment-summary-in-pr: on-failure
@@ -222,7 +222,7 @@ jobs:
         run: tar -czf dl-bundle.tar.gz dist/
 
       - name: Upload bundle artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dl-bundle-${{ github.sha }}
           path: dl-bundle.tar.gz
@@ -239,10 +239,10 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: 🔌 Set up Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: 🔨 Build image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           load: true

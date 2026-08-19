@@ -9,7 +9,7 @@ coverImage:
 ## The App Setup
 
 #### 0. Prerequisites
-You'll need git and Node.js 20 or newer installed.
+You'll need git and Node.js 22 or newer installed.
 If you're using [NVM](https://github.com/nvm-sh/nvm) you can run `nvm use` to download and use the version pinned in `.nvmrc`
 
 #### 1. Get the code and install dependencies

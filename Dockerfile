@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
 # Stage 1 - build: install all dependencies and compile the app
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
@@ -31,7 +31,7 @@ RUN find node_modules \( -type d -name '@esbuild' -o -type d -name 'esbuild' \) 
     find node_modules -type l -name esbuild -exec rm -f {} +
 
 # Stage 2 - runner: minimal image to serve the app
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 
 # Postgres client for schema/init, whois for app lookups, wget for healthcheck
 RUN apk add --no-cache postgresql-client whois wget
