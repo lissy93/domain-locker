@@ -21,6 +21,18 @@ export function resetMigrationState(): void {
   migration = null;
 }
 
+const PG_VARS = ['DL_PG_HOST', 'DL_PG_USER', 'DL_PG_PASSWORD', 'DL_PG_NAME'];
+
+/** Half-configured Postgres would otherwise drop to SQLite without a word */
+function warnAboutPartialPostgres(): void {
+  const missing = PG_VARS.filter((name) => !process.env[name]);
+  if (missing.length === PG_VARS.length) return;
+  log.warn(
+    `Postgres is only partly configured, so SQLite is being used instead. ` +
+      `Missing: ${missing.join(', ')}`,
+  );
+}
+
 async function runMigrations(): Promise<void> {
   if (process.env['DL_ENV_TYPE'] === 'managed') {
     throw new Error('The self-hosted data core is not used on managed instances');
@@ -31,11 +43,14 @@ async function runMigrations(): Promise<void> {
   }
 
   const backend = selectedBackend();
-  log.info(
-    backend === 'postgres'
-      ? `Using Postgres at ${process.env['DL_PG_HOST']}/${process.env['DL_PG_NAME']}`
-      : `Using SQLite at ${sqlitePath()}`,
-  );
+  if (backend === 'postgres') {
+    log.info(
+      `Using Postgres at ${process.env['DL_PG_HOST']}/${process.env['DL_PG_NAME']}`,
+    );
+  } else {
+    warnAboutPartialPostgres();
+    log.info(`Using SQLite at ${sqlitePath()}`);
+  }
 
   try {
     const { applied, baselined } = await migrateToLatest(getDb(), currentBackend());

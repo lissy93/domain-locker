@@ -1,13 +1,15 @@
 import { Kysely, PostgresDialect, SqliteDialect, type Dialect } from 'kysely';
 import { mkdirSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import pg from 'pg';
 import type { Database } from './schema';
 import { SqliteTypePlugin } from './sqlite-plugin';
 
 export type Backend = 'postgres' | 'sqlite';
 
-const DEFAULT_SQLITE_PATH = '/data/domain-locker.db';
+// Relative to the working directory, since only the container has a writable
+// /data. The Docker image points DL_SQLITE_PATH there instead
+const DEFAULT_SQLITE_PATH = './data/domain-locker.db';
 
 /** Postgres wins when configured, so existing installs keep their database */
 export function selectedBackend(): Backend {
@@ -15,8 +17,10 @@ export function selectedBackend(): Backend {
   return DL_PG_HOST && DL_PG_USER && DL_PG_PASSWORD && DL_PG_NAME ? 'postgres' : 'sqlite';
 }
 
+/** Absolute, so logs and errors name the file that was actually opened */
 export function sqlitePath(): string {
-  return process.env['DL_SQLITE_PATH'] || DEFAULT_SQLITE_PATH;
+  const configured = process.env['DL_SQLITE_PATH'] || DEFAULT_SQLITE_PATH;
+  return configured === ':memory:' ? configured : resolve(configured);
 }
 
 let instance: Kysely<Database> | null = null;
@@ -80,16 +84,26 @@ function sqliteDialect(path = sqlitePath()): Dialect {
   return new SqliteDialect({
     database: async () => {
       const { default: SqliteDatabase } = await import('better-sqlite3');
-      if (path !== ':memory:') {
-        mkdirSync(dirname(path), { recursive: true });
-      }
-      const database = new SqliteDatabase(path);
+      const database = openSqliteFile(SqliteDatabase, path);
       database.pragma('journal_mode = WAL');
       database.pragma('foreign_keys = ON');
       database.pragma('busy_timeout = 5000');
       return database;
     },
   });
+}
+
+/** A bare EACCES says nothing about the fix, which is to pick a writable path */
+function openSqliteFile<T>(open: new (path: string) => T, path: string): T {
+  try {
+    if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true });
+    return new open(path);
+  } catch (err) {
+    throw new Error(
+      `Cannot open the SQLite database at ${path}: ${(err as Error).message}. ` +
+        'Set DL_SQLITE_PATH to a writable path, or configure Postgres with DL_PG_*',
+    );
+  }
 }
 
 const PG_TYPE_DATE = 1082;
