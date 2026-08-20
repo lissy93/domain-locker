@@ -15,8 +15,7 @@ services:
       POSTGRES_USER: ${DL_PG_USER:-postgres}
       POSTGRES_PASSWORD: ${DL_PG_PASSWORD:-changeme2420}
 
-    # Only published so you can reach the db from the host. Set DL_PG_HOST_PORT
-    # if 5432 is taken. The app connects over the network below, not through this
+    # Host access only. The app connects over the network below, not through this
     ports:
       - "127.0.0.1:${DL_PG_HOST_PORT:-5432}:5432"
 
@@ -43,9 +42,8 @@ services:
     #   - dl_pg_password
     environment:
       DL_ENV_TYPE: ${DL_ENV_TYPE:-selfHosted}
-      # Where the postgres service above lives on the compose network. Override
-      # these only to point at your own database. Note compose also reads a .env
-      # in this directory, so don't leave a source-build one next to this file
+      # Where the postgres service above lives. Note compose also reads a .env
+      # here, so don't leave a source-build one next to this file
       DL_PG_HOST: ${DL_PG_HOST:-postgres}
       DL_PG_PORT: ${DL_PG_PORT:-5432}
       DL_PG_USER: ${DL_PG_USER:-postgres}

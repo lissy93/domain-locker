@@ -15,6 +15,34 @@ export interface RunningServer {
   logs: () => string;
 }
 
+/** Resolves true when the promise settled inside the window */
+function finishesWithin(promise: Promise<unknown>, ms: number): Promise<boolean> {
+  let timer: NodeJS.Timeout;
+  return Promise.race([
+    promise.then(() => true),
+    new Promise<boolean>((resolve) => {
+      timer = setTimeout(() => resolve(false), ms);
+    }),
+  ]).finally(() => clearTimeout(timer));
+}
+
+/**
+ * Ends the process, escalating if it lingers and releasing the pipes its
+ * children may still hold, so teardown can never hang the suite
+ */
+export async function stopProcess(child: ChildProcess, graceMs = 5_000): Promise<void> {
+  if (child.exitCode === null && child.signalCode === null) {
+    const exited = new Promise<void>((resolve) => child.once('exit', () => resolve()));
+    child.kill('SIGTERM');
+    if (!(await finishesWithin(exited, graceMs))) {
+      child.kill('SIGKILL');
+      await finishesWithin(exited, graceMs);
+    }
+  }
+  child.stdout?.destroy();
+  child.stderr?.destroy();
+}
+
 /** Asks the OS for a port nothing else is using */
 function freePort(): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -56,8 +84,7 @@ export async function startServer(
 
   const url = `http://127.0.0.1:${port}`;
   const stop = async () => {
-    child.kill('SIGTERM');
-    await new Promise((resolve) => child.once('exit', resolve));
+    await stopProcess(child);
     rmSync(dataDir, { recursive: true, force: true });
   };
 
@@ -115,8 +142,7 @@ export async function startDevServer(): Promise<RunningServer> {
   // The dev server binds the hostname, not the address, so ask for it by name
   const url = `http://localhost:${port}`;
   const stop = async () => {
-    child.kill('SIGTERM');
-    await new Promise((resolve) => child.once('exit', resolve));
+    await stopProcess(child);
     rmSync(dataDir, { recursive: true, force: true });
   };
 

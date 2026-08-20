@@ -10,11 +10,7 @@ import {
   type DbDomain,
 } from '~/app/../types/Database';
 
-/**
- * The domain list carries its relations, so tags, links, costings and
- * subdomains all change it. Matching on the verb covers every query group
- * without a list to keep in step with the services
- */
+// The domain list carries its relations, so a write to any query group changes it
 const WRITE_VERBS = ['save', 'update', 'delete', 'create', 'add'];
 
 const isWriteMethod = (name: string) => WRITE_VERBS.some((verb) => name.startsWith(verb));
@@ -83,11 +79,7 @@ export default class DatabaseService {
     this.domainsCache = null;
   }
 
-  /**
-   * Clears the cached list whenever something writes through the service or one
-   * of its query groups. Clearing on completion rather than on call means a read
-   * overlapping a write cannot put the pre-write rows back in the cache.
-   */
+  /** Clears the cache once a write settles, so a read cannot re-cache old rows */
   private watchForWrites<T extends object>(service: T): T {
     const groups = new Map<string, object>();
     return new Proxy(service, {

@@ -68,8 +68,7 @@ export class EnvService {
     const localStorageValue =
       BUILD_ENV['DL_ENV_TYPE'] !== 'managed' ? this.getValueFromLocalStorage(key) : null;
 
-    // Runtime beats build-time, so a prebuilt image takes the settings it was
-    // started with rather than whatever was in the .env when it was compiled
+    // Runtime beats build-time, so an image takes the settings it was started with
     const value = (localStorageValue || runtimeValue || buildtimeValue) ?? fallback;
 
     // If nothing, and unexpected, throw error to be caught by the caller

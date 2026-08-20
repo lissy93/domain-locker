@@ -7,8 +7,7 @@ import { SqliteTypePlugin } from './sqlite-plugin';
 
 export type Backend = 'postgres' | 'sqlite';
 
-// Relative to the working directory, since only the container has a writable
-// /data. The Docker image points DL_SQLITE_PATH there instead
+// Only the container has a writable /data, where the image points DL_SQLITE_PATH
 const DEFAULT_SQLITE_PATH = './data/domain-locker.db';
 
 /** Postgres wins when configured, so existing installs keep their database */

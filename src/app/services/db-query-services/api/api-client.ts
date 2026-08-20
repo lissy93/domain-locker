@@ -65,22 +65,14 @@ export class ApiClient {
       );
   }
 
-  /**
-   * Rendering happens in a fresh context with no cookies of its own, so the
-   * visitor's session is passed along. Without it a password-protected instance
-   * renders every page empty and only fills in once the browser takes over.
-   */
+  /** Rendering has no cookies of its own, so the visitor's session is passed along */
   private forwardedHeaders(): Record<string, string> | undefined {
     if (isPlatformBrowser(this.platformId)) return undefined;
     const cookie = this.request?.headers?.['cookie'];
     return cookie ? { cookie } : undefined;
   }
 
-  /**
-   * The browser always calls the page's own origin, since the API is served by
-   * the same app. Anything absolute would be cross-origin and blocked. Server
-   * rendering has no origin of its own, so it goes over the loopback.
-   */
+  /** Same origin in the browser, where anything absolute would be blocked */
   private baseUrl(): string {
     if (isPlatformBrowser(this.platformId)) return '';
     const env = (globalThis as { process?: { env?: Record<string, string | undefined> } })

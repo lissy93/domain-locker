@@ -25,9 +25,7 @@ export class EnvLoaderService {
       return;
     }
 
-    // Managed instances are configured at build time and have no runtime
-    // endpoint. Any other build asks the server, which is the only thing that
-    // knows how it was actually started
+    // Managed is configured at build time, any other build asks the server
     if (this.envService.getEnvVar('DL_ENV_TYPE') === 'managed') {
       return;
     }
@@ -40,8 +38,7 @@ export class EnvLoaderService {
     try {
       const response = await firstValueFrom(this.http.get<EnvResponse>('/api/env-var'));
 
-      // The server refuses when it isn't self-hosted, which is expected rather
-      // than a failure, so there is simply nothing to apply
+      // A refusal means the server isn't self-hosted, so there's nothing to apply
       if (!response || response.error || !response.env) {
         return;
       }
@@ -50,8 +47,7 @@ export class EnvLoaderService {
       const windowWithEnv = window as unknown as { __env?: Record<string, string> };
       const windowEnv = windowWithEnv.__env ?? {};
 
-      // The server is authoritative here, so its values replace any baked in
-      // at build time. A user's local override still wins over both
+      // The server is authoritative, so its values replace anything baked in
       Object.assign(windowEnv, envVars);
 
       // Then update the window.__env object, and mark as loaded
