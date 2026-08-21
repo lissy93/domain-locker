@@ -279,19 +279,7 @@ export default class MainDatabaseService extends DatabaseService {
       throw new Error('Write permissions disabled');
     }
 
-    const {
-      domain,
-      ipAddresses,
-      tags,
-      notifications,
-      dns,
-      ssl,
-      whois,
-      registrar,
-      host,
-      statuses,
-      subdomains,
-    } = data;
+    const { domain } = data;
 
     const dbDomain: Partial<DbDomain> = {
       domain_name: domain.domain_name,
@@ -311,20 +299,52 @@ export default class MainDatabaseService extends DatabaseService {
     if (domainError) throw domainError;
     if (!insertedDomain) throw new Error('Failed to insert domain');
 
-    await Promise.all([
-      this.ipQueries.saveIpAddresses(insertedDomain.id, ipAddresses),
-      this.tagQueries.saveTags(insertedDomain.id, tags),
-      this.notificationQueries.saveNotifications(insertedDomain.id, notifications),
-      this.dnsQueries.saveDnsRecords(insertedDomain.id, dns),
-      this.sslQueries.saveSslInfo(insertedDomain.id, ssl),
-      this.whoisQueries.saveWhoisInfo(insertedDomain.id, whois),
-      this.registrarQueries.saveRegistrar(insertedDomain.id, registrar),
-      this.hostsQueries.saveHost(insertedDomain.id, host),
-      this.statusQueries.saveStatuses(insertedDomain.id, statuses),
-      this.subdomainsQueries.saveSubdomains(insertedDomain.id, subdomains),
-    ]);
+    await this.saveDomainAssets(insertedDomain.id, data);
 
     return this.getDomainById(insertedDomain.id);
+  }
+
+  /**
+   * Saves everything hanging off a domain. The domain row is already in, so a
+   * failing asset is reported rather than thrown, which would lose the add
+   */
+  private async saveDomainAssets(domainId: string, data: SaveDomainData): Promise<void> {
+    const assets: [string, unknown][] = [
+      ['IP addresses', this.ipQueries.saveIpAddresses(domainId, data.ipAddresses)],
+      ['tags', this.tagQueries.saveTags(domainId, data.tags)],
+      [
+        'notifications',
+        this.notificationQueries.saveNotifications(domainId, data.notifications),
+      ],
+      ['DNS records', this.dnsQueries.saveDnsRecords(domainId, data.dns)],
+      ['SSL certificate', this.sslQueries.saveSslInfo(domainId, data.ssl)],
+      ['WHOIS details', this.whoisQueries.saveWhoisInfo(domainId, data.whois)],
+      ['registrar', this.registrarQueries.saveRegistrar(domainId, data.registrar)],
+      ['host', this.hostsQueries.saveHost(domainId, data.host)],
+      ['statuses', this.statusQueries.saveStatuses(domainId, data.statuses)],
+      ['subdomains', this.subdomainsQueries.saveSubdomains(domainId, data.subdomains)],
+    ];
+
+    const results = await Promise.allSettled(assets.map(([, task]) => task));
+    const failed: string[] = [];
+
+    results.forEach((result, index) => {
+      if (result.status !== 'rejected') return;
+      const label = assets[index][0];
+      failed.push(label);
+      this.errorHandler.handleError({
+        error: result.reason,
+        message: `Saved the domain, but not its ${label}`,
+        location: 'sb-database.saveDomainAssets',
+      });
+    });
+
+    if (failed.length) {
+      this.globalMessagingService.showWarn(
+        'Domain added, with some details missing',
+        `We couldn't save the ${failed.join(', ')}. You can add these by editing the domain.`,
+      );
+    }
   }
 
   async getDomainById(id: string): Promise<DbDomain> {

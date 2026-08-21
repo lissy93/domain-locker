@@ -89,13 +89,14 @@ export class EnvService {
   }
 
   /**
-   * True when data lives on this server rather than Supabase. The server owns
-   * the credentials and picks Postgres or SQLite itself, so the client only
-   * needs to know which side to talk to.
+   * True when data lives on this server rather than Supabase. DL_DB_BACKEND
+   * names the database the server holds, which is always one or the other, so
+   * Supabase still wins where it's configured and Postgres wasn't asked for.
    */
   isSelfHostedDatabase(): boolean {
     if (this.getEnvironmentType() === 'managed') return false;
-    return Boolean(this.getEnvVar('DL_DB_BACKEND')) || !this.isSupabaseEnabled();
+    if (!this.isSupabaseEnabled()) return true;
+    return this.getDatabaseBackend() === 'postgres';
   }
 
   /** Which database the server is using, for the diagnostics pages */

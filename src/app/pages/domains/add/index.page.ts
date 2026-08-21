@@ -276,7 +276,8 @@ export default class AddDomainComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Fetches subdomains, and subdomain info for the current domain
+   * Fetches subdomains for the current domain. Discovery is optional, and needs
+   * a provider configured, so anything other than a list is quietly skipped
    */
   private async fetchSubdomains(domainName: string): Promise<void> {
     try {
@@ -284,25 +285,16 @@ export default class AddDomainComponent implements OnInit, OnDestroy {
         'DL_DOMAIN_SUBS_API',
         '/api/domain-subs',
       );
-      const response = await this.http
-        .get(`${domainSubsEndpoint}?domain=${domainName}`)
-        .toPromise();
-      if (Array.isArray(response)) {
-        this.subdomainInfo = response;
-        const subdomainNames = response.map((sub) => sub.subdomain);
+      const response = await firstValueFrom(
+        this.http.get(`${domainSubsEndpoint}?domain=${domainName}`),
+      );
+      if (!Array.isArray(response)) return;
 
-        // Populate the subdomains in the form
-        this.domainForm.patchValue({ subdomains: subdomainNames });
-      } else {
-        this.errorHandler.handleError({
-          message: 'Unexpected subdomain data format',
-          location: 'AddDomainComponent.fetchExistingDomains',
-        });
-      }
+      this.subdomainInfo = response;
+      this.domainForm.patchValue({ subdomains: response.map((sub) => sub.subdomain) });
     } catch (error) {
       this.errorHandler.handleError({
         error,
-        showToast: true,
         message: 'Unable to fetch subdomain info',
         location: 'AddDomainComponent.fetchSubdomains',
       });
