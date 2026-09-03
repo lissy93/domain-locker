@@ -92,15 +92,30 @@ function sqliteDialect(path = sqlitePath()): Dialect {
   });
 }
 
-/** A bare EACCES says nothing about the fix, which is to pick a writable path */
+const FILE_ERROR_CODES = ['EACCES', 'EPERM', 'EROFS', 'ENOENT', 'ENOTDIR', 'ENOSPC'];
+
+/** Sending someone to check permissions over a stale binary wastes their time */
+export function sqliteOpenAdvice(error: NodeJS.ErrnoException): string {
+  const code = error.code ?? '';
+  if (FILE_ERROR_CODES.includes(code) || code.startsWith('SQLITE_')) {
+    return 'Set DL_SQLITE_PATH to a writable path, or configure Postgres with DL_PG_*';
+  }
+  return (
+    'The better-sqlite3 binary does not match the Node version running the app. ' +
+    'Run `npm rebuild better-sqlite3` under that same version'
+  );
+}
+
+/** A bare EACCES, or a bare ABI mismatch, says nothing about how to fix it */
 function openSqliteFile<T>(open: new (path: string) => T, path: string): T {
   try {
     if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true });
     return new open(path);
   } catch (err) {
+    const error = err as NodeJS.ErrnoException;
     throw new Error(
-      `Cannot open the SQLite database at ${path}: ${(err as Error).message}. ` +
-        'Set DL_SQLITE_PATH to a writable path, or configure Postgres with DL_PG_*',
+      `Cannot open the SQLite database at ${path}: ${error.message}. ` +
+        sqliteOpenAdvice(error),
     );
   }
 }
