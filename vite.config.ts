@@ -93,7 +93,10 @@ const themeFontTargets = Object.values(
   ),
 ).map((src) => ({ src, dest: 'themes/fonts' }));
 
-export default defineConfig( ({ mode }) => {
+export default defineConfig( ({ command, mode }) => {
+
+  // So as to not touch DN or start scheduler while Nitro is building
+  if (command === 'build') process.env['DL_BUILDING'] = 'true';
 
   const env = loadEnv(mode, process.cwd(), '')
   const buildPreset = env['BUILD_PRESET'] || env['NITRO_PRESET'] || 'node_server';
@@ -188,8 +191,6 @@ export default defineConfig( ({ mode }) => {
       // Node-environment server and schema suites live in test/ (npm run test:server)
       include: ['src/**/*.spec.ts'],
     },
-    // Only VITE_ is inlined wholesale; DL_/SUPABASE_ vars reach the browser
-    // solely through the __DL_CLIENT_ENV__ allowlist below
     envPrefix: ['VITE_'],
     define: {
       'import.meta.vitest': mode !== 'production',

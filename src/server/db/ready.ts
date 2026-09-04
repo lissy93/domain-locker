@@ -6,11 +6,17 @@ const log = new Logger('database');
 
 let migration: Promise<void> | null = null;
 
+/** How the one-time setup went. So the healthcheck can report a broken database */
+export type DatabaseStatus = 'pending' | 'ready' | 'failed';
+
+let status: DatabaseStatus = 'pending';
+
+export function databaseStatus(): DatabaseStatus {
+  return status;
+}
+
 /**
- * Brings the database up to date on first use. Memoised, so concurrent
- * requests share one run and later requests pay nothing. Existing installs
- * are baselined rather than re-run, so upgrading never replays DDL over
- * live tables.
+ * Brings the database up to date on first use
  */
 export function ensureMigrated(): Promise<void> {
   migration ??= runMigrations();
@@ -19,6 +25,7 @@ export function ensureMigrated(): Promise<void> {
 
 export function resetMigrationState(): void {
   migration = null;
+  status = 'pending';
 }
 
 const PG_VARS = ['DL_PG_HOST', 'DL_PG_USER', 'DL_PG_PASSWORD', 'DL_PG_NAME'];
@@ -39,6 +46,7 @@ async function runMigrations(): Promise<void> {
   }
   if (process.env['DL_SKIP_MIGRATIONS'] === 'true') {
     log.warn('DL_SKIP_MIGRATIONS is set, leaving the database untouched');
+    status = 'ready';
     return;
   }
 
@@ -62,9 +70,11 @@ async function runMigrations(): Promise<void> {
       const { startScheduler } = await import('../jobs/schedule');
       startScheduler();
     }
+    status = 'ready';
   } catch (err) {
     // Retry on the next request rather than leaving the app permanently broken
     migration = null;
+    status = 'failed';
     throw err;
   }
 }
