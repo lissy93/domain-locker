@@ -22,6 +22,7 @@ import {
   ApiTagQueries,
   ApiValuationQueries,
   toDomain,
+  toSavePayload,
 } from './api/api-queries';
 
 /** Shape the /v1 endpoints return, before EPP codes become security categories */
@@ -258,38 +259,6 @@ export default class ApiDatabaseService extends DatabaseService {
       throw error;
     });
   }
-}
-
-/** Maps the UI's save shape onto what /v1/domains accepts */
-function toSavePayload(data: SaveDomainData) {
-  const domain = data.domain as SaveDomainData['domain'] & {
-    registrar?: string | { name?: string; url?: string };
-  };
-  return {
-    domain: {
-      domain_name: domain.domain_name,
-      expiry_date: toIsoDate(domain.expiry_date),
-      registration_date: toIsoDate(domain.registration_date),
-      updated_date: toIsoDate(domain.updated_date),
-      notes: domain.notes ?? null,
-      registrar: domain.registrar ?? data.registrar ?? null,
-    },
-    tags: data.tags,
-    notifications: data.notifications,
-    statuses: data.statuses,
-    ipAddresses: data.ipAddresses,
-    ssl: data.ssl ?? null,
-    whois: data.whois ?? null,
-    dns: data.dns ?? null,
-    host: data.host ?? null,
-    subdomains: data.subdomains,
-    links: data.links,
-  };
-}
-
-function toIsoDate(value: Date | string | undefined | null): string | null {
-  if (!value) return null;
-  return value instanceof Date ? value.toISOString().slice(0, 10) : value;
 }
 
 export { from };

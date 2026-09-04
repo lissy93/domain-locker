@@ -30,6 +30,8 @@ describe.skipIf(!built)('/v1 API over HTTP', () => {
           domain: {
             domain_name: 'http-test.com',
             notes: 'Created over HTTP',
+            registration_date: '1995-12-14',
+            updated_date: '2024-03-01',
             registrar: { name: 'Gandi', url: 'https://gandi.net' },
           },
           tags: ['prod'],
@@ -68,21 +70,26 @@ describe.skipIf(!built)('/v1 API over HTTP', () => {
     ]);
   });
 
-  it('updates a domain', async () => {
-    const { status, body } = await api<{ notes: string; tags: string[] }>(
-      server,
-      `/v1/domains/${domainId}`,
-      {
-        method: 'PUT',
-        body: JSON.stringify({
-          domain: { domain_name: 'http-test.com', notes: 'Edited' },
-          tags: ['archived'],
-        }),
-      },
-    );
+  it('updates a domain without clearing the columns the edit omitted', async () => {
+    const { status, body } = await api<{
+      notes: string;
+      tags: string[];
+      registration_date: string | null;
+      updated_date: string | null;
+      registrar: { name: string } | null;
+    }>(server, `/v1/domains/${domainId}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        domain: { domain_name: 'http-test.com', notes: 'Edited' },
+        tags: ['archived'],
+      }),
+    });
     expect(status).toBe(200);
     expect(body.notes).toBe('Edited');
     expect(body.tags).toEqual(['archived']);
+    expect(body.registration_date).toBe('1995-12-14');
+    expect(body.updated_date).toBe('2024-03-01');
+    expect(body.registrar?.name).toBe('Gandi');
   });
 
   it('rejects a duplicate domain with a conflict', async () => {

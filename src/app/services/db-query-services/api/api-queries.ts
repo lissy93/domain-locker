@@ -5,6 +5,7 @@ import type {
   Host,
   Notification,
   Registrar,
+  SaveDomainData,
   Tag,
 } from '~/app/../types/Database';
 import type { DomainCosting } from '~/app/services/db-query-services/sb/db-valuations.service';
@@ -30,6 +31,50 @@ export function toDomain(payload: DomainPayload): DbDomain {
 
 function domainList(source: Observable<DomainPayload[]>): Observable<DbDomain[]> {
   return source.pipe(map((payloads) => payloads.map(toDomain)));
+}
+
+/**
+ * Maps the UI's save shape onto what /v1/domains accepts. Fields the caller
+ * never carried are left out entirely, so an edit form that only collects
+ * notes cannot clear the columns it never showed.
+ */
+export function toSavePayload(data: SaveDomainData) {
+  const domain = data.domain as SaveDomainData['domain'] & {
+    registrar?: string | { name?: string; url?: string };
+  };
+  return withoutUndefined({
+    domain: withoutUndefined({
+      domain_name: domain.domain_name,
+      expiry_date: toIsoDate(domain.expiry_date),
+      registration_date: toIsoDate(domain.registration_date),
+      updated_date: toIsoDate(domain.updated_date),
+      notes: domain.notes,
+      registrar: domain.registrar ?? data.registrar,
+    }),
+    tags: data.tags,
+    notifications: data.notifications,
+    statuses: data.statuses,
+    ipAddresses: data.ipAddresses,
+    ssl: data.ssl,
+    whois: data.whois,
+    dns: data.dns,
+    host: data.host,
+    subdomains: data.subdomains,
+    links: data.links,
+  });
+}
+
+/** undefined means "not carried", null means "clear this" */
+function toIsoDate(value?: Date | string | null): string | null | undefined {
+  if (value === undefined) return undefined;
+  if (!value) return null;
+  return value instanceof Date ? value.toISOString().slice(0, 10) : value;
+}
+
+function withoutUndefined<T extends object>(source: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(source).filter(([, value]) => value !== undefined),
+  ) as Partial<T>;
 }
 
 export class ApiTagQueries {

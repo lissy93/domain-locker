@@ -221,13 +221,35 @@ describe.each(BACKENDS)('domain writes (%s)', (backend) => {
     });
 
     it('keeps dates the edit did not carry, rather than clearing them', async () => {
-      const saved = await repo.save(FULL_INPUT);
+      const saved = await repo.save({
+        ...FULL_INPUT,
+        domain: {
+          ...FULL_INPUT.domain,
+          registration_date: '1995-12-14',
+          updated_date: '2024-03-01',
+        },
+      });
 
       const updated = await repo.update(saved!.id, {
         domain: { domain_name: 'written.com', notes: 'Only notes' },
       });
 
       expect(updated?.expiry_date).toBe('2027-06-01');
+      expect(updated?.registration_date).toBe('1995-12-14');
+      expect(updated?.updated_date).toBe('2024-03-01');
+    });
+
+    it('clears a date the edit deliberately nulled', async () => {
+      const saved = await repo.save({
+        ...FULL_INPUT,
+        domain: { ...FULL_INPUT.domain, registration_date: '1995-12-14' },
+      });
+
+      const updated = await repo.update(saved!.id, {
+        domain: { domain_name: 'written.com', registration_date: null },
+      });
+
+      expect(updated?.registration_date).toBeNull();
     });
 
     it('keeps the registrar when the edit omits one', async () => {
