@@ -3,7 +3,7 @@
  * Expects use of my custom Cloudflare worker, but also supports fallback to Shodan.
  * TODO: If there is a way to do this by looking at dns zone transfer records, that would be optimal.
  */
-import { defineEventHandler, getQuery } from 'h3';
+import { defineEventHandler, getQuery, setResponseStatus } from 'h3';
 import { verifyAuth } from '../utils/auth';
 import Logger from '../utils/logger';
 
@@ -282,26 +282,33 @@ function removeDuplicates(subdomains: Subdomain[]): Subdomain[] {
   return Array.from(uniqueMap.values());
 }
 
+/** Callers only ever expect a list, so a failure has to carry its status */
+function fail(
+  event: Parameters<typeof setResponseStatus>[0],
+  status: number,
+  error: string,
+) {
+  setResponseStatus(event, status);
+  return { error };
+}
+
 export default defineEventHandler(async (event) => {
   const authResult = await verifyAuth(event);
 
   if (!authResult.success) {
-    return { statusCode: 401, body: { error: authResult.error } };
+    return fail(event, 401, authResult.error ?? 'Authentication required');
   }
 
   const query = getQuery(event);
   const domain = ((query['domain'] as string) || '').replaceAll('www.', '').trim();
 
   if (!domain) {
-    return { error: 'Domain name is required' };
+    return fail(event, 400, 'Domain name is required');
   }
 
-  // Check if subdomain fetching is configured
+  // No provider is the default, and finding nothing is not a failure
   if (METHOD === 'none') {
-    return {
-      error:
-        'Subdomain fetching is not configured. Please configure at least one subdomain provider.',
-    };
+    return [];
   }
 
   const shodanUrl = SHODAN_URL
@@ -352,7 +359,7 @@ export default defineEventHandler(async (event) => {
     return removeDuplicates(subdomains);
   } catch (error) {
     log.error(`Error fetching subdomains for ${domain}: ${error}`);
-    return { error: 'Failed to retrieve subdomains' };
+    return fail(event, 502, 'Failed to retrieve subdomains');
   }
 });
 

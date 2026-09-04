@@ -296,7 +296,11 @@ export default class BulkAddComponent implements OnDestroy {
                       }[],
                     );
                   }),
-                  map((subdomains) => ({ domain: d, subdomains })),
+                  // An unconfigured provider answers with something other than a list
+                  map((subdomains) => ({
+                    domain: d,
+                    subdomains: Array.isArray(subdomains) ? subdomains : [],
+                  })),
                 ),
             ),
           ),

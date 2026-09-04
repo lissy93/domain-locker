@@ -113,6 +113,8 @@ export interface Host {
   isp: string;
   org: string;
   asNumber: string;
+  /** ip-api names the AS this way, so lookup responses carry it instead */
+  as?: string;
   domain_count?: number;
   ip?: string;
 }

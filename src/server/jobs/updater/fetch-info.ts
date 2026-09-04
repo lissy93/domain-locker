@@ -1,3 +1,6 @@
+import { isValidDomain, lookupDomainInfo } from '../../utils/domain-info';
+import { withTimeout } from './utils';
+
 export interface FreshDomainInfo {
   dates?: { expiry_date?: string; creation_date?: string; updated_date?: string };
   registrar?: { name?: string; url?: string };
@@ -8,52 +11,31 @@ export interface FreshDomainInfo {
   host?: Record<string, unknown>;
 }
 
-// Shape returned by /api/domain-info, before DNS keys are normalised for the updater
-type RawDomainInfo = Omit<FreshDomainInfo, 'dns'> & {
-  dns?: {
-    nameServers?: string[];
-    mxRecords?: string[];
-    txtRecords?: string[];
-  };
-};
+const LOOKUP_TIMEOUT_MS = 10000;
 
-const FETCH_DOMAIN_INFO_TIMEOUT_MS = 10000;
-
-export async function fetchDomainInfo(
-  endpoint: string,
-  domain: string,
-): Promise<FreshDomainInfo> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), FETCH_DOMAIN_INFO_TIMEOUT_MS);
-
-  try {
-    const res = await fetch(`${endpoint}?domain=${encodeURIComponent(domain)}`, {
-      signal: controller.signal,
-    });
-    if (!res.ok) {
-      throw new Error(`Failed to fetch domain info for "${domain}", HTTP ${res.status}`);
-    }
-
-    const json = (await res.json()) as { domainInfo?: RawDomainInfo };
-    if (!json?.domainInfo) {
-      throw new Error(`No domainInfo found in response for "${domain}"`);
-    }
-
-    // Map API DNS keys (nameServers/mxRecords/txtRecords) to the updater's ns/mx/txt
-    const { dns, ...info } = json.domainInfo;
-    if (!dns) return info;
-    return {
-      ...info,
-      dns: { ns: dns.nameServers, mx: dns.mxRecords, txt: dns.txtRecords },
-    };
-  } catch (err) {
-    if (err instanceof Error && err.name === 'AbortError') {
-      throw new Error(
-        `Request timed out after ${FETCH_DOMAIN_INFO_TIMEOUT_MS / 1000} seconds for "${domain}"`,
-      );
-    }
-    throw err;
-  } finally {
-    clearTimeout(timeout);
+/**
+ * Resolves a domain in-process. Going over HTTP would mean the job guessing the
+ * port it is served on, which it cannot know when no request triggered the run
+ */
+export async function fetchDomainInfo(domain: string): Promise<FreshDomainInfo> {
+  if (!isValidDomain(domain)) {
+    throw new Error(`Invalid domain name "${domain}"`);
   }
+
+  const { domainInfo } = await withTimeout(lookupDomainInfo(domain), LOOKUP_TIMEOUT_MS);
+
+  return {
+    dates: domainInfo.dates,
+    registrar: domainInfo.registrar,
+    status: domainInfo.status,
+    ssl: { ...domainInfo.ssl },
+    whois: { ...domainInfo.whois },
+    host: domainInfo.host ? { ...domainInfo.host } : undefined,
+    // The updater's field names are shorter than the lookup's
+    dns: {
+      ns: domainInfo.dns.nameServers,
+      mx: domainInfo.dns.mxRecords,
+      txt: domainInfo.dns.txtRecords,
+    },
+  };
 }

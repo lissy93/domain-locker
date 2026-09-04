@@ -1,6 +1,5 @@
 import { currentBackend, getDb } from '../../db/client';
 import { createRepos } from '../../db/repos';
-import { getInternalBaseUrl } from '../../utils/base-url';
 import { fetchDomainInfo } from './fetch-info';
 import { compareAndUpdateDomain } from './compare';
 import { withConcurrency, withRetry } from '../runner';
@@ -48,14 +47,10 @@ export async function runUpdater(): Promise<{
     )
     .slice(0, BATCH_SIZE);
 
-  const domainInfoUrl = `${getInternalBaseUrl()}/api/domain-info`;
-
   const outcomes = await withConcurrency(batch, CONCURRENCY, async (domain) => {
     try {
       // Lookups are rate limited upstream, so back off rather than give up
-      const fresh = await withRetry(() =>
-        fetchDomainInfo(domainInfoUrl, domain.domain_name),
-      );
+      const fresh = await withRetry(() => fetchDomainInfo(domain.domain_name));
       const { changes } = await compareAndUpdateDomain(
         {
           id: domain.id,
