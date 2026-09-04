@@ -4,6 +4,7 @@ import type { Database } from '../schema';
 import type { Backend } from '../client';
 import { SQLITE_INITIAL_SCHEMA } from './sqlite-initial';
 import { POSTGRES_JOB_RUNS, SQLITE_JOB_RUNS } from './002-job-runs';
+import { POSTGRES_DOMAIN_DATES } from './003-domain-dates';
 import Logger from '../../utils/logger';
 
 const log = new Logger('migrations');
@@ -47,6 +48,13 @@ export const MIGRATIONS: Migration[] = [
     statements: {
       postgres: () => POSTGRES_JOB_RUNS,
       sqlite: () => SQLITE_JOB_RUNS,
+    },
+  },
+  {
+    // SQLite already stores these as text, so only Postgres needs narrowing
+    version: '003_domain_dates',
+    statements: {
+      postgres: () => POSTGRES_DOMAIN_DATES,
     },
   },
 ];

@@ -117,8 +117,8 @@ export async function updateSSL(
          key_size, signature_algorithm
        ) VALUES (
          $1, $2, $3, $4,
-         $5::date, $6::date, $7,
-         $8::int, $9
+         $5, $6, $7,
+         $8, $9
        )`,
       [
         domainId,
@@ -170,7 +170,7 @@ export async function updateSSL(
       const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
 
       if (isNaN(diffInDays) || diffInDays > 1) {
-        updateSet.push(`${field.column} = $${updateSet.length + 2}::date`);
+        updateSet.push(`${field.column} = $${updateSet.length + 2}`);
         updateValues.push(toDateOnly(newVal));
         await recordDomainUpdate(
           domainId,
@@ -184,7 +184,7 @@ export async function updateSSL(
     }
 
     if (newVal && oldVal !== newVal && field.type != 'date') {
-      updateSet.push(`${field.column} = $${updateSet.length + 2}::${field.type}`);
+      updateSet.push(`${field.column} = $${updateSet.length + 2}`);
       updateValues.push(field.new ?? null);
 
       await recordDomainUpdate(

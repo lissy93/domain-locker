@@ -1,10 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { Kysely, sql } from 'kysely';
 import { createSqliteMemoryDb } from '~/server/db/client';
-import { migrateToLatest } from '~/server/db/migrations';
+import { BASELINE_VERSION, MIGRATIONS, migrateToLatest } from '~/server/db/migrations';
 import type { Database } from '~/server/db/schema';
 import { isPostgresAvailable, resetTestDatabase } from '../helpers/postgres';
 import { createPostgresTestDb } from '../helpers/kysely';
+
+/** Migrations that skip a dialect are recorded, not applied, so exclude them */
+const versionsFor = (backend: 'postgres' | 'sqlite') =>
+  MIGRATIONS.filter((migration) => migration.statements[backend]).map(
+    (migration) => migration.version,
+  );
 
 describe('migration runner (sqlite)', () => {
   let db: Kysely<Database>;
@@ -18,7 +24,7 @@ describe('migration runner (sqlite)', () => {
   it('creates the whole schema on a fresh database', async () => {
     const { applied, baselined } = await migrateToLatest(db, 'sqlite');
 
-    expect(applied).toEqual(['001_initial_schema', '002_job_runs']);
+    expect(applied).toEqual(versionsFor('sqlite'));
     expect(baselined).toEqual([]);
     await expect(db.selectFrom('domains').selectAll().execute()).resolves.toEqual([]);
   });
@@ -106,7 +112,7 @@ describe.skipIf(!pgAvailable)('migration runner (postgres)', () => {
 
     const { applied } = await migrateToLatest(db, 'postgres');
 
-    expect(applied).toEqual(['001_initial_schema', '002_job_runs']);
+    expect(applied).toEqual(versionsFor('postgres'));
     await expect(db.selectFrom('domains').selectAll().execute()).resolves.toEqual([]);
   });
 
@@ -124,8 +130,10 @@ describe.skipIf(!pgAvailable)('migration runner (postgres)', () => {
     const { applied, baselined } = await migrateToLatest(db, 'postgres');
 
     // The initial schema is assumed present; later migrations still run
-    expect(applied).toEqual(['002_job_runs']);
-    expect(baselined).toEqual(['001_initial_schema']);
+    expect(applied).toEqual(
+      versionsFor('postgres').filter((version) => version !== BASELINE_VERSION),
+    );
+    expect(baselined).toEqual([BASELINE_VERSION]);
     const kept = await db.selectFrom('domains').select('domain_name').execute();
     expect(kept).toEqual([{ domain_name: 'kept.com' }]);
   });
@@ -136,5 +144,36 @@ describe.skipIf(!pgAvailable)('migration runner (postgres)', () => {
     await migrateToLatest(db, 'postgres');
     const second = await migrateToLatest(db, 'postgres');
     expect(second).toEqual({ applied: [], baselined: [] });
+  });
+
+  it('narrows the registry dates without shifting them across a timezone', async () => {
+    const config = await resetTestDatabase('dl_test_migrate_dates');
+    db = createPostgresTestDb(config);
+    // Put the columns back to the type installs before 0.2.6 carry
+    await sql`ALTER TABLE domains
+                ALTER COLUMN registration_date TYPE timestamptz,
+                ALTER COLUMN updated_date TYPE timestamptz`.execute(db);
+    await db
+      .insertInto('domains')
+      .values({
+        user_id: 'a0000000-aaaa-42a0-a0a0-00a000000a69',
+        domain_name: 'summer.com',
+        // A midsummer date is the one a UTC conversion would move to the day before
+        registration_date: '2024-07-01',
+        updated_date: '2024-07-01',
+      })
+      .execute();
+
+    await migrateToLatest(db, 'postgres');
+
+    const row = await db
+      .selectFrom('domains')
+      .where('domain_name', '=', 'summer.com')
+      .select(['registration_date', 'updated_date'])
+      .executeTakeFirstOrThrow();
+    expect(row).toEqual({
+      registration_date: '2024-07-01',
+      updated_date: '2024-07-01',
+    });
   });
 });

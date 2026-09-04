@@ -26,7 +26,7 @@ export async function updateExpiryDate(
       newDateStr,
     );
 
-    await runQuery(`UPDATE domains SET expiry_date = $1::date WHERE id = $2`, [
+    await runQuery(`UPDATE domains SET expiry_date = $1 WHERE id = $2`, [
       newDateStr,
       domainRow.id,
     ]);

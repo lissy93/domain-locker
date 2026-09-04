@@ -108,8 +108,8 @@ CREATE TABLE IF NOT EXISTS "public"."domains" (
     created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
     registrar_id uuid,
-    registration_date timestamp with time zone,
-    updated_date timestamp with time zone,
+    registration_date date,
+    updated_date date,
     CONSTRAINT domains_pkey PRIMARY KEY (id),
     CONSTRAINT domains_user_id_domain_name_key UNIQUE (user_id, domain_name)
 );

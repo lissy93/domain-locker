@@ -28,8 +28,8 @@ export async function updateDomainDates(
   }
 
   for (const { column, label, value } of pending) {
-    await runQuery(`UPDATE domains SET ${column} = $1::timestamptz WHERE id = $2`, [
-      `${value}T00:00:00Z`,
+    await runQuery(`UPDATE domains SET ${column} = $1 WHERE id = $2`, [
+      value,
       domainRow.id,
     ]);
     changes.push(label);
