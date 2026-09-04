@@ -1,21 +1,9 @@
 import { z } from 'zod';
 import { defineApiRoute } from '../../../lib/handler';
-import type { AssetType } from '../../../db/repos/domains';
+import { ASSET_TYPES } from '../../../../types/common';
 
-const schema = z.object({
-  type: z.enum([
-    'domains',
-    'registrars',
-    'tags',
-    'hosts',
-    'ip_addresses',
-    'ssl_certificates',
-    'dns_records',
-    'links',
-    'subdomains',
-  ]),
-});
+const schema = z.object({ type: z.enum(ASSET_TYPES) });
 
 export default defineApiRoute({ query: schema }, async ({ db, query }) => ({
-  total: await db.domains.assetCount(query.type as AssetType),
+  total: await db.domains.assetCount(query.type),
 }));

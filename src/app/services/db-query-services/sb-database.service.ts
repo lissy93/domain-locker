@@ -40,6 +40,21 @@ import { SubdomainsQueries } from '~/app/services/db-query-services/sb/db-subdom
 
 import { createDbProxy } from '~/app/utils/db-proxy.factory';
 import { FeatureService } from '../features.service';
+import type { AssetType } from '~/types/common';
+
+/** Countable asset types mapped onto the tables Supabase holds them in */
+const ASSET_TABLES: Record<AssetType, string> = {
+  domains: 'domains',
+  registrars: 'registrars',
+  tags: 'tags',
+  hosts: 'hosts',
+  ip_addresses: 'ip_addresses',
+  ssl_certificates: 'ssl_certificates',
+  dns_records: 'dns_records',
+  links: 'domain_links',
+  subdomains: 'sub_domains',
+  domain_statuses: 'domain_statuses',
+};
 
 @Injectable({
   providedIn: 'root',
@@ -675,40 +690,8 @@ export default class MainDatabaseService extends DatabaseService {
     );
   }
 
-  getAssetCount(assetType: string): Observable<number> {
-    let table: string;
-    switch (assetType) {
-      case 'registrars':
-        table = 'registrars';
-        break;
-      case 'ip addresses':
-        table = 'ip_addresses';
-        break;
-      case 'ssl certificates':
-        table = 'ssl_certificates';
-        break;
-      case 'hosts':
-        table = 'hosts';
-        break;
-      case 'dns records':
-        table = 'dns_records';
-        break;
-      case 'tags':
-        table = 'tags';
-        break;
-      case 'links':
-        table = 'domain_links';
-        break;
-      case 'subdomains':
-        table = 'sub_domains';
-        break;
-      case 'domain statuses':
-        table = 'domain_statuses';
-        break;
-      default:
-        throw new Error(`Unknown asset type: ${assetType}`);
-    }
-
+  getAssetCount(assetType: AssetType): Observable<number> {
+    const table = ASSET_TABLES[assetType];
     return from(this.supabase.supabase.from(table).select('id', { count: 'exact' })).pipe(
       map((response) => response.count || 0),
     );

@@ -134,3 +134,19 @@ export interface UptimeRow {
   dns_lookup_time_ms: number | null;
   ssl_handshake_time_ms: number | null;
 }
+
+/** Countable asset tables, shared by the /v1 counts route and the UI cards */
+export const ASSET_TYPES = [
+  'domains',
+  'registrars',
+  'tags',
+  'hosts',
+  'ip_addresses',
+  'ssl_certificates',
+  'dns_records',
+  'links',
+  'subdomains',
+  'domain_statuses',
+] as const;
+
+export type AssetType = (typeof ASSET_TYPES)[number];

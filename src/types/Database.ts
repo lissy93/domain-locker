@@ -13,6 +13,7 @@ import {
   Subdomain,
   Link,
   UptimeRow,
+  AssetType,
 } from './common';
 import { DnsQueries as SbDnsQueries } from '~/app/services/db-query-services/sb/db-dns.service';
 import { HistoryQueries as SbHistoryQueries } from '~/app/services/db-query-services/sb/db-history.service';
@@ -165,7 +166,7 @@ export abstract class DatabaseService {
   ): Observable<Record<string, { domainId: string; domainName: string }[]>>;
   abstract getDomainExpirations(): Observable<DomainExpiration[]>;
   abstract deleteDomain(domainId: string): Observable<void>;
-  abstract getAssetCount(assetType: string): Observable<number>;
+  abstract getAssetCount(assetType: AssetType): Observable<number>;
   abstract listDomainNames(): Observable<string[]>;
   abstract getDomainsByStatus(statusCode: string): Observable<DbDomain[]>;
   abstract getStatusesWithDomainCounts(): Observable<

@@ -8,6 +8,7 @@ import {
   clearData,
   createMigratedDb,
 } from '../../helpers/backends';
+import { ASSET_TYPES } from '~/types/common';
 
 /** One behavioural contract, executed against every supported dialect */
 describe.each(BACKENDS)('domains repo (%s)', (backend) => {
@@ -162,6 +163,14 @@ describe.each(BACKENDS)('domains repo (%s)', (backend) => {
     expect(await repo.assetCount('hosts')).toBe(1);
     expect(await repo.assetCount('subdomains')).toBe(1);
     expect(await repo.assetCount('links')).toBe(1);
+    expect(await repo.assetCount('ssl_certificates')).toBe(1);
+    expect(await repo.assetCount('domain_statuses')).toBe(1);
+  });
+
+  it('counts every asset type the UI can ask for', async () => {
+    for (const assetType of ASSET_TYPES) {
+      await expect(repo.assetCount(assetType)).resolves.toBeTypeOf('number');
+    }
   });
 
   it('rejects an unknown asset type', async () => {

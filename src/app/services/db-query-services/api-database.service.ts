@@ -7,6 +7,7 @@ import {
   SaveDomainData,
   UptimeRow,
 } from '~/app/../types/Database';
+import type { AssetType } from '~/types/common';
 import { ErrorHandlerService } from '~/app/services/error-handler.service';
 import { ApiClient } from './api/api-client';
 import {
@@ -152,7 +153,7 @@ export default class ApiDatabaseService extends DatabaseService {
     );
   }
 
-  getAssetCount(assetType: string): Observable<number> {
+  getAssetCount(assetType: AssetType): Observable<number> {
     return this.api.get<{ total: number }>('/v1/assets/counts', { type: assetType }).pipe(
       map((response) => response.total),
       catchError((error) => this.fail(error)),

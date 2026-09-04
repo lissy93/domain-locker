@@ -9,8 +9,9 @@ import {
   toNumber,
 } from './helpers';
 import { insertDomain, updateDomain, type SaveDomainInput } from './domain-write';
+import type { AssetType } from '../../../types/common';
 
-export type { SaveDomainInput };
+export type { SaveDomainInput, AssetType };
 
 /** Shape the client consumes, matching the legacy formatDomainData output */
 export interface DomainRecord {
@@ -514,10 +515,8 @@ export function domainsRepo(db: Kysely<Database>) {
   };
 }
 
-export type AssetType = keyof typeof ASSET_SOURCES;
-
 /** Where each countable asset lives, and whether it is owned via its domain */
-const ASSET_SOURCES = {
+const ASSET_SOURCES: Record<AssetType, { table: string; viaDomain: boolean }> = {
   domains: { table: 'domains', viaDomain: false },
   registrars: { table: 'registrars', viaDomain: false },
   tags: { table: 'tags', viaDomain: false },
@@ -527,7 +526,8 @@ const ASSET_SOURCES = {
   dns_records: { table: 'dns_records', viaDomain: true },
   links: { table: 'domain_links', viaDomain: true },
   subdomains: { table: 'sub_domains', viaDomain: true },
-} as const;
+  domain_statuses: { table: 'domain_statuses', viaDomain: true },
+};
 
 function whoisOf(row: {
   whois_name: string | null;
