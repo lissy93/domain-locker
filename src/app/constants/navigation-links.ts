@@ -218,7 +218,7 @@ export const authenticatedNavLinks = [
       {
         label: 'Search',
         icon: 'pi pi-fw pi-search',
-        routerLink: '/search',
+        routerLink: '/domains/search',
       },
       {
         label: 'Add or Export',
@@ -252,7 +252,7 @@ export const authenticatedNavLinks = [
           {
             label: 'Data Deletion',
             icon: 'pi pi pi-trash',
-            routerLink: '/settings/delete-account',
+            routerLink: '/advanced/delete-data',
           },
         ],
       },

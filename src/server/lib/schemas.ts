@@ -86,6 +86,7 @@ export const uptimeQuerySchema = z.object({
   timeframe: z.enum(['hour', 'day', 'week', 'month', 'year']).default('day'),
 });
 
+// The yearly calendar asks for 52 weeks plus a week of padding, so 371
 export const dailyUptimeQuerySchema = z.object({
-  days: z.coerce.number().int().min(1).max(365).default(30),
+  days: z.coerce.number().int().min(1).max(400).default(30),
 });

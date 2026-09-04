@@ -4,6 +4,7 @@ import { defineConfig, loadEnv, type PluginOption } from 'vite';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import packageJson from './package.json';
 import * as path from 'node:path';
+import { existsSync, readdirSync } from 'node:fs';
 import { pickClientEnv } from './src/server/utils/client-env';
 
 /**
@@ -75,6 +76,22 @@ const themeTargets = [
     rename: 'green-light.css',
   },
 ];
+
+/**
+ * Each theme.css references ./fonts, so the sibling directory has to ship too.
+ * Themes share font files, and copying one twice makes the copy plugin fail,
+ * so each filename is taken from a single theme.
+ */
+const themeFontTargets = Object.values(
+  Object.fromEntries(
+    themeTargets
+      .map((target) => target.src.replace('theme.css', 'fonts'))
+      .filter((dir) => existsSync(dir))
+      .flatMap((dir) =>
+        readdirSync(dir).map((file) => [file, path.posix.join(dir, file)] as const),
+      ),
+  ),
+).map((src) => ({ src, dest: 'themes/fonts' }));
 
 export default defineConfig( ({ mode }) => {
 
@@ -153,11 +170,14 @@ export default defineConfig( ({ mode }) => {
         },
       }),
       viteStaticCopy({
-        targets: themeTargets.map((target) => ({
-          src: target.src,
-          dest: 'themes',
-          rename: target.rename,
-        })),
+        targets: [
+          ...themeTargets.map((target) => ({
+            src: target.src,
+            dest: 'themes',
+            rename: target.rename,
+          })),
+          ...themeFontTargets,
+        ],
       }),
     ],
 
