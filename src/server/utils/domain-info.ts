@@ -1,7 +1,7 @@
 import dns from 'dns';
 import tls, { PeerCertificate } from 'tls';
 import type { DomainInfo } from '../../types/DomainInfo';
-import type { Host } from '../../types/common';
+import type { Abuse, Contact, Dates, Dns, Host, Registrar } from '../../types/common';
 import { getWhoisInfo } from './whois';
 import { parseDate } from './whois/dates';
 import Logger from './logger';
@@ -14,6 +14,22 @@ const DOMAIN_PATTERN =
   /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i;
 
 export const isValidDomain = (domain: string): boolean => DOMAIN_PATTERN.test(domain);
+
+/**
+ * Same as DomainData, except might be incomplete
+ * Since registries often don't give back all the fields :(
+ */
+export type DomainLookup = Omit<
+  DomainInfo,
+  'dates' | 'registrar' | 'whois' | 'abuse' | 'dns'
+> & {
+  dates: Partial<Dates>;
+  registrar: Partial<Registrar>;
+  whois: Partial<Contact>;
+  abuse: Partial<Abuse>;
+  /** WHOIS reports dnssec as a string, or null where it says nothing at all */
+  dns: Partial<Omit<Dns, 'dnssec'>> & { dnssec?: string | null };
+};
 
 /**
  * Execute a function safely
@@ -106,7 +122,7 @@ const getHostData = async (ip: string): Promise<Host | undefined> => {
  */
 export async function lookupDomainInfo(
   domain: string,
-): Promise<{ domainInfo: DomainInfo; errors?: string[] }> {
+): Promise<{ domainInfo: DomainLookup; errors?: string[] }> {
   const errors: string[] = [];
   const dunno = null; // Fallback for unknown values
 
@@ -136,7 +152,7 @@ export async function lookupDomainInfo(
     ? await safeExecute(() => getHostData(ipv4[0]), 'Host info fetch failed', errors)
     : null; // we need at least one IP to get host info
 
-  const domainInfo: DomainInfo = {
+  const domainInfo: DomainLookup = {
     domainName: whoisData?.domainName || domain,
     status: whoisData?.status || [],
     ip_addresses: { ipv4: ipv4 || [], ipv6: ipv6 || [] },
