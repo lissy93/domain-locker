@@ -1,4 +1,5 @@
 import { MenuItem } from 'primeng/api';
+import type { FeatureDefinitions } from '~/app/constants/feature-options';
 
 export interface ExtendedMenuItem extends MenuItem {
   svgIcon?: string;
@@ -132,8 +133,22 @@ export const toolsLinks = [
   },
 ];
 
-export const settingsLinks = [
-  { label: 'Account Settings', icon: 'pi pi-user-edit', routerLink: '/settings/account' },
+/** `feature` hides a link where that feature is off, e.g. accounts on self-hosted */
+export interface SettingsLink {
+  label: string;
+  icon: string;
+  routerLink: string;
+  description?: string;
+  feature?: keyof FeatureDefinitions;
+}
+
+export const settingsLinks: SettingsLink[] = [
+  {
+    label: 'Account Settings',
+    icon: 'pi pi-user-edit',
+    routerLink: '/settings/account',
+    feature: 'userAccounts',
+  },
   {
     label: 'Notification Preferences',
     icon: 'pi pi-bell',
@@ -149,7 +164,12 @@ export const settingsLinks = [
     icon: 'pi pi-eye-slash',
     routerLink: '/settings/privacy-settings',
   },
-  { label: 'Manage Plan', icon: 'pi pi-shop', routerLink: '/settings/upgrade' },
+  {
+    label: 'Manage Plan',
+    icon: 'pi pi-shop',
+    routerLink: '/settings/upgrade',
+    feature: 'enableBilling',
+  },
   {
     label: 'Developer Options',
     icon: 'pi pi-code',
@@ -159,6 +179,7 @@ export const settingsLinks = [
     label: 'Danger Zone',
     icon: 'pi pi-exclamation-triangle',
     routerLink: '/settings/delete-account',
+    feature: 'userAccounts',
   },
 ];
 

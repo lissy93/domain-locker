@@ -29,6 +29,7 @@ import { EnvService } from '~/app/services/environment.service';
 import { HitCountingService } from '~/app/services/hit-counting.service';
 import { LogoComponent } from '~/app/components/home-things/logo/logo.component';
 import { NgxTurnstileModule, NgxTurnstileComponent } from 'ngx-turnstile';
+import { SelfHostedLoginComponent } from '~/app/components/misc/self-hosted-login.component';
 
 @Component({
   standalone: true,
@@ -40,6 +41,7 @@ import { NgxTurnstileModule, NgxTurnstileComponent } from 'ngx-turnstile';
     PrimeNgModule,
     LogoComponent,
     NgxTurnstileModule,
+    SelfHostedLoginComponent,
   ],
   templateUrl: './login.page.html',
   styles: [
@@ -84,13 +86,17 @@ export default class LoginPageComponent implements OnInit, OnDestroy {
     { label: 'Sign Up', value: false },
   ];
 
+  // Self-hosted has no auth provider, so it signs in with the instance password
+  selfHostedAuth = !this.environmentService.isSupabaseEnabled();
+
   requireMFA = false;
   factorId: string | null = null;
   challengeId: string | null = null;
   partialSession: unknown;
   isDemoInstance = false;
 
-  @ViewChild(NgxTurnstileComponent) turnstile!: NgxTurnstileComponent;
+  // Absent unless DL_TURNSTILE_KEY is configured
+  @ViewChild(NgxTurnstileComponent) turnstile?: NgxTurnstileComponent;
   turnstileResponse?: string;
   turnstileSiteKey = '';
 
@@ -111,6 +117,7 @@ export default class LoginPageComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    if (this.selfHostedAuth) return;
     this.onModeChange();
 
     this.subscriptions.add(
@@ -374,7 +381,7 @@ export default class LoginPageComponent implements OnInit, OnDestroy {
       }
     } catch (error) {
       this.handleError(error);
-      this.turnstile.reset();
+      this.turnstile?.reset();
     } finally {
       this.showLoader = false;
     }

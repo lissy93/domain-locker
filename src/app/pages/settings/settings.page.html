@@ -1,7 +1,7 @@
 <ul
   class="grid md:hidden grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 list-none p-0 my-4"
 >
-  @for (link of settingsLinks; track link) {
+  @for (link of (settingsLinks$ | async) ?? []; track link.routerLink) {
     <li>
       <a
         [routerLink]="link.routerLink"
@@ -14,8 +14,10 @@
   }
 </ul>
 
-<h3>Account Checkup</h3>
-<app-account-issues />
+@if (userAccounts$ | async) {
+  <h3>Account Checkup</h3>
+  <app-account-issues />
+}
 
 <p-divider align="center" (click)="toggleAccountInfo()">
   <div
@@ -38,68 +40,72 @@
 }
 
 @if (showAccountInfo && !isAccountInfoLoading) {
-  <div class="w-full">
-    <h3>Current Plan</h3>
-    @if (currentPlan$ | async; as currentPlan) {
-      <p>
-        Current Plan:
-        <span class="opacity-70 italic">{{ currentPlan | titlecase }}</span>
-      </p>
-    } @else {
-      Loading billing details...
-    }
+  @if (billingEnabled$ | async) {
+    <div class="w-full">
+      <h3>Current Plan</h3>
+      @if (currentPlan$ | async; as currentPlan) {
+        <p>
+          Current Plan:
+          <span class="opacity-70 italic">{{ currentPlan | titlecase }}</span>
+        </p>
+      } @else {
+        Loading billing details...
+      }
 
-    <div class="flex justify-end w-full">
-      <p-button
-        label="Manage Plan"
-        icon="pi pi-shop"
-        severity="primary"
-        size="small"
-        [outlined]="true"
-        routerLink="/settings/upgrade"
-      />
-    </div>
-  </div>
-
-  <p-divider />
-
-  <div class="w-full">
-    <h3>Profile</h3>
-    @if (user$ | async; as user) {
-      <div>
-        <p class="my-1">
-          Name:
-          <span class="opacity-70 italic">{{
-            user.user_metadata['name'] || 'Unset'
-          }}</span>
-        </p>
-        <p class="my-1">
-          Email: <span class="opacity-70 italic">{{ user.email }}</span>
-        </p>
-        <p class="my-1">
-          Password: <span class="opacity-70 italic">{{ passwordInfo(user) }}</span>
-        </p>
-        <p class="my-1">
-          MFA: <span class="opacity-70 italic">{{ mfaInfo(user) }}</span>
-        </p>
+      <div class="flex justify-end w-full">
+        <p-button
+          label="Manage Plan"
+          icon="pi pi-shop"
+          severity="primary"
+          size="small"
+          [outlined]="true"
+          routerLink="/settings/upgrade"
+        />
       </div>
-    } @else {
-      Loading user...
-    }
-    <div class="flex justify-end w-full">
-      <p-button
-        label="Edit Profile"
-        icon="pi pi-user-edit"
-        class="mr-2"
-        severity="primary"
-        size="small"
-        [outlined]="true"
-        routerLink="/settings/account"
-      />
     </div>
-  </div>
 
-  <p-divider />
+    <p-divider />
+  }
+
+  @if (userAccounts$ | async) {
+    <div class="w-full">
+      <h3>Profile</h3>
+      @if (user$ | async; as user) {
+        <div>
+          <p class="my-1">
+            Name:
+            <span class="opacity-70 italic">{{
+              user.user_metadata['name'] || 'Unset'
+            }}</span>
+          </p>
+          <p class="my-1">
+            Email: <span class="opacity-70 italic">{{ user.email }}</span>
+          </p>
+          <p class="my-1">
+            Password: <span class="opacity-70 italic">{{ passwordInfo(user) }}</span>
+          </p>
+          <p class="my-1">
+            MFA: <span class="opacity-70 italic">{{ mfaInfo(user) }}</span>
+          </p>
+        </div>
+      } @else {
+        Loading user...
+      }
+      <div class="flex justify-end w-full">
+        <p-button
+          label="Edit Profile"
+          icon="pi pi-user-edit"
+          class="mr-2"
+          severity="primary"
+          size="small"
+          [outlined]="true"
+          routerLink="/settings/account"
+        />
+      </div>
+    </div>
+
+    <p-divider />
+  }
 
   <div class="w-full">
     <h3>Display</h3>

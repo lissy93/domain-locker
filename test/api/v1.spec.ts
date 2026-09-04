@@ -224,6 +224,59 @@ describe.skipIf(!built)('/v1 API with a password set', () => {
   });
 });
 
+describe.skipIf(!built)('job routes with only an api key set', () => {
+  let server: RunningServer;
+
+  beforeAll(async () => {
+    server = await startServer({ DL_API_KEY: 'cron', DL_DISABLE_SCHEDULER: 'true' });
+  }, 60_000);
+
+  afterAll(() => server?.stop());
+
+  it('leaves the app itself open, since no password was configured', async () => {
+    expect((await api(server, '/v1/auth/status')).body).toEqual({
+      authRequired: false,
+      authenticated: true,
+    });
+    expect((await api(server, '/v1/domains')).status).toBe(200);
+  });
+
+  it('closes the scheduled job routes to anyone without the key', async () => {
+    for (const headers of [{}, { 'x-api-key': 'wrong' }] as Record<string, string>[]) {
+      const { status, body } = await api<{ error: { code: string } }>(
+        server,
+        '/api/cleanup-monitor-data',
+        { method: 'POST', headers },
+      );
+      expect(status).toBe(401);
+      expect(body.error.code).toBe('unauthorized');
+    }
+  });
+
+  it('lets the key through', async () => {
+    const { status } = await api(server, '/api/cleanup-monitor-data', {
+      method: 'POST',
+      headers: { 'x-api-key': 'cron' },
+    });
+    expect(status).toBe(200);
+  });
+});
+
+describe.skipIf(!built)('job routes with no credentials set', () => {
+  let server: RunningServer;
+
+  beforeAll(async () => {
+    server = await startServer({ DL_DISABLE_SCHEDULER: 'true' });
+  }, 60_000);
+
+  afterAll(() => server?.stop());
+
+  it('stays open, which is the zero-config default', async () => {
+    const { status } = await api(server, '/api/cleanup-monitor-data', { method: 'POST' });
+    expect(status).toBe(200);
+  });
+});
+
 describe.skipIf(!built)('/v1 API in read-only mode', () => {
   let server: RunningServer;
 

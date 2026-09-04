@@ -1,366 +1,372 @@
 <div class="flex items-center justify-center h-full flex-col gap-4">
-  <!-- Demo Instance -->
-  @if (isDemoInstance) {
-    <div class="max-w-[500px] w-[calc(100%-0.5rem)]">
-      <p-messages severity="info">
-        <ng-template pTemplate>
-          <app-logo />
-          <div class="ml-2 flex flex-col gap-2">
-            <span class="font-semibold">This instance is running in demo-mode</span>
-            <span>
-              Data saved here will be reset daily. Some features have been disabled for
-              security.
-            </span>
-          </div>
-        </ng-template>
-      </p-messages>
-    </div>
-  }
+  @if (selfHostedAuth) {
+    <app-self-hosted-login />
+  } @else {
+    <!-- Demo Instance -->
+    @if (isDemoInstance) {
+      <div class="max-w-[500px] w-[calc(100%-0.5rem)]">
+        <p-messages severity="info">
+          <ng-template pTemplate>
+            <app-logo />
+            <div class="ml-2 flex flex-col gap-2">
+              <span class="font-semibold">This instance is running in demo-mode</span>
+              <span>
+                Data saved here will be reset daily. Some features have been disabled for
+                security.
+              </span>
+            </div>
+          </ng-template>
+        </p-messages>
+      </div>
+    }
 
-  <!-- New User, welcome -->
-  @if (showWelcomeCard && !isAuthenticated) {
-    <div class="max-w-[500px] w-[calc(100%-0.5rem)]">
-      <h2 class="font-semibold text-primary">Welcome!</h2>
-      <p class="m-0">
-        Domain chaos ends here—you're just moments away from total control
-      </p>
-    </div>
-  }
+    <!-- New User, welcome -->
+    @if (showWelcomeCard && !isAuthenticated) {
+      <div class="max-w-[500px] w-[calc(100%-0.5rem)]">
+        <h2 class="font-semibold text-primary">Welcome!</h2>
+        <p class="m-0">
+          Domain chaos ends here—you're just moments away from total control
+        </p>
+      </div>
+    }
 
-  <!-- User already authenticated -->
-  @if (isAuthenticated && !requireMFA) {
-    <p-card class="max-w-[500px] w-[calc(100%-0.5rem)]">
-      <ng-template pTemplate="title">You're Signed In</ng-template>
-      <div class="flex gap-2 flex-wrap md:flex-nowrap">
-        <a class="w-full" routerLink="/domains">
+    <!-- User already authenticated -->
+    @if (isAuthenticated && !requireMFA) {
+      <p-card class="max-w-[500px] w-[calc(100%-0.5rem)]">
+        <ng-template pTemplate="title">You're Signed In</ng-template>
+        <div class="flex gap-2 flex-wrap md:flex-nowrap">
+          <a class="w-full" routerLink="/domains">
+            <p-button
+              severity="primary"
+              label="Go to Account"
+              class="w-full"
+              styleClass="w-full"
+              icon="pi pi-user"
+            ></p-button>
+          </a>
           <p-button
-            severity="primary"
-            label="Go to Account"
+            severity="secondary"
+            label="Sign Out"
             class="w-full"
             styleClass="w-full"
-            icon="pi pi-user"
+            (click)="signOut()"
+            icon="pi pi-sign-out"
           ></p-button>
-        </a>
-        <p-button
-          severity="secondary"
-          label="Sign Out"
-          class="w-full"
-          styleClass="w-full"
-          (click)="signOut()"
-          icon="pi pi-sign-out"
-        ></p-button>
-      </div>
-    </p-card>
-  }
-
-  <!-- Social login options -->
-  @if (
-    !isAuthenticated &&
-    !requireMFA &&
-    !showPasswordResetForm &&
-    (enableSocialLogin$ | async)
-  ) {
-    <p-card class="max-w-[500px] w-[calc(100%-0.5rem)]">
-      <ng-template pTemplate="title"> Continue With </ng-template>
-      <div class="flex gap-2 justify-between flex-col sm:flex-row">
-        <p-button
-          class="flex-1"
-          label="GitHub"
-          [outlined]="true"
-          icon="pi pi-github"
-          styleClass="w-full"
-          (click)="loginWithGitHub()"
-        ></p-button>
-        <p-button
-          class="flex-1"
-          label="Google"
-          [outlined]="true"
-          icon="pi pi-google"
-          styleClass="w-full"
-          (click)="loginWithGoogle()"
-        ></p-button>
-        <p-button
-          class="flex-1"
-          label="Facebook"
-          [outlined]="true"
-          icon="pi pi-facebook"
-          styleClass="w-full"
-          (click)="loginWithFacebook()"
-        ></p-button>
-      </div>
-    </p-card>
-  }
-
-  <!-- Reset Password -->
-  @if (showPasswordResetForm) {
-    <p-card class="max-w-[500px] w-[calc(100%-0.5rem)]">
-      <ng-template pTemplate="title"> Reset Password </ng-template>
-      @if (showNewPasswordSetForm) {
-        <form [formGroup]="form" (ngSubmit)="saveUpdatedPassword()" class="p-fluid">
-          <p>
-            Enter your new password below. This will be used to sign in to your account.
-          </p>
-          <div class="mb-4">
-            <label for="password" class="block">New Password</label>
-            <p-password
-              id="password"
-              formControlName="password"
-              [toggleMask]="true"
-              [promptLabel]="'Enter new password'"
-              weakLabel="Too simple"
-              mediumLabel="Average complexity"
-              strongLabel="Complex password"
-              [feedback]="true"
-            ></p-password>
-            @if (form.get('password')?.invalid && form.get('password')?.touched) {
-              <p-message
-                severity="error"
-                text="Password is required and must be at least 6 characters long"
-              ></p-message>
-            }
-          </div>
-          <p-button
-            type="submit"
-            label="Set New Password"
-            styleClass="w-full"
-            [disabled]="form.invalid || disabled"
-            [loading]="showLoader"
-          ></p-button>
-          @if (errorMessage) {
-            <p-message
-              severity="error"
-              [text]="errorMessage"
-              styleClass="w-full mt-4"
-            ></p-message>
-          }
-          @if (successMessage) {
-            <p-message
-              severity="success"
-              [text]="successMessage"
-              styleClass="w-full mt-4"
-            ></p-message>
-          }
-        </form>
-      }
-      @if (!showNewPasswordSetForm) {
-        <form [formGroup]="form" (ngSubmit)="sendPasswordResetEmail()" class="p-fluid">
-          <p>
-            Enter your email address and we will send you a link to reset your password.
-          </p>
-          <div class="mb-4">
-            <label for="email" class="block">Email</label>
-            <input type="email" pInputText id="email" formControlName="email" />
-            @if (form.get('email')?.invalid && form.get('email')?.touched) {
-              <p-message severity="error" text="Valid email is required"></p-message>
-            }
-          </div>
-          <p-button
-            type="submit"
-            label="Send Reset Link"
-            styleClass="w-full"
-            [disabled]="disabled"
-            [loading]="showLoader"
-          ></p-button>
-          @if (errorMessage) {
-            <p-message
-              severity="error"
-              [text]="errorMessage"
-              styleClass="w-full mt-4"
-            ></p-message>
-          }
-          @if (successMessage) {
-            <p-message
-              severity="success"
-              [text]="successMessage"
-              styleClass="w-full mt-4"
-            ></p-message>
-          }
-          <button
-            type="button"
-            (click)="togglePasswordResetForm()"
-            class="flex justify-center mt-3 mx-auto underline cursor-pointer text-sm opacity-70 text-center bg-transparent border-none text-default"
-          >
-            Remembered Password?
-          </button>
-        </form>
-      }
-    </p-card>
-  }
-
-  <!-- Multi-factor auth code input -->
-  @if (requireMFA) {
-    <p-card class="max-w-[500px] w-[calc(100%-0.5rem)]">
-      <ng-template pTemplate="title"> Multi-Factor Authentication </ng-template>
-      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="p-fluid">
-        <p>
-          You've enabled multi-factor authentication for your account. To complete your
-          login, you need to provide the 6-digit code from your authenticator app.
-        </p>
-        <div class="mb-4">
-          <label for="mfaCode" class="block">2FA Code</label>
-          <p-inputOtp formControlName="mfaCode" [integerOnly]="true" [length]="6" />
-          @if (form.get('mfaCode')?.invalid && form.get('mfaCode')?.touched) {
-            <p-message severity="error" text="A valid MFA code is required"></p-message>
-          }
         </div>
-        <p-button
-          type="submit"
-          label="Complete Login"
-          styleClass="w-full"
-          [disabled]="form.invalid"
-          [loading]="showLoader"
-        ></p-button>
-        @if (errorMessage) {
-          <p-message
-            severity="error"
-            [text]="errorMessage"
-            styleClass="w-full mt-4"
-          ></p-message>
-        }
-      </form>
-    </p-card>
-  }
+      </p-card>
+    }
 
-  <!-- Login and signup form  -->
-  @if (!isAuthenticated && !requireMFA && !showPasswordResetForm) {
-    <p-card class="w-full max-w-[500px] w-[calc(100%-0.5rem)]">
-      <ng-template pTemplate="title">
-        {{ isLogin ? 'Login' : 'Sign Up' }}
-      </ng-template>
-      <ng-template pTemplate="subtitle"> Welcome to Domain Locker </ng-template>
-      <ng-template pTemplate="content">
-        <p-selectButton
-          [options]="modes"
-          [(ngModel)]="isLogin"
-          optionLabel="label"
-          optionValue="value"
-          (onChange)="onModeChange()"
-        ></p-selectButton>
-        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="p-fluid">
-          <div class="mb-4">
-            <label for="email" class="block">Email</label>
-            <input type="email" pInputText id="email" formControlName="email" />
-            @if (form.get('email')?.invalid && form.get('email')?.touched) {
-              <p-message severity="error" text="Valid email is required"></p-message>
-            }
-          </div>
-          <div class="mb-4">
-            <label for="password" class="block">Password</label>
-            <p-password
-              id="password"
-              formControlName="password"
-              [toggleMask]="true"
-              [promptLabel]="isLogin ? 'Enter password' : 'Choose a password'"
-              weakLabel="Too simple"
-              mediumLabel="Average complexity"
-              strongLabel="Complex password"
-              [feedback]="!isLogin"
-            ></p-password>
-            @if (form.get('password')?.invalid && form.get('password')?.touched) {
-              <p-message
-                severity="error"
-                text="Password is required and must be at least 6 characters long"
-              ></p-message>
-            }
-          </div>
-          @if (!isLogin) {
+    <!-- Social login options -->
+    @if (
+      !isAuthenticated &&
+      !requireMFA &&
+      !showPasswordResetForm &&
+      (enableSocialLogin$ | async)
+    ) {
+      <p-card class="max-w-[500px] w-[calc(100%-0.5rem)]">
+        <ng-template pTemplate="title"> Continue With </ng-template>
+        <div class="flex gap-2 justify-between flex-col sm:flex-row">
+          <p-button
+            class="flex-1"
+            label="GitHub"
+            [outlined]="true"
+            icon="pi pi-github"
+            styleClass="w-full"
+            (click)="loginWithGitHub()"
+          ></p-button>
+          <p-button
+            class="flex-1"
+            label="Google"
+            [outlined]="true"
+            icon="pi pi-google"
+            styleClass="w-full"
+            (click)="loginWithGoogle()"
+          ></p-button>
+          <p-button
+            class="flex-1"
+            label="Facebook"
+            [outlined]="true"
+            icon="pi pi-facebook"
+            styleClass="w-full"
+            (click)="loginWithFacebook()"
+          ></p-button>
+        </div>
+      </p-card>
+    }
+
+    <!-- Reset Password -->
+    @if (showPasswordResetForm) {
+      <p-card class="max-w-[500px] w-[calc(100%-0.5rem)]">
+        <ng-template pTemplate="title"> Reset Password </ng-template>
+        @if (showNewPasswordSetForm) {
+          <form [formGroup]="form" (ngSubmit)="saveUpdatedPassword()" class="p-fluid">
+            <p>
+              Enter your new password below. This will be used to sign in to your account.
+            </p>
             <div class="mb-4">
-              <label for="confirmPassword" class="block">Confirm Password</label>
+              <label for="password" class="block">New Password</label>
               <p-password
-                id="confirmPassword"
-                formControlName="confirmPassword"
+                id="password"
+                formControlName="password"
                 [toggleMask]="true"
-                [feedback]="false"
+                [promptLabel]="'Enter new password'"
+                weakLabel="Too simple"
+                mediumLabel="Average complexity"
+                strongLabel="Complex password"
+                [feedback]="true"
               ></p-password>
-              @if (
-                form.get('confirmPassword')?.invalid &&
-                form.get('confirmPassword')?.touched
-              ) {
-                <p-message severity="error" text="Passwords do not match"></p-message>
-              }
-            </div>
-          }
-          @if (!isLogin) {
-            <div class="mb-4">
-              <p-checkbox
-                formControlName="acceptTerms"
-                [binary]="true"
-                label="I agree to the terms and conditions"
-              ></p-checkbox>
-              <a
-                routerLink="/about/legal/terms-of-service"
-                class="no-underline inline pr-2 text-lg"
-                pTooltip="View Terms"
-                >*</a
-              >
-              @if (form.get('acceptTerms')?.invalid && form.get('acceptTerms')?.touched) {
+              @if (form.get('password')?.invalid && form.get('password')?.touched) {
                 <p-message
                   severity="error"
-                  text="You must agree to the terms and conditions"
+                  text="Password is required and must be at least 6 characters long"
                 ></p-message>
               }
             </div>
-          }
-          <!--  Captcha -->
-          @if (turnstileSiteKey) {
-            <ngx-turnstile
-              class="text-center mb-4"
-              [siteKey]="turnstileSiteKey"
-              (resolved)="sendCaptchaResponse($event)"
-              theme="auto"
-              [tabIndex]="0"
-            />
-          }
-          <p-button
-            type="submit"
-            [label]="isLogin ? 'Login' : 'Sign Up'"
-            styleClass="w-full"
-            [disabled]="form.invalid || disabled"
-            [loading]="showLoader"
-          ></p-button>
-          @if (isLogin) {
+            <p-button
+              type="submit"
+              label="Set New Password"
+              styleClass="w-full"
+              [disabled]="form.invalid || disabled"
+              [loading]="showLoader"
+            ></p-button>
+            @if (errorMessage) {
+              <p-message
+                severity="error"
+                [text]="errorMessage"
+                styleClass="w-full mt-4"
+              ></p-message>
+            }
+            @if (successMessage) {
+              <p-message
+                severity="success"
+                [text]="successMessage"
+                styleClass="w-full mt-4"
+              ></p-message>
+            }
+          </form>
+        }
+        @if (!showNewPasswordSetForm) {
+          <form [formGroup]="form" (ngSubmit)="sendPasswordResetEmail()" class="p-fluid">
+            <p>
+              Enter your email address and we will send you a link to reset your password.
+            </p>
+            <div class="mb-4">
+              <label for="email" class="block">Email</label>
+              <input type="email" pInputText id="email" formControlName="email" />
+              @if (form.get('email')?.invalid && form.get('email')?.touched) {
+                <p-message severity="error" text="Valid email is required"></p-message>
+              }
+            </div>
+            <p-button
+              type="submit"
+              label="Send Reset Link"
+              styleClass="w-full"
+              [disabled]="disabled"
+              [loading]="showLoader"
+            ></p-button>
+            @if (errorMessage) {
+              <p-message
+                severity="error"
+                [text]="errorMessage"
+                styleClass="w-full mt-4"
+              ></p-message>
+            }
+            @if (successMessage) {
+              <p-message
+                severity="success"
+                [text]="successMessage"
+                styleClass="w-full mt-4"
+              ></p-message>
+            }
             <button
               type="button"
               (click)="togglePasswordResetForm()"
               class="flex justify-center mt-3 mx-auto underline cursor-pointer text-sm opacity-70 text-center bg-transparent border-none text-default"
             >
-              Forgotten Password?
+              Remembered Password?
             </button>
+          </form>
+        }
+      </p-card>
+    }
+
+    <!-- Multi-factor auth code input -->
+    @if (requireMFA) {
+      <p-card class="max-w-[500px] w-[calc(100%-0.5rem)]">
+        <ng-template pTemplate="title"> Multi-Factor Authentication </ng-template>
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="p-fluid">
+          <p>
+            You've enabled multi-factor authentication for your account. To complete your
+            login, you need to provide the 6-digit code from your authenticator app.
+          </p>
+          <div class="mb-4">
+            <label for="mfaCode" class="block">2FA Code</label>
+            <p-inputOtp formControlName="mfaCode" [integerOnly]="true" [length]="6" />
+            @if (form.get('mfaCode')?.invalid && form.get('mfaCode')?.touched) {
+              <p-message severity="error" text="A valid MFA code is required"></p-message>
+            }
+          </div>
+          <p-button
+            type="submit"
+            label="Complete Login"
+            styleClass="w-full"
+            [disabled]="form.invalid"
+            [loading]="showLoader"
+          ></p-button>
+          @if (errorMessage) {
+            <p-message
+              severity="error"
+              [text]="errorMessage"
+              styleClass="w-full mt-4"
+            ></p-message>
           }
         </form>
-        @if (errorMessage) {
-          <p-message
-            severity="error"
-            [text]="errorMessage"
-            styleClass="w-full mt-4"
-          ></p-message>
-        }
-        @if (successMessage) {
-          <p-message
-            severity="success"
-            [text]="successMessage"
-            styleClass="w-full mt-4"
-          ></p-message>
-        }
-        @if (showResendEmail) {
-          <p-messages severity="secondary">
-            <ng-template pTemplate>
-              <div class="w-full flex justify-between">
-                Not received verification email?
-                <p-button
-                  (click)="resendVerificationEmail()"
-                  [loading]="showLoader"
-                  label="Resend"
-                  icon="pi pi-refresh"
-                  size="small"
-                  severity="secondary"
-                  styleClass="px-4 py-1"
-                />
+      </p-card>
+    }
+
+    <!-- Login and signup form  -->
+    @if (!isAuthenticated && !requireMFA && !showPasswordResetForm) {
+      <p-card class="w-full max-w-[500px] w-[calc(100%-0.5rem)]">
+        <ng-template pTemplate="title">
+          {{ isLogin ? 'Login' : 'Sign Up' }}
+        </ng-template>
+        <ng-template pTemplate="subtitle"> Welcome to Domain Locker </ng-template>
+        <ng-template pTemplate="content">
+          <p-selectButton
+            [options]="modes"
+            [(ngModel)]="isLogin"
+            optionLabel="label"
+            optionValue="value"
+            (onChange)="onModeChange()"
+          ></p-selectButton>
+          <form [formGroup]="form" (ngSubmit)="onSubmit()" class="p-fluid">
+            <div class="mb-4">
+              <label for="email" class="block">Email</label>
+              <input type="email" pInputText id="email" formControlName="email" />
+              @if (form.get('email')?.invalid && form.get('email')?.touched) {
+                <p-message severity="error" text="Valid email is required"></p-message>
+              }
+            </div>
+            <div class="mb-4">
+              <label for="password" class="block">Password</label>
+              <p-password
+                id="password"
+                formControlName="password"
+                [toggleMask]="true"
+                [promptLabel]="isLogin ? 'Enter password' : 'Choose a password'"
+                weakLabel="Too simple"
+                mediumLabel="Average complexity"
+                strongLabel="Complex password"
+                [feedback]="!isLogin"
+              ></p-password>
+              @if (form.get('password')?.invalid && form.get('password')?.touched) {
+                <p-message
+                  severity="error"
+                  text="Password is required and must be at least 6 characters long"
+                ></p-message>
+              }
+            </div>
+            @if (!isLogin) {
+              <div class="mb-4">
+                <label for="confirmPassword" class="block">Confirm Password</label>
+                <p-password
+                  id="confirmPassword"
+                  formControlName="confirmPassword"
+                  [toggleMask]="true"
+                  [feedback]="false"
+                ></p-password>
+                @if (
+                  form.get('confirmPassword')?.invalid &&
+                  form.get('confirmPassword')?.touched
+                ) {
+                  <p-message severity="error" text="Passwords do not match"></p-message>
+                }
               </div>
-            </ng-template>
-          </p-messages>
-        }
-      </ng-template>
-    </p-card>
+            }
+            @if (!isLogin) {
+              <div class="mb-4">
+                <p-checkbox
+                  formControlName="acceptTerms"
+                  [binary]="true"
+                  label="I agree to the terms and conditions"
+                ></p-checkbox>
+                <a
+                  routerLink="/about/legal/terms-of-service"
+                  class="no-underline inline pr-2 text-lg"
+                  pTooltip="View Terms"
+                  >*</a
+                >
+                @if (
+                  form.get('acceptTerms')?.invalid && form.get('acceptTerms')?.touched
+                ) {
+                  <p-message
+                    severity="error"
+                    text="You must agree to the terms and conditions"
+                  ></p-message>
+                }
+              </div>
+            }
+            <!--  Captcha -->
+            @if (turnstileSiteKey) {
+              <ngx-turnstile
+                class="text-center mb-4"
+                [siteKey]="turnstileSiteKey"
+                (resolved)="sendCaptchaResponse($event)"
+                theme="auto"
+                [tabIndex]="0"
+              />
+            }
+            <p-button
+              type="submit"
+              [label]="isLogin ? 'Login' : 'Sign Up'"
+              styleClass="w-full"
+              [disabled]="form.invalid || disabled"
+              [loading]="showLoader"
+            ></p-button>
+            @if (isLogin) {
+              <button
+                type="button"
+                (click)="togglePasswordResetForm()"
+                class="flex justify-center mt-3 mx-auto underline cursor-pointer text-sm opacity-70 text-center bg-transparent border-none text-default"
+              >
+                Forgotten Password?
+              </button>
+            }
+          </form>
+          @if (errorMessage) {
+            <p-message
+              severity="error"
+              [text]="errorMessage"
+              styleClass="w-full mt-4"
+            ></p-message>
+          }
+          @if (successMessage) {
+            <p-message
+              severity="success"
+              [text]="successMessage"
+              styleClass="w-full mt-4"
+            ></p-message>
+          }
+          @if (showResendEmail) {
+            <p-messages severity="secondary">
+              <ng-template pTemplate>
+                <div class="w-full flex justify-between">
+                  Not received verification email?
+                  <p-button
+                    (click)="resendVerificationEmail()"
+                    [loading]="showLoader"
+                    label="Resend"
+                    icon="pi pi-refresh"
+                    size="small"
+                    severity="secondary"
+                    styleClass="px-4 py-1"
+                  />
+                </div>
+              </ng-template>
+            </p-messages>
+          }
+        </ng-template>
+      </p-card>
+    }
   }
 </div>

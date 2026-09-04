@@ -1,4 +1,5 @@
 import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { PrimeNgModule } from '~/app/prime-ng.module';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ConfirmationService, MessageService } from 'primeng/api';
@@ -15,7 +16,7 @@ import { FeatureNotEnabledComponent } from '~/app/components/misc/feature-not-en
   selector: 'app-settings-account-page',
   templateUrl: './account.page.html',
   styleUrls: ['./index.page.scss'],
-  imports: [PrimeNgModule, ReactiveFormsModule, FeatureNotEnabledComponent],
+  imports: [CommonModule, PrimeNgModule, ReactiveFormsModule, FeatureNotEnabledComponent],
   providers: [MessageService, ConfirmationService],
 })
 export default class UserSettingsComponent implements OnInit {
@@ -63,8 +64,16 @@ export default class UserSettingsComponent implements OnInit {
 
   isEnabled = true;
   writePermissions = true;
+  userAccounts$ = this.featureService.isFeatureEnabled('userAccounts');
 
-  ngOnInit() {
+  async ngOnInit() {
+    this.featureService.isFeatureEnabled('writePermissions').subscribe((isEnabled) => {
+      this.writePermissions = isEnabled;
+    });
+
+    // Everything below talks to the auth provider, which self-hosted has none of
+    if (!(await this.featureService.isFeatureEnabledPromise('userAccounts'))) return;
+
     this.initializeForms();
     this.loadUserData();
     this.checkIfUserHasPassword().then((hasPassword) => {
@@ -73,10 +82,6 @@ export default class UserSettingsComponent implements OnInit {
       this.cdr.detectChanges(); // Ensures the UI updates
     });
     this.checkMFAStatus();
-
-    this.featureService.isFeatureEnabled('writePermissions').subscribe((isEnabled) => {
-      this.writePermissions = isEnabled;
-    });
   }
 
   initializeForms() {

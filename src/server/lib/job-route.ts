@@ -1,6 +1,6 @@
 import { defineEventHandler, setResponseStatus } from 'h3';
 import { runJob, type JobName } from '../jobs/runner';
-import { hasValidApiKey, isAuthEnabled, hasValidSession } from './auth';
+import { jobAuthMissing } from './auth';
 import { STATUS_BY_CODE } from './errors';
 import Logger from '../utils/logger';
 
@@ -20,7 +20,7 @@ export function defineJobRoute(job: JobName, work: () => Promise<unknown>) {
       };
     }
 
-    if (isAuthEnabled() && !hasValidApiKey(event) && !hasValidSession(event)) {
+    if (jobAuthMissing(event)) {
       setResponseStatus(event, STATUS_BY_CODE['unauthorized']);
       return { error: { code: 'unauthorized', message: 'Authentication required' } };
     }

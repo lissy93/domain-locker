@@ -35,6 +35,7 @@ import {
 } from '~/app/services/error-handler.service';
 import { AccessibilityService } from '~/app/services/accessibility-options.service';
 import { EnvService } from '~/app/services/environment.service';
+import { AuthService } from '~/app/services/auth.service';
 import { FeatureService } from '~/app/services/features.service';
 import { MetaTagsService } from '~/app/services/meta-tags.service';
 
@@ -106,6 +107,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private environmentService = inject(EnvService);
   private featureService = inject(FeatureService);
   private metaTagsService = inject(MetaTagsService);
+  private authService = inject(AuthService);
   private platformId = inject<object>(PLATFORM_ID);
 
   private subscription: Subscription | undefined;
@@ -244,9 +246,9 @@ export class AppComponent implements OnInit, OnDestroy {
       return Promise.resolve(true);
     }
 
-    // Cancel if Supabase auth isn't enabled or setup
+    // Without Supabase, the instance password is the only gate, if one is set
     if (!this.environmentService.isSupabaseEnabled()) {
-      return Promise.resolve(true);
+      return this.authService.isAuthenticated();
     }
 
     try {

@@ -150,6 +150,8 @@ export class SupabaseService {
   }
 
   async getCurrentUser(): Promise<User | null> {
+    // No provider means nobody is signed in, rather than a crash
+    if (!this.supabase) return null;
     const {
       data: { user },
     } = await this.supabase.auth.getUser();

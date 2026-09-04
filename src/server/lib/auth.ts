@@ -69,6 +69,10 @@ function apiKey(): string | null {
   return process.env['DL_API_KEY'] || null;
 }
 
+export function isApiKeyConfigured(): boolean {
+  return Boolean(apiKey());
+}
+
 export function hasValidApiKey(event: H3Event): boolean {
   const expected = apiKey();
   if (!expected) return false;
@@ -85,8 +89,11 @@ export function requireAuth(event: H3Event): void {
   throw apiError('unauthorized', 'Authentication required');
 }
 
-/** Job routes additionally accept an API key even when no password is set */
-export function requireJobAuth(event: H3Event): void {
-  if (hasValidApiKey(event)) return;
-  requireAuth(event);
+/**
+ * Job routes are protected by either credential, so a key on its own still
+ * closes the cron endpoints without password-gating the whole UI
+ */
+export function jobAuthMissing(event: H3Event): boolean {
+  if (!isAuthEnabled() && !isApiKeyConfigured()) return false;
+  return !hasValidApiKey(event) && !hasValidSession(event);
 }
