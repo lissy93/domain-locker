@@ -1,7 +1,7 @@
 import { sql, type Kysely } from 'kysely';
 import type { Backend } from '../client';
 import type { Database } from '../schema';
-import { currentUserId, toBoolean, toNumber } from './helpers';
+import { currentUserId, groupBy, toBoolean, toNumber } from './helpers';
 
 export interface UptimeRow {
   checked_at: string;
@@ -26,6 +26,17 @@ export function timeframeCutoff(timeframe: string, now = Date.now()): string {
   return new Date(now - hours * 3_600_000).toISOString();
 }
 
+/** UTC midnight for an ISO timestamp, so aggregation never splits a day in two */
+function dayStart(iso: string): string {
+  return `${iso.slice(0, 10)}T00:00:00.000Z`;
+}
+
+/** Averages come back as fractional numerics, but the columns hold whole ms */
+function rounded(value: unknown): number | null {
+  const parsed = toNumber(value);
+  return parsed === null ? null : Math.round(parsed);
+}
+
 export function uptimeRepo(db: Kysely<Database>, backend: Backend) {
   /** Both dialects sort ISO-8601 UTC strings chronologically, so a plain compare works */
   function since(cutoff: string, domainId: string, userId: string) {
@@ -36,6 +47,12 @@ export function uptimeRepo(db: Kysely<Database>, backend: Backend) {
       .where('uptime.domain_id', '=', domainId)
       .where('uptime.checked_at', '>=', cutoff);
   }
+
+  /** UTC day bucket, matching the ISO timestamps SQLite stores */
+  const dayBucket =
+    backend === 'postgres'
+      ? sql<string>`to_char(uptime.checked_at at time zone 'UTC', 'YYYY-MM-DD')`
+      : sql<string>`substr(uptime.checked_at, 1, 10)`;
 
   return {
     async history(
@@ -72,19 +89,13 @@ export function uptimeRepo(db: Kysely<Database>, backend: Backend) {
       userId = currentUserId(),
     ): Promise<{ day: string; avg_response_time_ms: number | null }[]> {
       const cutoff = new Date(Date.now() - days * 86_400_000).toISOString();
-      // Only the date extraction differs between dialects
-      const day =
-        backend === 'postgres'
-          ? sql<string>`to_char(date_trunc('day', uptime.checked_at), 'YYYY-MM-DD')`
-          : sql<string>`substr(uptime.checked_at, 1, 10)`;
-
       const rows = await since(cutoff, domainId, userId)
         .select([
-          day.as('day'),
+          dayBucket.as('day'),
           sql<number | null>`avg(uptime.response_time_ms)`.as('avg_response_time_ms'),
         ])
-        .groupBy(day)
-        .orderBy(day)
+        .groupBy(dayBucket)
+        .orderBy(dayBucket)
         .execute();
 
       return rows.map((row) => ({
@@ -194,6 +205,70 @@ export function uptimeRepo(db: Kysely<Database>, backend: Backend) {
           ssl_handshake_time_ms: check.ssl_handshake_time_ms,
         })
         .execute();
+    },
+
+    /**
+     * Collapses each day past the detail window into one averaged row per domain,
+     * timed at noon UTC. Days already down to a single row are skipped, so repeat
+     * runs stay cheap and storage settles at one row per domain per day
+     */
+    async aggregate(
+      olderThanDays: number,
+    ): Promise<{ averages: number; removed: number }> {
+      const cutoff = dayStart(
+        new Date(Date.now() - olderThanDays * 86_400_000).toISOString(),
+      );
+      const groups = await db
+        .selectFrom('uptime')
+        .where('uptime.checked_at', '<', cutoff)
+        .select([
+          'uptime.domain_id',
+          dayBucket.as('day'),
+          sql<number>`avg(case when uptime.is_up then 1.0 else 0.0 end)`.as('up_ratio'),
+          sql<number | null>`avg(uptime.response_time_ms)`.as('response_time_ms'),
+          sql<number | null>`avg(uptime.dns_lookup_time_ms)`.as('dns_lookup_time_ms'),
+          sql<number | null>`avg(uptime.ssl_handshake_time_ms)`.as(
+            'ssl_handshake_time_ms',
+          ),
+        ])
+        .groupBy(['uptime.domain_id', dayBucket])
+        .having((eb) => eb(eb.fn.countAll(), '>', 1))
+        .execute();
+
+      let removed = 0;
+      // A day at a time, so each statement stays bounded however big the backlog
+      for (const [day, forDay] of groupBy(groups, 'day')) {
+        const start = `${day}T00:00:00.000Z`;
+        const end = new Date(Date.parse(start) + 86_400_000).toISOString();
+        await db.transaction().execute(async (trx) => {
+          const deleted = await trx
+            .deleteFrom('uptime')
+            .where(
+              'domain_id',
+              'in',
+              forDay.map((group) => group.domain_id),
+            )
+            .where('checked_at', '>=', start)
+            .where('checked_at', '<', end)
+            .executeTakeFirst();
+          await trx
+            .insertInto('uptime')
+            .values(
+              forDay.map((group) => ({
+                domain_id: group.domain_id,
+                checked_at: `${day}T12:00:00.000Z`,
+                is_up: Number(group.up_ratio) > 0.5,
+                response_code: 200,
+                response_time_ms: rounded(group.response_time_ms),
+                dns_lookup_time_ms: rounded(group.dns_lookup_time_ms),
+                ssl_handshake_time_ms: rounded(group.ssl_handshake_time_ms),
+              })),
+            )
+            .execute();
+          removed += Number(deleted.numDeletedRows ?? 0);
+        });
+      }
+      return { averages: groups.length, removed };
     },
 
     /** Drops checks older than the retention window */

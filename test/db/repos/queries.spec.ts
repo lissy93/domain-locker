@@ -470,6 +470,91 @@ describe.each(BACKENDS)('repositories (%s)', (backend) => {
       expect(await repo.uptime.prune(90)).toBe(1);
       expect(await repo.uptime.history(domain!.id, 'year')).toHaveLength(1);
     });
+
+    it('collapses old checks into one averaged row per domain per day', async () => {
+      const domain = await repo.domains.save(domainInput('aggregate.com'));
+      const day = new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10);
+      const checks = [
+        { hour: '01', is_up: true, response_time_ms: 100 },
+        { hour: '09', is_up: true, response_time_ms: 300 },
+        { hour: '20', is_up: false, response_time_ms: null },
+      ];
+      for (const check of checks) {
+        await repo.uptime.record(domain!.id, {
+          is_up: check.is_up,
+          response_code: check.is_up ? 200 : 500,
+          response_time_ms: check.response_time_ms,
+          dns_lookup_time_ms: null,
+          ssl_handshake_time_ms: null,
+          checked_at: `${day}T${check.hour}:00:00.000Z`,
+        });
+      }
+      await repo.uptime.record(domain!.id, {
+        is_up: true,
+        response_code: 200,
+        response_time_ms: 55,
+        dns_lookup_time_ms: null,
+        ssl_handshake_time_ms: null,
+      });
+
+      expect(await repo.uptime.aggregate(7)).toEqual({ averages: 1, removed: 3 });
+
+      const history = await repo.uptime.history(domain!.id, 'year');
+      expect(history).toHaveLength(2);
+      expect(history[0]).toMatchObject({
+        checked_at: `${day}T12:00:00.000Z`,
+        is_up: true,
+        response_time_ms: 200,
+        dns_lookup_time_ms: null,
+      });
+      expect(history[1].response_time_ms).toBe(55);
+    });
+
+    it('leaves single-row days alone, so repeat runs change nothing', async () => {
+      const domain = await repo.domains.save(domainInput('idempotent.com'));
+      const day = new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10);
+      for (const hour of ['02', '14']) {
+        await repo.uptime.record(domain!.id, {
+          is_up: true,
+          response_code: 200,
+          response_time_ms: 40,
+          dns_lookup_time_ms: null,
+          ssl_handshake_time_ms: null,
+          checked_at: `${day}T${hour}:00:00.000Z`,
+        });
+      }
+
+      expect(await repo.uptime.aggregate(7)).toEqual({ averages: 1, removed: 2 });
+      const collapsed = await repo.uptime.history(domain!.id, 'year');
+
+      expect(await repo.uptime.aggregate(7)).toEqual({ averages: 0, removed: 0 });
+      expect(await repo.uptime.history(domain!.id, 'year')).toEqual(collapsed);
+    });
+
+    it('averages each domain separately', async () => {
+      const fast = await repo.domains.save(domainInput('fast.com'));
+      const slow = await repo.domains.save(domainInput('slow.com'));
+      const day = new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10);
+      for (const [domainId, times] of [
+        [fast!.id, [10, 30]],
+        [slow!.id, [800, 1000]],
+      ] as const) {
+        for (const [index, responseTime] of times.entries()) {
+          await repo.uptime.record(domainId, {
+            is_up: true,
+            response_code: 200,
+            response_time_ms: responseTime,
+            dns_lookup_time_ms: null,
+            ssl_handshake_time_ms: null,
+            checked_at: `${day}T0${index + 1}:00:00.000Z`,
+          });
+        }
+      }
+
+      expect(await repo.uptime.aggregate(7)).toEqual({ averages: 2, removed: 4 });
+      expect((await repo.uptime.history(fast!.id, 'year'))[0].response_time_ms).toBe(20);
+      expect((await repo.uptime.history(slow!.id, 'year'))[0].response_time_ms).toBe(900);
+    });
   });
 
   describe('admin', () => {

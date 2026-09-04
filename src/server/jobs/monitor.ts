@@ -7,7 +7,11 @@ import Logger from '../utils/logger';
 const log = new Logger('domain-monitor');
 
 const CONCURRENCY = Number(process.env['DL_MONITOR_CONCURRENCY'] || 10);
-const RETENTION_DAYS = Number(process.env['DL_UPTIME_RETENTION_DAYS'] || 90);
+
+function daysFromEnv(name: string, fallback: number): number {
+  const value = Number(process.env[name]);
+  return Number.isFinite(value) && value >= 0 ? value : fallback;
+}
 
 export interface MonitorSummary {
   checked: number;
@@ -46,10 +50,24 @@ export async function runMonitor(): Promise<MonitorSummary> {
   return summary;
 }
 
-/** Drops uptime samples past the retention window */
-export async function runUptimeCleanup(): Promise<{ deleted: number }> {
+/**
+ * Collapses old samples into daily averages, keeping long-run history readable
+ * without holding every check. Retention is off unless a hard cap is configured
+ */
+export async function runUptimeCleanup(): Promise<{
+  averages: number;
+  removed: number;
+  deleted: number;
+}> {
   const repos = createRepos(getDb(), currentBackend());
-  const deleted = await repos.uptime.prune(RETENTION_DAYS);
-  log.info(`Removed ${deleted} uptime rows older than ${RETENTION_DAYS} days`);
-  return { deleted };
+  const retentionDays = daysFromEnv('DL_UPTIME_RETENTION_DAYS', 0);
+
+  const { averages, removed } = await repos.uptime.aggregate(
+    daysFromEnv('DL_UPTIME_AGGREGATE_AFTER_DAYS', 7),
+  );
+  const deleted = retentionDays > 0 ? await repos.uptime.prune(retentionDays) : 0;
+
+  log.info(`Collapsed ${removed} uptime checks into ${averages} daily averages`);
+  if (deleted) log.info(`Removed ${deleted} rows older than ${retentionDays} days`);
+  return { averages, removed, deleted };
 }
