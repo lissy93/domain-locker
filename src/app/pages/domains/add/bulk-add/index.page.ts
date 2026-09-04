@@ -386,11 +386,17 @@ export default class BulkAddComponent implements OnDestroy {
 
     const notificationSettings = this.bulkAddForm.get('notifications')?.value || {};
 
-    // 1) get existing domain names so we know which to update
+    // 1) get existing domains, so those already tracked are updated by id
     this.databaseService.instance
-      .listDomainNames()
+      .listDomains()
       .pipe(
-        concatMap((existingDomains: string[]) => {
+        map(
+          (existing) =>
+            new Map(
+              existing.map((domain) => [domain.domain_name.toLowerCase(), domain.id]),
+            ),
+        ),
+        concatMap((existingIds) => {
           // 2) sequentially process each domain in the form
           return from(this.domains.controls).pipe(
             concatMap((domainForm) => {
@@ -457,8 +463,9 @@ export default class BulkAddComponent implements OnDestroy {
                 links: domainInfo?.links || [],
               };
 
-              const operation = existingDomains.includes(domainName)
-                ? this.databaseService.instance.updateDomain(domainName, domainData)
+              const existingId = existingIds.get(domainName.toLowerCase());
+              const operation = existingId
+                ? this.databaseService.instance.updateDomain(existingId, domainData)
                 : this.databaseService.instance.saveDomain(domainData);
 
               return operation.pipe(

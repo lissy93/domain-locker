@@ -86,6 +86,24 @@ describe('updater lookup', () => {
     expect(result.results[0].error).toContain('WHOIS refused');
   });
 
+  it('moves a domain to the back of the queue even when its lookup failed', async () => {
+    vi.spyOn(lookup, 'lookupDomainInfo').mockRejectedValue(new Error('WHOIS refused'));
+    await db
+      .updateTable('domains')
+      .set({ updated_at: '2020-01-01T00:00:00.000Z' })
+      .where('id', '=', domainId)
+      .execute();
+
+    await runUpdater();
+
+    const row = await db
+      .selectFrom('domains')
+      .where('id', '=', domainId)
+      .select('updated_at')
+      .executeTakeFirstOrThrow();
+    expect(row.updated_at > '2020-01-01T00:00:00.000Z').toBe(true);
+  });
+
   it('rejects a domain name the lookup would not accept', async () => {
     const spy = vi.spyOn(lookup, 'lookupDomainInfo');
     await db

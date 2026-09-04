@@ -262,6 +262,26 @@ describe.each(BACKENDS)('domain writes (%s)', (backend) => {
       expect(updated?.registrar?.name).toBe('Namecheap');
     });
 
+    it('replaces the certificate and whois rather than adding a second copy', async () => {
+      const saved = await repo.save(FULL_INPUT);
+
+      const updated = await repo.update(saved!.id, {
+        domain: { domain_name: 'written.com' },
+        ssl: { issuer: 'ZeroSSL', key_size: 4096 },
+        whois: { organization: 'Renamed Ltd' },
+      });
+
+      expect(updated?.ssl?.['issuer']).toBe('ZeroSSL');
+      expect(updated?.whois?.['organization']).toBe('Renamed Ltd');
+      expect(await repo.list()).toHaveLength(1);
+      const certificates = await db
+        .selectFrom('ssl_certificates')
+        .where('domain_id', '=', saved!.id)
+        .select('id')
+        .execute();
+      expect(certificates).toHaveLength(1);
+    });
+
     it('drops tags when given an empty list', async () => {
       const saved = await repo.save(FULL_INPUT);
       const updated = await repo.update(saved!.id, {

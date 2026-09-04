@@ -179,6 +179,48 @@ describe.each(BACKENDS)('domains repo (%s)', (backend) => {
     ).rejects.toThrow(/Unknown asset type/);
   });
 
+  it('hands the updater the least recently refreshed domains first', async () => {
+    for (const [name, refreshedAt] of [
+      ['fresh.com', '2026-03-03T00:00:00.000Z'],
+      ['stale.com', '2026-01-01T00:00:00.000Z'],
+      ['older.com', '2026-02-02T00:00:00.000Z'],
+    ]) {
+      await db
+        .insertInto('domains')
+        .values({ ...bareDomain(name), updated_at: refreshedAt })
+        .execute();
+    }
+
+    const batch = await repo.listStalest(2);
+    expect(batch.map((domain) => domain.domain_name)).toEqual(['stale.com', 'older.com']);
+
+    await repo.markRefreshed(batch[0].id);
+    const next = await repo.listStalest(2);
+    expect(next.map((domain) => domain.domain_name)).toEqual(['older.com', 'fresh.com']);
+  });
+
+  it('does not let a domain with duplicate whois rows eat a second batch slot', async () => {
+    const stale = await db
+      .insertInto('domains')
+      .values({ ...bareDomain('stale.com'), updated_at: '2026-01-01T00:00:00.000Z' })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    await db
+      .insertInto('whois_info')
+      .values([
+        { domain_id: stale.id, organization: 'First' },
+        { domain_id: stale.id, organization: 'Second' },
+      ])
+      .execute();
+    await db
+      .insertInto('domains')
+      .values({ ...bareDomain('next.com'), updated_at: '2026-02-02T00:00:00.000Z' })
+      .execute();
+
+    const names = (await repo.listStalest(2)).map((domain) => domain.domain_name);
+    expect(names).toContain('next.com');
+  });
+
   describe('remove', () => {
     it('deletes the domain and everything hanging off it', async () => {
       const id = await seedFullDomain(db, 'gone.com');

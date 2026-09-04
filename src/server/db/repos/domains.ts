@@ -234,6 +234,32 @@ export function domainsRepo(db: Kysely<Database>) {
       return withRelations(await baseQuery(userId).execute());
     },
 
+    /** Least recently refreshed first, so a capped updater run reaches every domain in turn */
+    async listStalest(limit: number, userId = currentUserId()): Promise<DomainRecord[]> {
+      // Picked before the joins, so a domain with duplicate rows takes one slot
+      const stalest = db
+        .selectFrom('domains')
+        .where('user_id', '=', userId)
+        .select('id')
+        .orderBy('updated_at')
+        .limit(limit);
+      const rows = await baseQuery(userId)
+        .where('domains.id', 'in', stalest)
+        .orderBy('domains.updated_at')
+        .execute();
+      return withRelations(rows);
+    },
+
+    /** updated_at records the last refresh, which is what listStalest orders on */
+    async markRefreshed(id: string, userId = currentUserId()): Promise<void> {
+      await db
+        .updateTable('domains')
+        .set({ updated_at: new Date().toISOString() })
+        .where('id', '=', id)
+        .where('user_id', '=', userId)
+        .execute();
+    },
+
     async getByName(
       domainName: string,
       userId = currentUserId(),

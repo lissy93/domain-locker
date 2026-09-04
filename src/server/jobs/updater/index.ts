@@ -1,5 +1,6 @@
 import { currentBackend, getDb } from '../../db/client';
 import { createRepos } from '../../db/repos';
+import type { DomainRecord } from '../../db/repos/domains';
 import { fetchDomainInfo } from './fetch-info';
 import { compareAndUpdateDomain } from './compare';
 import { withConcurrency, withRetry } from '../runner';
@@ -34,43 +35,18 @@ export async function runUpdater(): Promise<{
   results: UpdaterResult[];
 }> {
   const repos = createRepos(getDb(), currentBackend());
-  const domains = await repos.domains.list();
+  const domains = await repos.domains.listStalest(BATCH_SIZE);
   if (!domains.length) {
     return { checked: 0, changed: 0, results: [] };
   }
 
-  // Least recently updated first, so every domain gets its turn
-  const batch = domains
-    .slice()
-    .sort((left, right) =>
-      (left.updated_date ?? '').localeCompare(right.updated_date ?? ''),
-    )
-    .slice(0, BATCH_SIZE);
-
-  const outcomes = await withConcurrency(batch, CONCURRENCY, async (domain) => {
-    try {
-      // Lookups are rate limited upstream, so back off rather than give up
-      const fresh = await withRetry(() => fetchDomainInfo(domain.domain_name));
-      const { changes } = await compareAndUpdateDomain(
-        {
-          id: domain.id,
-          domain_name: domain.domain_name,
-          expiry_date: domain.expiry_date ?? undefined,
-          registration_date: domain.registration_date ?? undefined,
-          updated_date: domain.updated_date ?? undefined,
-          user_id: domain.user_id ?? undefined,
-          registrar: domain.registrar,
-          host: domain.host,
-        },
-        fresh,
-      );
-      return { domain: domain.domain_name, changes } satisfies UpdaterResult;
-    } catch (err) {
-      return {
-        domain: domain.domain_name,
-        error: (err as Error)?.message ?? String(err),
-      } satisfies UpdaterResult;
-    }
+  const outcomes = await withConcurrency(domains, CONCURRENCY, async (domain) => {
+    const result = await refreshDomain(domain);
+    // Sends it to the back of the queue whether the lookup worked or not
+    await repos.domains
+      .markRefreshed(domain.id)
+      .catch((err) => log.warn(`Could not mark ${domain.domain_name} refreshed: ${err}`));
+    return result;
   });
 
   const results = outcomes.map((outcome) =>
@@ -80,6 +56,30 @@ export async function runUpdater(): Promise<{
   );
   const changed = results.filter((result) => result.changes?.length).length;
 
-  log.info(`Checked ${results.length} of ${domains.length} domains, ${changed} changed`);
+  log.info(`Refreshed ${results.length} domains, ${changed} changed`);
   return { checked: results.length, changed, results };
+}
+
+/** Looks a domain up and applies what changed, reporting failure rather than throwing */
+async function refreshDomain(domain: DomainRecord): Promise<UpdaterResult> {
+  try {
+    // Lookups are rate limited upstream, so back off rather than give up
+    const fresh = await withRetry(() => fetchDomainInfo(domain.domain_name));
+    const { changes } = await compareAndUpdateDomain(
+      {
+        id: domain.id,
+        domain_name: domain.domain_name,
+        expiry_date: domain.expiry_date ?? undefined,
+        registration_date: domain.registration_date ?? undefined,
+        updated_date: domain.updated_date ?? undefined,
+        user_id: domain.user_id ?? undefined,
+        registrar: domain.registrar,
+        host: domain.host,
+      },
+      fresh,
+    );
+    return { domain: domain.domain_name, changes };
+  } catch (err) {
+    return { domain: domain.domain_name, error: (err as Error)?.message ?? String(err) };
+  }
 }

@@ -47,10 +47,6 @@ Connection* page, which stored them in local storage and sent them with every
 request. That page is now read-only, and offers to clear anything left behind.
 Visit it once and click *Remove stored credentials*.
 
-If you genuinely relied on pointing the browser at an external database, set
-`DL_ALLOW_CLIENT_DB_CREDENTIALS=true` to keep the old behaviour for one more
-release, and move those values into the server's environment when you can.
-
 ## Optional: move from Postgres to SQLite
 
 Postgres remains fully supported and nothing pushes you off it. If you set

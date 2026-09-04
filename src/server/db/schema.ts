@@ -6,7 +6,7 @@ import type { ColumnType, Generated, Insertable, Selectable, Updateable } from '
  * the SQLite DDL in migrations/ mirrors it with equivalent storage classes.
  */
 
-/** Set by the database on insert, never written by the app */
+/** Defaulted by the database on insert, and only touched to stamp a refresh */
 type Timestamp = ColumnType<string, string | undefined, string | undefined>;
 
 /** ISO date, kept as a YYYY-MM-DD string in both dialects */

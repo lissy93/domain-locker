@@ -105,52 +105,33 @@ function editableChanges(domain: SaveDomainInput['domain'], registrarId: string 
   return changes;
 }
 
+/** Which table each replaceable relation lives in */
+const RELATION_TABLES = {
+  tags: 'domain_tags',
+  notifications: 'notification_preferences',
+  subdomains: 'sub_domains',
+  links: 'domain_links',
+  statuses: 'domain_statuses',
+  ipAddresses: 'ip_addresses',
+  dns: 'dns_records',
+  ssl: 'ssl_certificates',
+  whois: 'whois_info',
+} as const;
+
 /** Only relations the caller supplied are cleared, so a partial edit keeps the rest */
 async function clearReplacedRelations(
   trx: Transaction<Database>,
   domainId: string,
   input: SaveDomainInput,
 ) {
-  const clears: Promise<unknown>[] = [];
-  if (input.tags) {
-    clears.push(
-      trx.deleteFrom('domain_tags').where('domain_id', '=', domainId).execute(),
-    );
-  }
-  if (input.notifications) {
-    clears.push(
-      trx
-        .deleteFrom('notification_preferences')
-        .where('domain_id', '=', domainId)
-        .execute(),
-    );
-  }
-  if (input.subdomains) {
-    clears.push(
-      trx.deleteFrom('sub_domains').where('domain_id', '=', domainId).execute(),
-    );
-  }
-  if (input.links) {
-    clears.push(
-      trx.deleteFrom('domain_links').where('domain_id', '=', domainId).execute(),
-    );
-  }
-  if (input.statuses) {
-    clears.push(
-      trx.deleteFrom('domain_statuses').where('domain_id', '=', domainId).execute(),
-    );
-  }
-  if (input.ipAddresses) {
-    clears.push(
-      trx.deleteFrom('ip_addresses').where('domain_id', '=', domainId).execute(),
-    );
-  }
-  if (input.dns) {
-    clears.push(
-      trx.deleteFrom('dns_records').where('domain_id', '=', domainId).execute(),
-    );
-  }
-  await Promise.all(clears);
+  const supplied = Object.entries(RELATION_TABLES).filter(
+    ([field]) => input[field as keyof typeof RELATION_TABLES] !== undefined,
+  );
+  await Promise.all(
+    supplied.map(([, table]) =>
+      trx.deleteFrom(table).where('domain_id', '=', domainId).execute(),
+    ),
+  );
 }
 
 async function writeRelations(
