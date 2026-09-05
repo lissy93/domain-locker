@@ -61,15 +61,9 @@ async function runMigrations(): Promise<void> {
   }
 
   try {
-    const { applied, baselined } = await migrateToLatest(getDb(), currentBackend());
-    if (baselined.length) log.info(`Baselined existing database at ${baselined.at(-1)}`);
+    const { applied } = await migrateToLatest(getDb(), currentBackend());
     if (applied.length) log.success(`Applied migrations: ${applied.join(', ')}`);
-    if (!applied.length && !baselined.length) log.info('Database already up to date');
-
-    if (process.env['NODE_ENV'] !== 'test') {
-      const { startScheduler } = await import('../jobs/schedule');
-      startScheduler();
-    }
+    else log.info('Database already up to date');
     status = 'ready';
   } catch (err) {
     // Retry on the next request rather than leaving the app permanently broken

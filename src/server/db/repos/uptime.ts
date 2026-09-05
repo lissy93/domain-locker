@@ -37,6 +37,31 @@ function rounded(value: unknown): number | null {
   return parsed === null ? null : Math.round(parsed);
 }
 
+const UPTIME_COLUMNS = [
+  'uptime.checked_at',
+  'uptime.is_up',
+  'uptime.response_code',
+  'uptime.response_time_ms',
+  'uptime.dns_lookup_time_ms',
+  'uptime.ssl_handshake_time_ms',
+] as const;
+
+/** Cap on rows returned, for instances where the cleanup job never ran */
+const MAX_POINTS = 50_000;
+
+type RawUptimeRow = Record<keyof UptimeRow, unknown>;
+
+function toUptimeRow(row: RawUptimeRow): UptimeRow {
+  return {
+    checked_at: String(row.checked_at),
+    is_up: toBoolean(row.is_up),
+    response_code: toNumber(row.response_code),
+    response_time_ms: toNumber(row.response_time_ms),
+    dns_lookup_time_ms: toNumber(row.dns_lookup_time_ms),
+    ssl_handshake_time_ms: toNumber(row.ssl_handshake_time_ms),
+  };
+}
+
 export function uptimeRepo(db: Kysely<Database>, backend: Backend) {
   /** Both dialects sort ISO-8601 UTC strings chronologically, so a plain compare works */
   function since(cutoff: string, domainId: string, userId: string) {
@@ -61,25 +86,12 @@ export function uptimeRepo(db: Kysely<Database>, backend: Backend) {
       userId = currentUserId(),
     ): Promise<UptimeRow[]> {
       const rows = await since(timeframeCutoff(timeframe), domainId, userId)
-        .select([
-          'uptime.checked_at',
-          'uptime.is_up',
-          'uptime.response_code',
-          'uptime.response_time_ms',
-          'uptime.dns_lookup_time_ms',
-          'uptime.ssl_handshake_time_ms',
-        ])
-        .orderBy('uptime.checked_at')
+        .select(UPTIME_COLUMNS)
+        .orderBy('uptime.checked_at', 'desc')
+        .limit(MAX_POINTS)
         .execute();
 
-      return rows.map((row) => ({
-        checked_at: row.checked_at,
-        is_up: toBoolean(row.is_up),
-        response_code: toNumber(row.response_code),
-        response_time_ms: toNumber(row.response_time_ms),
-        dns_lookup_time_ms: toNumber(row.dns_lookup_time_ms),
-        ssl_handshake_time_ms: toNumber(row.ssl_handshake_time_ms),
-      }));
+      return rows.reverse().map(toUptimeRow);
     },
 
     /** Daily averages, aggregated in the database to keep the response small */
@@ -122,32 +134,18 @@ export function uptimeRepo(db: Kysely<Database>, backend: Backend) {
         .where('domains.user_id', '=', userId)
         .where('uptime.domain_id', 'in', domainIds)
         .where('uptime.checked_at', '>=', timeframeCutoff(timeframe))
-        .select([
-          'uptime.domain_id',
-          'uptime.checked_at',
-          'uptime.is_up',
-          'uptime.response_code',
-          'uptime.response_time_ms',
-          'uptime.dns_lookup_time_ms',
-          'uptime.ssl_handshake_time_ms',
-        ])
-        .orderBy('uptime.checked_at')
+        .select(['uptime.domain_id', ...UPTIME_COLUMNS])
+        .orderBy('uptime.checked_at', 'desc')
+        .limit(MAX_POINTS)
         .execute();
 
-      for (const row of rows) {
-        grouped[row.domain_id]?.push({
-          checked_at: row.checked_at,
-          is_up: toBoolean(row.is_up),
-          response_code: toNumber(row.response_code),
-          response_time_ms: toNumber(row.response_time_ms),
-          dns_lookup_time_ms: toNumber(row.dns_lookup_time_ms),
-          ssl_handshake_time_ms: toNumber(row.ssl_handshake_time_ms),
-        });
+      for (const row of rows.reverse()) {
+        grouped[row.domain_id]?.push(toUptimeRow(row));
       }
       return grouped;
     },
 
-    /** Latest check for each of the given domains, for the monitor list */
+    /** Latest check per domain, for the monitor list */
     async latestFor(
       domainIds: string[],
       userId = currentUserId(),
@@ -163,28 +161,21 @@ export function uptimeRepo(db: Kysely<Database>, backend: Backend) {
         .innerJoin('domains', 'domains.id', 'uptime.domain_id')
         .where('domains.user_id', '=', userId)
         .where('uptime.domain_id', 'in', domainIds)
-        .select([
-          'uptime.domain_id',
-          'uptime.checked_at',
-          'uptime.is_up',
-          'uptime.response_code',
-          'uptime.response_time_ms',
-          'uptime.dns_lookup_time_ms',
-          'uptime.ssl_handshake_time_ms',
-        ])
-        .orderBy('uptime.checked_at', 'desc')
+        .where((eb) =>
+          eb(
+            'uptime.checked_at',
+            '=',
+            eb
+              .selectFrom('uptime as recent')
+              .whereRef('recent.domain_id', '=', 'uptime.domain_id')
+              .select(({ fn }) => fn.max('recent.checked_at').as('checked_at')),
+          ),
+        )
+        .select(['uptime.domain_id', ...UPTIME_COLUMNS])
         .execute();
 
       for (const row of rows) {
-        if (latest[row.domain_id]) continue;
-        latest[row.domain_id] = {
-          checked_at: row.checked_at,
-          is_up: toBoolean(row.is_up),
-          response_code: toNumber(row.response_code),
-          response_time_ms: toNumber(row.response_time_ms),
-          dns_lookup_time_ms: toNumber(row.dns_lookup_time_ms),
-          ssl_handshake_time_ms: toNumber(row.ssl_handshake_time_ms),
-        };
+        latest[row.domain_id] ??= toUptimeRow(row);
       }
       return latest;
     },
@@ -258,7 +249,7 @@ export function uptimeRepo(db: Kysely<Database>, backend: Backend) {
                 domain_id: group.domain_id,
                 checked_at: `${day}T12:00:00.000Z`,
                 is_up: Number(group.up_ratio) > 0.5,
-                response_code: 200,
+                response_code: null,
                 response_time_ms: rounded(group.response_time_ms),
                 dns_lookup_time_ms: rounded(group.dns_lookup_time_ms),
                 ssl_handshake_time_ms: rounded(group.ssl_handshake_time_ms),

@@ -1,16 +1,16 @@
-import { currentBackend, getDb } from '../../db/client';
-import { createRepos } from '../../db/repos';
+import { repos } from '../../db/repos';
 import type { DomainRecord } from '../../db/repos/domains';
 import { fetchDomainInfo } from './fetch-info';
 import { compareAndUpdateDomain } from './compare';
 import { withConcurrency, withRetry } from '../runner';
+import { numberFromEnv } from '../../utils/config';
 import Logger from '../../utils/logger';
 
 const log = new Logger('domain-updater');
 
-const CONCURRENCY = Number(process.env['DL_UPDATER_CONCURRENCY'] || 5);
+const CONCURRENCY = numberFromEnv('DL_UPDATER_CONCURRENCY', 5, { min: 1 });
 /** Cap per run so a large portfolio spreads over several runs instead of stalling */
-const BATCH_SIZE = Number(process.env['DL_UPDATER_BATCH_SIZE'] || 100);
+const BATCH_SIZE = numberFromEnv('DL_UPDATER_BATCH_SIZE', 100, { min: 1 });
 
 export interface DomainRow {
   id: string;
@@ -34,8 +34,8 @@ export async function runUpdater(): Promise<{
   changed: number;
   results: UpdaterResult[];
 }> {
-  const repos = createRepos(getDb(), currentBackend());
-  const domains = await repos.domains.listStalest(BATCH_SIZE);
+  const db = repos();
+  const domains = await db.domains.listStalest(BATCH_SIZE);
   if (!domains.length) {
     return { checked: 0, changed: 0, results: [] };
   }
@@ -43,7 +43,7 @@ export async function runUpdater(): Promise<{
   const outcomes = await withConcurrency(domains, CONCURRENCY, async (domain) => {
     const result = await refreshDomain(domain);
     // Sends it to the back of the queue whether the lookup worked or not
-    await repos.domains
+    await db.domains
       .markRefreshed(domain.id)
       .catch((err) => log.warn(`Could not mark ${domain.domain_name} refreshed: ${err}`));
     return result;

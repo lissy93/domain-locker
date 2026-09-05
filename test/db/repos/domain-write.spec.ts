@@ -313,6 +313,87 @@ describe.each(BACKENDS)('domain writes (%s)', (backend) => {
         .executeTakeFirstOrThrow();
       expect(untouched.notes).toBeNull();
     });
+
+    it('keeps discovered subdomain detail when an edit only sends names', async () => {
+      const saved = await repo.save(FULL_INPUT);
+      const api = saved!.sub_domains.find((sub) => sub.name === 'api');
+      expect(api?.sd_info).toContain('443');
+
+      // What the edit form sends: names only, no sd_info
+      await repo.update(saved!.id, {
+        domain: { domain_name: 'written.com', notes: 'Edited' },
+        subdomains: [{ name: 'www' }, { name: 'api' }],
+      });
+
+      const after = await repo.getById(saved!.id);
+      expect(after!.sub_domains.find((sub) => sub.name === 'api')?.sd_info).toContain(
+        '443',
+      );
+    });
+
+    it('drops subdomains the edit left out', async () => {
+      const saved = await repo.save(FULL_INPUT);
+      await repo.update(saved!.id, {
+        domain: { domain_name: 'written.com' },
+        subdomains: [{ name: 'www' }],
+      });
+
+      const after = await repo.getById(saved!.id);
+      expect(after!.sub_domains.map((sub) => sub.name)).toEqual(['www']);
+    });
+
+    it('replaces the host link rather than accumulating them', async () => {
+      const saved = await repo.save(FULL_INPUT);
+      await repo.update(saved!.id, {
+        domain: { domain_name: 'written.com' },
+        host: { ip: '1.1.1.1', isp: 'Cloudflare' },
+      });
+
+      const links = await db
+        .selectFrom('domain_hosts')
+        .where('domain_id', '=', saved!.id)
+        .selectAll()
+        .execute();
+      expect(links).toHaveLength(1);
+      const after = await repo.getById(saved!.id);
+      expect(after!.host?.['ip']).toBe('1.1.1.1');
+    });
+
+    it('keeps the existing host when the lookup carries no address', async () => {
+      const saved = await repo.save(FULL_INPUT);
+      await repo.update(saved!.id, {
+        domain: { domain_name: 'written.com' },
+        host: { isp: 'Unknown', org: 'No address here' },
+      });
+
+      const after = await repo.getById(saved!.id);
+      expect(after!.host?.['ip']).toBe('8.8.8.8');
+    });
+
+    it('does not wipe stored records when a lookup returns nothing', async () => {
+      const saved = await repo.save(FULL_INPUT);
+      await repo.update(saved!.id, {
+        domain: { domain_name: 'written.com' },
+        ssl: null,
+        whois: null,
+      });
+
+      const after = await repo.getById(saved!.id);
+      expect(after!.ssl?.['issuer']).toBe('Lets Encrypt');
+      expect(after!.whois?.['organization']).toBe('Example Ltd');
+    });
+
+    it('clears the registrar when the edit carries an empty one', async () => {
+      const saved = await repo.save(FULL_INPUT);
+      expect(saved!.registrar?.name).toBe('Namecheap');
+
+      await repo.update(saved!.id, {
+        domain: { domain_name: 'written.com', registrar: '' },
+      });
+
+      const after = await repo.getById(saved!.id);
+      expect(after!.registrar).toBeNull();
+    });
   });
 });
 

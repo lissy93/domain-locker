@@ -2,7 +2,7 @@ import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http'
 import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { REQUEST } from '@analogjs/router/tokens';
-import { Observable, catchError, map, throwError } from 'rxjs';
+import { Observable, catchError, throwError } from 'rxjs';
 
 interface ApiErrorBody {
   error?: { code?: string; message?: string; details?: unknown };
@@ -60,7 +60,6 @@ export class ApiClient {
         withCredentials: true,
       })
       .pipe(
-        map((response) => response as T),
         catchError((error: HttpErrorResponse) => throwError(() => toApiError(error))),
       );
   }

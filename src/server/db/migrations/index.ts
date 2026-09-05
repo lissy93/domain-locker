@@ -31,18 +31,7 @@ export function splitStatements(script: string): string[] {
  * rename an existing column while a deprecation window is open, so an install
  * can always be rolled back to the previous minor release.
  */
-/** The schema every pre-runner install already has */
-export const BASELINE_VERSION = '001_initial_schema';
-
 export const MIGRATIONS: Migration[] = [
-  {
-    version: '001_initial_schema',
-    statements: {
-      // Postgres accepts the whole script in one go, dollar-quoted bodies included
-      postgres: () => [readPostgresSchema()],
-      sqlite: () => splitStatements(SQLITE_INITIAL_SCHEMA),
-    },
-  },
   {
     version: '002_job_runs',
     statements: {
@@ -60,7 +49,7 @@ export const MIGRATIONS: Migration[] = [
 ];
 
 /** Mirrors start.sh, which copies db/schema.sql to the image root */
-function readPostgresSchema(): string {
+function readPostgresSchema(): string | null {
   for (const path of ['./schema.sql', './db/schema.sql']) {
     try {
       return readFileSync(path, 'utf8');
@@ -68,13 +57,47 @@ function readPostgresSchema(): string {
       continue;
     }
   }
-  throw new Error('Could not find schema.sql (looked in ./schema.sql, ./db/schema.sql)');
+  return null;
+}
+
+/** Base schema, safe to re-apply on every boot */
+async function ensureBaseSchema(db: Kysely<Database>, backend: Backend): Promise<void> {
+  if (backend === 'sqlite') {
+    for (const statement of splitStatements(SQLITE_INITIAL_SCHEMA)) {
+      await sql.raw(statement).execute(db);
+    }
+    return;
+  }
+
+  const schema = readPostgresSchema();
+  if (!schema) {
+    // Only a first run needs the file
+    if (await hasTables(db)) {
+      log.warn('schema.sql not found, leaving the existing schema as it is');
+      return;
+    }
+    throw new Error(
+      'Could not find schema.sql (looked in ./schema.sql, ./db/schema.sql)',
+    );
+  }
+
+  try {
+    await sql.raw(schema).execute(db);
+  } catch (err) {
+    // A restricted role cannot re-apply it, but an existing database still works
+    if (!(await hasTables(db))) throw err;
+    const message = err instanceof Error ? err.message : String(err);
+    log.warn(
+      `Could not re-apply schema.sql, continuing with the existing one: ${message}`,
+    );
+  }
 }
 
 export async function migrateToLatest(
   db: Kysely<Database>,
   backend: Backend,
-): Promise<{ applied: string[]; baselined: string[] }> {
+): Promise<{ applied: string[] }> {
+  await ensureBaseSchema(db, backend);
   await ensureMigrationsTable(db, backend);
 
   const applied = new Set(
@@ -82,17 +105,6 @@ export async function migrateToLatest(
       (row) => row.version,
     ),
   );
-
-  // An install that predates the runner already has the initial schema, so
-  // record it as done rather than replaying DDL over live tables
-  const baselined: string[] = [];
-  if (!applied.size && (await hasLegacyTables(db))) {
-    // Only the initial schema predates the runner; later migrations still apply
-    await recordVersion(db, BASELINE_VERSION);
-    applied.add(BASELINE_VERSION);
-    baselined.push(BASELINE_VERSION);
-    log.info(`Existing database detected, baselined at ${BASELINE_VERSION}`);
-  }
 
   const newlyApplied: string[] = [];
   for (const migration of MIGRATIONS) {
@@ -113,10 +125,7 @@ export async function migrateToLatest(
     newlyApplied.push(migration.version);
   }
 
-  if (newlyApplied.length) {
-    log.success(`Applied ${newlyApplied.length} migration(s)`);
-  }
-  return { applied: newlyApplied, baselined };
+  return { applied: newlyApplied };
 }
 
 async function ensureMigrationsTable(
@@ -134,8 +143,7 @@ async function ensureMigrationsTable(
     .execute(db);
 }
 
-/** True when the app's tables exist but the runner has never recorded a version */
-async function hasLegacyTables(db: Kysely<Database>): Promise<boolean> {
+async function hasTables(db: Kysely<Database>): Promise<boolean> {
   try {
     await db.selectFrom('domains').select('id').limit(1).execute();
     return true;

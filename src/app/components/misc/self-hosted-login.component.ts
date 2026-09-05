@@ -1,5 +1,6 @@
 import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { PrimeNgModule } from '~/app/prime-ng.module';
 import { LogoComponent } from '~/app/components/home-things/logo/logo.component';
 import { AuthService } from '~/app/services/auth.service';
@@ -10,7 +11,7 @@ import { ApiRequestError } from '~/app/services/db-query-services/api/api-client
 @Component({
   standalone: true,
   selector: 'app-self-hosted-login',
-  imports: [ReactiveFormsModule, PrimeNgModule, LogoComponent],
+  imports: [ReactiveFormsModule, RouterLink, PrimeNgModule, LogoComponent],
   template: `
     <p-card styleClass="max-w-[500px] w-[calc(100%-0.5rem)]">
       <ng-template pTemplate="header">

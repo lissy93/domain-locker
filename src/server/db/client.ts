@@ -4,6 +4,7 @@ import { dirname, resolve } from 'node:path';
 import pg from 'pg';
 import type { Database } from './schema';
 import { SqliteTypePlugin } from './sqlite-plugin';
+import { numberFromEnv } from '../utils/config';
 
 export type Backend = 'postgres' | 'sqlite';
 
@@ -66,14 +67,14 @@ function postgresDialect(): Dialect {
   return new PostgresDialect({
     pool: new pg.Pool({
       host: process.env['DL_PG_HOST'],
-      port: Number(process.env['DL_PG_PORT'] || 5432),
+      port: numberFromEnv('DL_PG_PORT', 5432, { min: 1 }),
       user: process.env['DL_PG_USER'],
       password: process.env['DL_PG_PASSWORD'],
       database: process.env['DL_PG_NAME'],
-      max: Number(process.env['DL_PG_POOL_SIZE'] || 10),
+      max: numberFromEnv('DL_PG_POOL_SIZE', 10, { min: 1 }),
       connectionTimeoutMillis: 10_000,
       idleTimeoutMillis: 30_000,
-      statement_timeout: Number(process.env['DL_PG_STATEMENT_TIMEOUT'] || 15_000),
+      statement_timeout: numberFromEnv('DL_PG_STATEMENT_TIMEOUT', 15_000, { min: 1 }),
       types: { getTypeParser: getPostgresTypeParser } as never,
     }),
   });

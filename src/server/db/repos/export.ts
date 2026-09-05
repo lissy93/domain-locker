@@ -12,14 +12,11 @@ export function exportRepo(db: Kysely<Database>) {
       domainNames?: string[],
       userId = currentUserId(),
     ): Promise<Record<string, unknown>[]> {
-      const all = await domains.list(userId);
       const wanted = domainNames?.length
-        ? new Set(domainNames.map((name) => name.toLowerCase()))
-        : null;
-
-      return all
-        .filter((domain) => !wanted || wanted.has(domain.domain_name.toLowerCase()))
-        .map(flatten);
+        ? domainNames.map((name) => name.toLowerCase())
+        : undefined;
+      const all = await domains.list(userId, wanted);
+      return all.map(flatten);
     },
   };
 }

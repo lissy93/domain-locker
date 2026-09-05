@@ -1,4 +1,4 @@
-import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHmac, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import { getCookie, setCookie, deleteCookie, getRequestHeader, type H3Event } from 'h3';
 import { apiError } from './errors';
 
@@ -14,16 +14,25 @@ export function isAuthEnabled(): boolean {
   return Boolean(authPassword());
 }
 
-/**
- * Signing key for session cookies. Derived from the password when no explicit
- * secret is set, so sessions survive restarts without extra configuration.
- */
-function signingSecret(): string {
-  return process.env['DL_AUTH_SECRET'] || `dl:${authPassword() ?? ''}`;
+let derivedKey: { from: string; key: Buffer } | null = null;
+
+/** Signing key for session cookies, stretched from the password when no secret is set */
+function signingKey(): Buffer {
+  const explicit = process.env['DL_AUTH_SECRET'];
+  if (explicit) return Buffer.from(explicit);
+
+  const password = authPassword() ?? '';
+  if (derivedKey?.from !== password) {
+    derivedKey = {
+      from: password,
+      key: scryptSync(password, 'domain-locker:session', 32),
+    };
+  }
+  return derivedKey.key;
 }
 
 function sign(payload: string): string {
-  return createHmac('sha256', signingSecret()).update(payload).digest('base64url');
+  return createHmac('sha256', signingKey()).update(payload).digest('base64url');
 }
 
 function safeEquals(left: string, right: string): boolean {

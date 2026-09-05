@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, from, map, throwError } from 'rxjs';
+import { Observable, catchError, firstValueFrom, map, throwError } from 'rxjs';
 import {
   DatabaseService,
   DbDomain,
@@ -55,13 +55,17 @@ export default class ApiDatabaseService extends DatabaseService {
     this.subdomainsQueries = new ApiSubdomainsQueries(this.api);
   }
 
-  private fail(error: unknown): Observable<never> {
+  private report(error: unknown): void {
     this.errorHandler.handleError({
       error,
       message: (error as Error)?.message || 'Request to the Domain Locker API failed',
       location: 'api-database.service',
       showToast: false,
     });
+  }
+
+  private fail(error: unknown): Observable<never> {
+    this.report(error);
     return throwError(() => error);
   }
 
@@ -248,18 +252,9 @@ export default class ApiDatabaseService extends DatabaseService {
   }
 
   private promise<T>(source: Observable<T>): Promise<T> {
-    return new Promise<T>((resolve, reject) => {
-      source.subscribe({ next: resolve, error: reject });
-    }).catch((error) => {
-      this.errorHandler.handleError({
-        error,
-        message: (error as Error)?.message || 'Request to the Domain Locker API failed',
-        location: 'api-database.service',
-        showToast: false,
-      });
+    return firstValueFrom(source).catch((error: unknown) => {
+      this.report(error);
       throw error;
     });
   }
 }
-
-export { from };

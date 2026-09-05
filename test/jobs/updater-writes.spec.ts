@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Kysely } from 'kysely';
 import type { Database } from '~/server/db/schema';
+import { resetRepos } from '~/server/db/repos';
 import {
   BACKENDS,
   SELF_HOST_USER,
@@ -31,6 +32,8 @@ describe.each(BACKENDS)('updater writes (%s)', (backend) => {
     vi.spyOn(client, 'getDb').mockReturnValue(db);
     vi.spyOn(client, 'currentBackend').mockReturnValue(backend);
     vi.spyOn(ready, 'ensureMigrated').mockResolvedValue(undefined);
+    // Repos are cached per connection, so rebind to this backend
+    resetRepos();
     fns = {
       updateDomainDates: (await import('~/server/jobs/updater/fns/dates'))
         .updateDomainDates,
@@ -41,6 +44,7 @@ describe.each(BACKENDS)('updater writes (%s)', (backend) => {
   });
 
   afterAll(async () => {
+    resetRepos();
     vi.restoreAllMocks();
     await db?.destroy();
   });

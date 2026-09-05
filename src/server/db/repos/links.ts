@@ -10,14 +10,6 @@ export interface LinkInput {
   domains: string[];
 }
 
-interface LinkRow {
-  id: string;
-  link_name: string;
-  link_url: string;
-  link_description: string | null;
-  domain_name: string;
-}
-
 export function linksRepo(db: Kysely<Database>) {
   function allRows(userId: string) {
     return db
@@ -203,4 +195,3 @@ export function linksRepo(db: Kysely<Database>) {
 }
 
 export type LinkListing = Awaited<ReturnType<ReturnType<typeof linksRepo>['list']>>;
-export type { LinkRow };

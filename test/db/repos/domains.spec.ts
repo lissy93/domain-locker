@@ -254,6 +254,32 @@ describe.each(BACKENDS)('domains repo (%s)', (backend) => {
       expect((await repo.getById(keptId))?.tags).toEqual(['production']);
     });
 
+    it('keeps a tag the user made but has not applied yet', async () => {
+      const id = await seedFullDomain(db, 'gone.com');
+      await db
+        .insertInto('tags')
+        .values({ name: 'for-later', user_id: SELF_HOST_USER })
+        .execute();
+
+      await repo.remove(id);
+
+      const tags = await db.selectFrom('tags').select('name').execute();
+      expect(tags).toEqual([{ name: 'for-later' }]);
+    });
+
+    it('keeps a registrar that no domain uses yet', async () => {
+      const id = await seedFullDomain(db, 'gone.com');
+      await db
+        .insertInto('registrars')
+        .values({ name: 'Spare Registrar', user_id: SELF_HOST_USER })
+        .execute();
+
+      await repo.remove(id);
+
+      const registrars = await db.selectFrom('registrars').select('name').execute();
+      expect(registrars).toEqual([{ name: 'Spare Registrar' }]);
+    });
+
     it('refuses to delete a domain owned by someone else', async () => {
       const other = await db
         .insertInto('domains')

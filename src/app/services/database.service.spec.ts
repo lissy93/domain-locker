@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
-import { firstValueFrom, of } from 'rxjs';
+import { firstValueFrom, of, throwError } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import DatabaseService from '~/app/services/database.service';
 import ApiDatabaseService from '~/app/services/db-query-services/api-database.service';
@@ -84,6 +84,16 @@ describe('DatabaseService domain cache', () => {
     await firstValueFrom(service.instance.tagQueries.getTags());
     await firstValueFrom(service.domains$);
     expect(backend.listDomains).toHaveBeenCalledOnce();
+  });
+
+  it('retries after a failed load instead of replaying the error forever', async () => {
+    backend.listDomains.mockReturnValueOnce(
+      throwError(() => new Error('network down')) as never,
+    );
+
+    await expect(firstValueFrom(service.domains$)).rejects.toThrow('network down');
+    expect(await firstValueFrom(service.domains$)).toHaveLength(1);
+    expect(backend.listDomains).toHaveBeenCalledTimes(2);
   });
 
   it('returns the same wrapped query group each time it is read', () => {

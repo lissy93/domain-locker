@@ -29,6 +29,10 @@ export interface ApiContext<Body, Query> {
 interface RouteOptions<Body, Query> {
   /** Rejected when the instance is running read-only (demo mode) */
   write?: boolean;
+  /** Reachable without a session, for the routes that establish one */
+  public?: boolean;
+  /** Skipped for routes that do not touch the database */
+  skipMigration?: boolean;
   body?: ZodType<Body>;
   query?: ZodType<Query>;
 }
@@ -62,7 +66,7 @@ export function defineApiRoute<Result, Body = undefined, Query = undefined>(
       if (!isSameOrigin(event)) {
         throw new ApiError('forbidden', 'Cross-origin requests are not allowed');
       }
-      requireAuth(event);
+      if (!options.public) requireAuth(event);
 
       if (options.write && isReadOnly()) {
         throw new ApiError('read_only', 'This instance is running in read-only mode');
@@ -81,7 +85,7 @@ export function defineApiRoute<Result, Body = undefined, Query = undefined>(
         return decodeURIComponent(value);
       };
 
-      await ensureMigrated();
+      if (!options.skipMigration) await ensureMigrated();
       return await handle({
         event,
         db: repos(),

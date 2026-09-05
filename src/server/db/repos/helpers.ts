@@ -21,6 +21,14 @@ export function indexBy<T, K extends keyof T>(rows: T[], key: K): Map<T[K], T> {
   return new Map(rows.map((row) => [row[key], row]));
 }
 
+/** Drops join keys and metadata the client has no use for */
+export function omit(
+  row: Record<string, unknown>,
+  keys: string[],
+): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(row).filter(([key]) => !keys.includes(key)));
+}
+
 /** SQLite stores booleans as 0/1, so normalise whichever dialect produced the row */
 export function toBoolean(value: unknown): boolean {
   return value === true || value === 1;

@@ -1,4 +1,4 @@
-import type { Kysely } from 'kysely';
+import { sql, type Kysely } from 'kysely';
 import type { Database } from '../schema';
 import { currentUserId, toNumber } from './helpers';
 
@@ -10,12 +10,30 @@ export interface HistoryEntry {
 }
 
 export function historyRepo(db: Kysely<Database>) {
-  function updatesFor(userId: string, domainName?: string) {
-    const query = db
+  function updatesFor(userId: string, filters: ListFilters = {}) {
+    let query = db
       .selectFrom('domain_updates')
       .innerJoin('domains', 'domains.id', 'domain_updates.domain_id')
       .where('domains.user_id', '=', userId);
-    return domainName ? query.where('domains.domain_name', '=', domainName) : query;
+
+    if (filters.domainName) {
+      query = query.where('domains.domain_name', '=', filters.domainName);
+    }
+    if (filters.category) {
+      query = query.where('domain_updates.change', '=', filters.category);
+    }
+    if (filters.changeType) {
+      query = query.where('domain_updates.change_type', '=', filters.changeType);
+    }
+    if (filters.search) {
+      // Postgres LIKE is case sensitive, SQLite's is not
+      query = query.where(
+        sql`lower(domains.domain_name)`,
+        'like',
+        `%${filters.search.toLowerCase()}%`,
+      );
+    }
+    return query;
   }
 
   return {
@@ -26,7 +44,7 @@ export function historyRepo(db: Kysely<Database>) {
       userId = currentUserId(),
     ): Promise<HistoryEntry[]> {
       const since = new Date(Date.now() - days * 86_400_000).toISOString();
-      const rows = await updatesFor(userId, domainName)
+      const rows = await updatesFor(userId, { domainName })
         .where('domain_updates.date', '>=', since)
         .select(['domain_updates.change_type', 'domain_updates.date'])
         .execute();
@@ -45,18 +63,21 @@ export function historyRepo(db: Kysely<Database>) {
       );
     },
 
-    async totalCount(domainName?: string, userId = currentUserId()): Promise<number> {
-      const row = await updatesFor(userId, domainName)
+    async totalCount(
+      filters: ListFilters = {},
+      userId = currentUserId(),
+    ): Promise<number> {
+      const row = await updatesFor(userId, filters)
         .select((eb) => eb.fn.countAll().as('total'))
         .executeTakeFirst();
       return toNumber(row?.total) ?? 0;
     },
 
     async list(
-      { limit = 25, offset = 0, domainName }: ListOptions = {},
+      { limit = 25, offset = 0, ...filters }: ListOptions = {},
       userId = currentUserId(),
     ) {
-      return updatesFor(userId, domainName)
+      return updatesFor(userId, filters)
         .select([
           'domain_updates.id',
           'domain_updates.domain_id',
@@ -106,8 +127,16 @@ export function historyRepo(db: Kysely<Database>) {
   };
 }
 
-interface ListOptions {
+export interface ListFilters {
+  domainName?: string;
+  /** The `change` column, which the UI groups as a category */
+  category?: string;
+  changeType?: string;
+  /** Partial domain-name match, for the free-text filter */
+  search?: string;
+}
+
+interface ListOptions extends ListFilters {
   limit?: number;
   offset?: number;
-  domainName?: string;
 }

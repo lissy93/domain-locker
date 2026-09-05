@@ -79,6 +79,7 @@ it takes to switch again.
 |---|---|
 | `DL_SQLITE_PATH` | Where the SQLite file lives (`/data/domain-locker.db` in Docker, `./data/domain-locker.db` otherwise) |
 | `DL_AUTH_PASSWORD` | Require a password to use the app. Off by default |
+| `DL_AUTH_SECRET` | Key used to sign session cookies. Derived from the password when unset |
 | `DL_API_KEY` | Lets an external scheduler trigger jobs when a password is set |
 | `DL_DISABLE_SCHEDULER` | Turn off the internal scheduler and drive jobs yourself |
 | `DL_MONITOR_INTERVAL_MINUTES` | How often uptime is checked (default 15) |

@@ -2,6 +2,7 @@ import { runJob, type JobName } from './runner';
 import { runMonitor, runUptimeCleanup } from './monitor';
 import { runUpdater } from './updater';
 import { runReminders } from './reminders';
+import { numberFromEnv } from '../utils/config';
 import Logger from '../utils/logger';
 
 const log = new Logger('scheduler');
@@ -15,10 +16,8 @@ export interface Schedule {
 
 const MINUTE = 60_000;
 
-function minutesFromEnv(name: string, fallback: number): number {
-  const value = Number(process.env[name]);
-  return Number.isFinite(value) && value > 0 ? value : fallback;
-}
+const minutesFromEnv = (name: string, fallback: number) =>
+  numberFromEnv(name, fallback, { min: 1 });
 
 export function schedules(): Schedule[] {
   return [
@@ -62,7 +61,10 @@ export function startScheduler(): void {
   for (const schedule of schedules()) {
     const interval = schedule.everyMinutes * MINUTE;
     const timer = setInterval(() => {
-      void runJob(schedule.job, schedule.run);
+      // runJob hits the database before its own try, so a tick can reject
+      runJob(schedule.job, schedule.run).catch((err: unknown) => {
+        log.error(`${schedule.job} could not run: ${(err as Error)?.message ?? err}`);
+      });
     }, interval);
     timer.unref?.();
     timers.push(timer);

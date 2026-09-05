@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { Kysely, sql } from 'kysely';
 import { createSqliteMemoryDb } from '~/server/db/client';
-import { BASELINE_VERSION, MIGRATIONS, migrateToLatest } from '~/server/db/migrations';
+import { MIGRATIONS, migrateToLatest } from '~/server/db/migrations';
+import { POSTGRES_DOMAIN_DATES } from '~/server/db/migrations/003-domain-dates';
 import type { Database } from '~/server/db/schema';
 import { isPostgresAvailable, resetTestDatabase } from '../helpers/postgres';
 import { createPostgresTestDb } from '../helpers/kysely';
@@ -22,10 +23,9 @@ describe('migration runner (sqlite)', () => {
   afterEach(() => db.destroy());
 
   it('creates the whole schema on a fresh database', async () => {
-    const { applied, baselined } = await migrateToLatest(db, 'sqlite');
+    const { applied } = await migrateToLatest(db, 'sqlite');
 
     expect(applied).toEqual(versionsFor('sqlite'));
-    expect(baselined).toEqual([]);
     await expect(db.selectFrom('domains').selectAll().execute()).resolves.toEqual([]);
   });
 
@@ -34,7 +34,6 @@ describe('migration runner (sqlite)', () => {
     const second = await migrateToLatest(db, 'sqlite');
 
     expect(second.applied).toEqual([]);
-    expect(second.baselined).toEqual([]);
   });
 
   it('seeds the self-hosted user so foreign keys resolve', async () => {
@@ -116,7 +115,7 @@ describe.skipIf(!pgAvailable)('migration runner (postgres)', () => {
     await expect(db.selectFrom('domains').selectAll().execute()).resolves.toEqual([]);
   });
 
-  it('baselines an existing install instead of replaying DDL', async () => {
+  it('upgrades an existing install without disturbing its rows', async () => {
     const config = await resetTestDatabase('dl_test_migrate_existing');
     db = createPostgresTestDb(config);
     await db
@@ -127,13 +126,9 @@ describe.skipIf(!pgAvailable)('migration runner (postgres)', () => {
       })
       .execute();
 
-    const { applied, baselined } = await migrateToLatest(db, 'postgres');
+    const { applied } = await migrateToLatest(db, 'postgres');
 
-    // The initial schema is assumed present; later migrations still run
-    expect(applied).toEqual(
-      versionsFor('postgres').filter((version) => version !== BASELINE_VERSION),
-    );
-    expect(baselined).toEqual([BASELINE_VERSION]);
+    expect(applied).toEqual(versionsFor('postgres'));
     const kept = await db.selectFrom('domains').select('domain_name').execute();
     expect(kept).toEqual([{ domain_name: 'kept.com' }]);
   });
@@ -143,26 +138,64 @@ describe.skipIf(!pgAvailable)('migration runner (postgres)', () => {
     db = createPostgresTestDb(config);
     await migrateToLatest(db, 'postgres');
     const second = await migrateToLatest(db, 'postgres');
-    expect(second).toEqual({ applied: [], baselined: [] });
+    expect(second).toEqual({ applied: [] });
+  });
+
+  /** schema.sql is re-applied every boot, so edits to it must reach live installs */
+  it('re-applies the base schema, so a changed function reaches an existing install', async () => {
+    const config = await resetTestDatabase('dl_test_migrate_reapply');
+    db = createPostgresTestDb(config);
+    await sql`CREATE OR REPLACE FUNCTION "public"."delete_domain"("domain_id" uuid)
+                RETURNS void LANGUAGE plpgsql AS $$ BEGIN RETURN; END; $$`.execute(db);
+
+    await migrateToLatest(db, 'postgres');
+
+    const domain = await db
+      .insertInto('domains')
+      .values({
+        user_id: 'a0000000-aaaa-42a0-a0a0-00a000000a69',
+        domain_name: 'stale-fn.com',
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    await sql`SELECT delete_domain(${domain.id}::uuid)`.execute(db);
+    const left = await db.selectFrom('domains').select('id').execute();
+    expect(left).toEqual([]);
+  });
+
+  // A server west of Greenwich is where the naive cast loses a day
+  /** A restricted role cannot re-apply the schema, but must still boot */
+  it('carries on when the role may not re-apply the base schema', async () => {
+    const config = await resetTestDatabase('dl_test_migrate_restricted');
+    db = createPostgresTestDb(config);
+    // Roles are cluster wide, so drop any left by an earlier run
+    await sql`DROP ROLE IF EXISTS dl_restricted`.execute(db);
+    await sql`CREATE ROLE dl_restricted LOGIN PASSWORD 'restricted'`.execute(db);
+    await sql`GRANT USAGE ON SCHEMA public TO dl_restricted`.execute(db);
+    await sql`GRANT SELECT, INSERT, UPDATE, DELETE
+                ON ALL TABLES IN SCHEMA public TO dl_restricted`.execute(db);
+    await db.destroy();
+
+    db = createPostgresTestDb({
+      ...config,
+      user: 'dl_restricted',
+      password: 'restricted',
+    });
+    await expect(migrateToLatest(db, 'postgres')).resolves.toBeDefined();
+    await expect(db.selectFrom('domains').selectAll().execute()).resolves.toEqual([]);
   });
 
   it('narrows the registry dates without shifting them across a timezone', async () => {
     const config = await resetTestDatabase('dl_test_migrate_dates');
-    db = createPostgresTestDb(config);
+    db = createPostgresTestDb(config, 'America/Los_Angeles');
     // Put the columns back to the type installs before 0.2.6 carry
     await sql`ALTER TABLE domains
                 ALTER COLUMN registration_date TYPE timestamptz,
                 ALTER COLUMN updated_date TYPE timestamptz`.execute(db);
-    await db
-      .insertInto('domains')
-      .values({
-        user_id: 'a0000000-aaaa-42a0-a0a0-00a000000a69',
-        domain_name: 'summer.com',
-        // A midsummer date is the one a UTC conversion would move to the day before
-        registration_date: '2024-07-01',
-        updated_date: '2024-07-01',
-      })
-      .execute();
+    // Stored as UTC midnight, which a session-local cast reads as the day before
+    await sql`INSERT INTO domains (user_id, domain_name, registration_date, updated_date)
+              VALUES ('a0000000-aaaa-42a0-a0a0-00a000000a69', 'summer.com',
+                      '2024-07-01T00:00:00Z', '2024-03-01T00:00:00Z')`.execute(db);
 
     await migrateToLatest(db, 'postgres');
 
@@ -173,7 +206,31 @@ describe.skipIf(!pgAvailable)('migration runner (postgres)', () => {
       .executeTakeFirstOrThrow();
     expect(row).toEqual({
       registration_date: '2024-07-01',
-      updated_date: '2024-07-01',
+      updated_date: '2024-03-01',
     });
+  });
+
+  /** Re-running the narrowing against an already-narrowed column must be a no-op */
+  it('leaves the dates alone when the columns are already narrowed', async () => {
+    const config = await resetTestDatabase('dl_test_migrate_dates_again');
+    db = createPostgresTestDb(config, 'America/Los_Angeles');
+    await db
+      .insertInto('domains')
+      .values({
+        user_id: 'a0000000-aaaa-42a0-a0a0-00a000000a69',
+        domain_name: 'already.com',
+        registration_date: '2024-07-01',
+      })
+      .execute();
+
+    await migrateToLatest(db, 'postgres');
+    for (const statement of POSTGRES_DOMAIN_DATES) await sql.raw(statement).execute(db);
+
+    const row = await db
+      .selectFrom('domains')
+      .where('domain_name', '=', 'already.com')
+      .select('registration_date')
+      .executeTakeFirstOrThrow();
+    expect(row.registration_date).toBe('2024-07-01');
   });
 });

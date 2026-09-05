@@ -1,17 +1,14 @@
-import { currentBackend, getDb } from '../db/client';
-import { createRepos } from '../db/repos';
+import { repos } from '../db/repos';
 import { checkDomain } from './uptime-check';
 import { withConcurrency } from './runner';
+import { numberFromEnv } from '../utils/config';
 import Logger from '../utils/logger';
 
 const log = new Logger('domain-monitor');
 
-const CONCURRENCY = Number(process.env['DL_MONITOR_CONCURRENCY'] || 10);
+const CONCURRENCY = numberFromEnv('DL_MONITOR_CONCURRENCY', 10, { min: 1 });
 
-function daysFromEnv(name: string, fallback: number): number {
-  const value = Number(process.env[name]);
-  return Number.isFinite(value) && value >= 0 ? value : fallback;
-}
+const daysFromEnv = (name: string, fallback: number) => numberFromEnv(name, fallback);
 
 export interface MonitorSummary {
   checked: number;
@@ -21,13 +18,13 @@ export interface MonitorSummary {
 
 /** Records one uptime sample per domain */
 export async function runMonitor(): Promise<MonitorSummary> {
-  const repos = createRepos(getDb(), currentBackend());
-  const domains = await repos.domains.list();
+  const db = repos();
+  const domains = await db.domains.listForMonitoring();
   if (!domains.length) return { checked: 0, up: 0, down: 0 };
 
   const outcomes = await withConcurrency(domains, CONCURRENCY, async (domain) => {
     const check = await checkDomain(domain.domain_name);
-    await repos.uptime.record(domain.id, check);
+    await db.uptime.record(domain.id, check);
     return check.is_up;
   });
 
@@ -59,13 +56,13 @@ export async function runUptimeCleanup(): Promise<{
   removed: number;
   deleted: number;
 }> {
-  const repos = createRepos(getDb(), currentBackend());
+  const db = repos();
   const retentionDays = daysFromEnv('DL_UPTIME_RETENTION_DAYS', 0);
 
-  const { averages, removed } = await repos.uptime.aggregate(
+  const { averages, removed } = await db.uptime.aggregate(
     daysFromEnv('DL_UPTIME_AGGREGATE_AFTER_DAYS', 7),
   );
-  const deleted = retentionDays > 0 ? await repos.uptime.prune(retentionDays) : 0;
+  const deleted = retentionDays > 0 ? await db.uptime.prune(retentionDays) : 0;
 
   log.info(`Collapsed ${removed} uptime checks into ${averages} daily averages`);
   if (deleted) log.info(`Removed ${deleted} rows older than ${retentionDays} days`);

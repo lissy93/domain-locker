@@ -373,8 +373,8 @@ describe.each(BACKENDS)('repositories (%s)', (backend) => {
         updated: 1,
       });
       expect(await repo.history.totalCount()).toBe(3);
-      expect(await repo.history.totalCount('bucket.com')).toBe(3);
-      expect(await repo.history.totalCount('other.com')).toBe(0);
+      expect(await repo.history.totalCount({ domainName: 'bucket.com' })).toBe(3);
+      expect(await repo.history.totalCount({ domainName: 'other.com' })).toBe(0);
     });
   });
 
@@ -443,10 +443,19 @@ describe.each(BACKENDS)('repositories (%s)', (backend) => {
         ssl_handshake_time_ms: null,
       });
 
+      // A second domain with its own newer check, to catch cross-domain leakage
+      await repo.uptime.record(second!.id, {
+        is_up: false,
+        response_code: 503,
+        response_time_ms: null,
+        dns_lookup_time_ms: null,
+        ssl_handshake_time_ms: null,
+      });
+
       const latest = await repo.uptime.latestFor([first!.id, second!.id]);
       expect(latest[first!.id]?.is_up).toBe(true);
       expect(latest[first!.id]?.response_code).toBe(200);
-      expect(latest[second!.id]).toBeNull();
+      expect(latest[second!.id]?.response_code).toBe(503);
     });
 
     it('prunes checks past the retention window', async () => {

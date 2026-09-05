@@ -2,6 +2,7 @@ import { lookup } from 'node:dns/promises';
 import { connect, type TLSSocket } from 'node:tls';
 import { request } from 'node:https';
 import { performance } from 'node:perf_hooks';
+import { numberFromEnv } from '../utils/config';
 
 export interface UptimeCheck {
   is_up: boolean;
@@ -11,7 +12,7 @@ export interface UptimeCheck {
   ssl_handshake_time_ms: number | null;
 }
 
-const TIMEOUT_MS = Number(process.env['DL_MONITOR_TIMEOUT'] || 10_000);
+const TIMEOUT_MS = numberFromEnv('DL_MONITOR_TIMEOUT', 10_000, { min: 1 });
 
 /** Times each stage separately, so a slow DNS or TLS step is visible on its own */
 export async function checkDomain(domainName: string): Promise<UptimeCheck> {

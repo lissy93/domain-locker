@@ -33,6 +33,13 @@ export function isPostgresConfigured(env: Record<string, string | undefined>): b
   return PG_REQUIRED_VARS.every((name) => Boolean(env[name]));
 }
 
+/** True when this server holds the data. Supabase only wins if Postgres wasn't asked for */
+export function usesSelfHostedData(env: Record<string, string | undefined>): boolean {
+  if (env['DL_ENV_TYPE'] === 'managed') return false;
+  const supabaseConfigured = Boolean(env['SUPABASE_URL'] && env['SUPABASE_ANON_KEY']);
+  return !supabaseConfigured || isPostgresConfigured(env);
+}
+
 /** Picks the allowlisted variables out of an environment, plus the backend name */
 export function pickClientEnv(
   env: Record<string, string | undefined>,

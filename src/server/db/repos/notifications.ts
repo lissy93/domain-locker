@@ -24,6 +24,43 @@ export function notificationsRepo(db: Kysely<Database>) {
       return rows.map((row) => ({ ...row, is_enabled: toBoolean(row.is_enabled) }));
     },
 
+    /** One domain's preferences, for the per-change delivery path */
+    async preferencesFor(
+      domainId: string,
+      userId = currentUserId(),
+    ): Promise<NotificationPreference[]> {
+      const rows = await db
+        .selectFrom('notification_preferences')
+        .innerJoin('domains', 'domains.id', 'notification_preferences.domain_id')
+        .where('domains.user_id', '=', userId)
+        .where('notification_preferences.domain_id', '=', domainId)
+        .select([
+          'notification_preferences.domain_id',
+          'notification_preferences.notification_type',
+          'notification_preferences.is_enabled',
+        ])
+        .execute();
+      return rows.map((row) => ({ ...row, is_enabled: toBoolean(row.is_enabled) }));
+    },
+
+    /** Whether this change was already notified since the given time */
+    async sentSince(
+      domainId: string,
+      changeType: string,
+      since: string,
+      userId = currentUserId(),
+    ): Promise<boolean> {
+      const row = await db
+        .selectFrom('notifications')
+        .where('user_id', '=', userId)
+        .where('domain_id', '=', domainId)
+        .where('change_type', '=', changeType)
+        .where('created_at', '>=', since)
+        .select('id')
+        .executeTakeFirst();
+      return Boolean(row);
+    },
+
     /** Upserts many preferences at once, ignoring domains the user does not own */
     async setPreferences(
       preferences: NotificationPreference[],

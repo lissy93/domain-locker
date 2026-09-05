@@ -5,11 +5,19 @@ import { testPgConfig, type TestPgConfig } from './postgres';
 
 const { Pool } = pkg;
 
-/** Kysely bound to the throwaway test cluster, mirroring the app's type parsers */
-export function createPostgresTestDb(config: TestPgConfig = testPgConfig()) {
+/** Kysely for the test cluster. timeZone sets the session zone, for dates outside UTC */
+export function createPostgresTestDb(
+  config: TestPgConfig = testPgConfig(),
+  timeZone?: string,
+) {
   return new Kysely<Database>({
     dialect: new PostgresDialect({
-      pool: new Pool({ ...config, max: 4, types: { getTypeParser } as never }),
+      pool: new Pool({
+        ...config,
+        max: 4,
+        types: { getTypeParser } as never,
+        ...(timeZone ? { options: `-c timezone=${timeZone}` } : {}),
+      }),
     }),
   });
 }

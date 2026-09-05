@@ -1,7 +1,7 @@
 import type { Kysely, Transaction } from 'kysely';
 import type { Database } from '../schema';
 import { normalizeRegistrarName, removeUrlChars } from '../../jobs/updater/utils';
-import { currentUserId } from './helpers';
+import { currentUserId, toJsonString } from './helpers';
 
 type Db = Kysely<Database> | Transaction<Database>;
 
@@ -101,7 +101,8 @@ function editableChanges(domain: SaveDomainInput['domain'], registrarId: string 
   for (const column of EDITABLE_COLUMNS) {
     if (domain[column] !== undefined) changes[column] = domain[column] ?? null;
   }
-  if (registrarId) changes['registrar_id'] = registrarId;
+  // An empty registrar clears it
+  if (domain.registrar !== undefined) changes['registrar_id'] = registrarId;
   return changes;
 }
 
@@ -109,7 +110,6 @@ function editableChanges(domain: SaveDomainInput['domain'], registrarId: string 
 const RELATION_TABLES = {
   tags: 'domain_tags',
   notifications: 'notification_preferences',
-  subdomains: 'sub_domains',
   links: 'domain_links',
   statuses: 'domain_statuses',
   ipAddresses: 'ip_addresses',
@@ -118,14 +118,14 @@ const RELATION_TABLES = {
   whois: 'whois_info',
 } as const;
 
-/** Only relations the caller supplied are cleared, so a partial edit keeps the rest */
+/** Clears only the relations the caller sent. null counts as not sent */
 async function clearReplacedRelations(
   trx: Transaction<Database>,
   domainId: string,
   input: SaveDomainInput,
 ) {
   const supplied = Object.entries(RELATION_TABLES).filter(
-    ([field]) => input[field as keyof typeof RELATION_TABLES] !== undefined,
+    ([field]) => input[field as keyof typeof RELATION_TABLES] != null,
   );
   await Promise.all(
     supplied.map(([, table]) =>
@@ -222,20 +222,8 @@ async function writeRelations(
       .execute();
   }
 
-  if (input.subdomains?.length) {
-    await trx
-      .insertInto('sub_domains')
-      .values(
-        input.subdomains.map((subdomain) => ({
-          domain_id: domainId,
-          name: subdomain.name,
-          sd_info:
-            subdomain.sd_info === undefined || subdomain.sd_info === null
-              ? null
-              : JSON.stringify(subdomain.sd_info),
-        })),
-      )
-      .execute();
+  if (input.subdomains) {
+    await mergeSubdomains(trx, domainId, input.subdomains);
   }
 
   if (input.links?.length) {
@@ -251,6 +239,40 @@ async function writeRelations(
       )
       .execute();
   }
+}
+
+/** Replaces subdomains by name, keeping the sd_info of any that stay */
+async function mergeSubdomains(
+  trx: Transaction<Database>,
+  domainId: string,
+  subdomains: NonNullable<SaveDomainInput['subdomains']>,
+) {
+  const existing = new Map(
+    (
+      await trx
+        .selectFrom('sub_domains')
+        .where('domain_id', '=', domainId)
+        .select(['name', 'sd_info'])
+        .execute()
+    ).map((row) => [row.name, row.sd_info]),
+  );
+
+  await trx.deleteFrom('sub_domains').where('domain_id', '=', domainId).execute();
+  if (!subdomains.length) return;
+
+  await trx
+    .insertInto('sub_domains')
+    .values(
+      subdomains.map((subdomain) => ({
+        domain_id: domainId,
+        name: subdomain.name,
+        sd_info:
+          subdomain.sd_info == null
+            ? toJsonString(existing.get(subdomain.name))
+            : JSON.stringify(subdomain.sd_info),
+      })),
+    )
+    .execute();
 }
 
 /** Finds or creates the user's registrar, returning null when none was given */
@@ -355,6 +377,13 @@ async function linkHost(
     .select('id')
     .executeTakeFirst();
   if (!saved) return;
+
+  // Drop the old links only once we have a replacement
+  await db
+    .deleteFrom('domain_hosts')
+    .where('domain_id', '=', domainId)
+    .where('host_id', '!=', saved.id)
+    .execute();
 
   await db
     .insertInto('domain_hosts')

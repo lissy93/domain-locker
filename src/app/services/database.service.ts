@@ -1,19 +1,15 @@
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, isObservable, shareReplay, tap } from 'rxjs';
+import { Observable, catchError, isObservable, shareReplay, tap, throwError } from 'rxjs';
 import { EnvService } from '~/app/services/environment.service';
 import SbDatabaseService from '~/app/services/db-query-services/sb-database.service';
 import ApiDatabaseService from '~/app/services/db-query-services/api-database.service';
 import { ErrorHandlerService } from '~/app/services/error-handler.service';
+import { DOMAIN_WRITE_METHODS } from '~/app/constants/write-methods';
 import {
   type DatabaseService as IDatabaseService,
   type DbDomain,
 } from '~/app/../types/Database';
-
-// The domain list carries its relations, so a write to any query group changes it
-const WRITE_VERBS = ['save', 'update', 'delete', 'create', 'add'];
-
-const isWriteMethod = (name: string) => WRITE_VERBS.some((verb) => name.startsWith(verb));
 
 @Injectable({
   providedIn: 'root',
@@ -69,9 +65,13 @@ export default class DatabaseService {
    * so this replaces a fetch per page with a fetch per change.
    */
   public get domains$(): Observable<DbDomain[]> {
-    this.domainsCache ??= this.service
-      .listDomains()
-      .pipe(shareReplay({ bufferSize: 1, refCount: false }));
+    this.domainsCache ??= this.service.listDomains().pipe(
+      catchError((error: unknown) => {
+        this.invalidateDomains();
+        return throwError(() => error);
+      }),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
     return this.domainsCache;
   }
 
@@ -79,7 +79,7 @@ export default class DatabaseService {
     this.domainsCache = null;
   }
 
-  /** Clears the cache once a write settles, so a read cannot re-cache old rows */
+  /** Clears the cached domain list once a write finishes */
   private watchForWrites<T extends object>(service: T): T {
     const groups = new Map<string, object>();
     return new Proxy(service, {
@@ -93,7 +93,7 @@ export default class DatabaseService {
           return wrapped;
         }
 
-        if (typeof value !== 'function' || !isWriteMethod(name)) return value;
+        if (typeof value !== 'function' || !DOMAIN_WRITE_METHODS.has(name)) return value;
         return (...args: unknown[]) =>
           this.invalidateOnceSettled(
             (value as (...a: unknown[]) => unknown).apply(target, args),

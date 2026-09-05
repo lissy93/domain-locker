@@ -4,6 +4,7 @@ import {
   currentUserId,
   groupBy,
   indexBy,
+  omit,
   toBoolean,
   toJsonString,
   toNumber,
@@ -63,7 +64,6 @@ export function domainsRepo(db: Kysely<Database>) {
     return db
       .selectFrom('domains')
       .leftJoin('registrars', 'registrars.id', 'domains.registrar_id')
-      .leftJoin('whois_info', 'whois_info.domain_id', 'domains.id')
       .leftJoin('domain_costings', 'domain_costings.domain_id', 'domains.id')
       .where('domains.user_id', '=', userId)
       .select([
@@ -78,13 +78,6 @@ export function domainsRepo(db: Kysely<Database>) {
         'domains.registrar_id',
         'registrars.name as registrar_name',
         'registrars.url as registrar_url',
-        'whois_info.name as whois_name',
-        'whois_info.organization as whois_organization',
-        'whois_info.country as whois_country',
-        'whois_info.street as whois_street',
-        'whois_info.city as whois_city',
-        'whois_info.state as whois_state',
-        'whois_info.postal_code as whois_postal_code',
         'domain_costings.purchase_price',
         'domain_costings.current_value',
         'domain_costings.renewal_cost',
@@ -99,7 +92,7 @@ export function domainsRepo(db: Kysely<Database>) {
     if (!rows.length) return [];
     const ids = rows.map((row) => row.id);
 
-    const [ips, ssl, tags, prefs, hosts, dns, statuses, subdomains, links] =
+    const [ips, ssl, whois, tags, prefs, hosts, dns, statuses, subdomains, links] =
       await Promise.all([
         db
           .selectFrom('ip_addresses')
@@ -110,6 +103,11 @@ export function domainsRepo(db: Kysely<Database>) {
           .selectFrom('ssl_certificates')
           .where('domain_id', 'in', ids)
           .selectAll()
+          .execute(),
+        db
+          .selectFrom('whois_info')
+          .where('domain_id', 'in', ids)
+          .select(['domain_id', ...WHOIS_FIELDS])
           .execute(),
         db
           .selectFrom('domain_tags')
@@ -164,6 +162,7 @@ export function domainsRepo(db: Kysely<Database>) {
     const byDomain = {
       ips: groupBy(ips, 'domain_id'),
       ssl: indexBy(ssl, 'domain_id'),
+      whois: indexBy(whois, 'domain_id'),
       tags: groupBy(tags, 'domain_id'),
       prefs: groupBy(prefs, 'domain_id'),
       hosts: groupBy(hosts, 'domain_id'),
@@ -195,14 +194,14 @@ export function domainsRepo(db: Kysely<Database>) {
         registrar: row.registrar_name
           ? { name: row.registrar_name, url: row.registrar_url }
           : null,
-        whois: whoisOf(row),
+        whois: whoisOf(byDomain.whois.get(row.id)),
         domain_costings: costingsOf(row),
         ip_addresses: (byDomain.ips.get(row.id) ?? []).map((ip) => ({
           ip_address: ip.ip_address,
           is_ipv6: toBoolean(ip.is_ipv6),
         })),
         ssl: certificate ? certificateOf(certificate) : null,
-        host: host ? { ...host, domain_id: undefined } : null,
+        host: host ? omit(host, ['domain_id']) : null,
         tags: (byDomain.tags.get(row.id) ?? []).map((tag) => tag.name),
         notification_preferences: (byDomain.prefs.get(row.id) ?? []).map((pref) => ({
           notification_type: pref.notification_type,
@@ -230,8 +229,13 @@ export function domainsRepo(db: Kysely<Database>) {
   }
 
   return {
-    async list(userId = currentUserId()): Promise<DomainRecord[]> {
-      return withRelations(await baseQuery(userId).execute());
+    /** Optionally narrowed to named domains, for export */
+    async list(userId = currentUserId(), names?: string[]): Promise<DomainRecord[]> {
+      const query = baseQuery(userId);
+      const rows = await (names
+        ? query.where(sql`lower(domains.domain_name)`, 'in', names).execute()
+        : query.execute());
+      return withRelations(rows);
     },
 
     /** Least recently refreshed first, so a capped updater run reaches every domain in turn */
@@ -275,6 +279,37 @@ export function domainsRepo(db: Kysely<Database>) {
       const rows = await baseQuery(userId).where('domains.id', '=', id).execute();
       const [domain] = await withRelations(rows);
       return domain ?? null;
+    },
+
+    async nameById(id: string): Promise<string | null> {
+      const row = await db
+        .selectFrom('domains')
+        .where('id', '=', id)
+        .select('domain_name')
+        .executeTakeFirst();
+      return row?.domain_name ?? null;
+    },
+
+    /** Id and name only, for the monitor job */
+    async listForMonitoring(userId = currentUserId()) {
+      return db
+        .selectFrom('domains')
+        .where('user_id', '=', userId)
+        .select(['id', 'domain_name'])
+        .orderBy('domain_name')
+        .execute();
+    },
+
+    /** Domains that carry an expiry date, for the reminder job */
+    async listExpiring(userId = currentUserId()) {
+      return db
+        .selectFrom('domains')
+        .where('user_id', '=', userId)
+        .where('expiry_date', 'is not', null)
+        .select(['id', 'domain_name', 'expiry_date'])
+        .orderBy('expiry_date')
+        .$narrowType<{ expiry_date: string }>()
+        .execute();
     },
 
     async listNames(userId = currentUserId()): Promise<string[]> {
@@ -483,58 +518,83 @@ export function domainsRepo(db: Kysely<Database>) {
         .selectFrom('domains')
         .where('id', '=', id)
         .where('user_id', '=', userId)
-        .select('id')
+        .select(['id', 'registrar_id'])
         .executeTakeFirst();
       if (!owned) return false;
 
       await db.transaction().execute(async (trx) => {
+        // Only what this domain referenced, so unused tags survive
+        const tagIds = (
+          await trx
+            .selectFrom('domain_tags')
+            .where('domain_id', '=', id)
+            .select('tag_id')
+            .execute()
+        ).map((row) => row.tag_id);
+        const hostIds = (
+          await trx
+            .selectFrom('domain_hosts')
+            .where('domain_id', '=', id)
+            .select('host_id')
+            .execute()
+        ).map((row) => row.host_id);
+
         // Child rows cascade, so only the tidy-up of shared records is explicit
         await trx.deleteFrom('domains').where('id', '=', id).execute();
 
-        await trx
-          .deleteFrom('tags')
-          .where('user_id', '=', userId)
-          .where((eb) =>
-            eb.not(
-              eb.exists(
-                eb
-                  .selectFrom('domain_tags')
-                  .whereRef('domain_tags.tag_id', '=', 'tags.id')
-                  .select('domain_tags.tag_id'),
+        if (tagIds.length) {
+          await trx
+            .deleteFrom('tags')
+            .where('user_id', '=', userId)
+            .where('id', 'in', tagIds)
+            .where((eb) =>
+              eb.not(
+                eb.exists(
+                  eb
+                    .selectFrom('domain_tags')
+                    .whereRef('domain_tags.tag_id', '=', 'tags.id')
+                    .select('domain_tags.tag_id'),
+                ),
               ),
-            ),
-          )
-          .execute();
+            )
+            .execute();
+        }
 
-        await trx
-          .deleteFrom('hosts')
-          .where('user_id', '=', userId)
-          .where((eb) =>
-            eb.not(
-              eb.exists(
-                eb
-                  .selectFrom('domain_hosts')
-                  .whereRef('domain_hosts.host_id', '=', 'hosts.id')
-                  .select('domain_hosts.host_id'),
+        if (hostIds.length) {
+          await trx
+            .deleteFrom('hosts')
+            .where('user_id', '=', userId)
+            .where('id', 'in', hostIds)
+            .where((eb) =>
+              eb.not(
+                eb.exists(
+                  eb
+                    .selectFrom('domain_hosts')
+                    .whereRef('domain_hosts.host_id', '=', 'hosts.id')
+                    .select('domain_hosts.host_id'),
+                ),
               ),
-            ),
-          )
-          .execute();
+            )
+            .execute();
+        }
 
-        await trx
-          .deleteFrom('registrars')
-          .where('user_id', '=', userId)
-          .where((eb) =>
-            eb.not(
-              eb.exists(
-                eb
-                  .selectFrom('domains')
-                  .whereRef('domains.registrar_id', '=', 'registrars.id')
-                  .select('domains.id'),
+        if (owned.registrar_id) {
+          await trx
+            .deleteFrom('registrars')
+            .where('user_id', '=', userId)
+            .where('id', '=', owned.registrar_id)
+            .where((eb) =>
+              eb.not(
+                eb.exists(
+                  eb
+                    .selectFrom('domains')
+                    .whereRef('domains.registrar_id', '=', 'registrars.id')
+                    .select('domains.id'),
+                ),
               ),
-            ),
-          )
-          .execute();
+            )
+            .execute();
+        }
       });
       return true;
     },
@@ -555,21 +615,11 @@ const ASSET_SOURCES: Record<AssetType, { table: string; viaDomain: boolean }> = 
   domain_statuses: { table: 'domain_statuses', viaDomain: true },
 };
 
-function whoisOf(row: {
-  whois_name: string | null;
-  whois_organization: string | null;
-  whois_country: string | null;
-  whois_street: string | null;
-  whois_city: string | null;
-  whois_state: string | null;
-  whois_postal_code: string | null;
-}): Record<string, string | null> | null {
-  const whois = Object.fromEntries(
-    WHOIS_FIELDS.map((field) => [
-      field,
-      row[`whois_${field}` as keyof typeof row] ?? null,
-    ]),
-  );
+function whoisOf(
+  row?: Record<(typeof WHOIS_FIELDS)[number], string | null>,
+): Record<string, string | null> | null {
+  if (!row) return null;
+  const whois = Object.fromEntries(WHOIS_FIELDS.map((f) => [f, row[f] ?? null]));
   return Object.values(whois).some(Boolean) ? whois : null;
 }
 
@@ -591,11 +641,7 @@ function costingsOf(row: {
   };
 }
 
-function certificateOf(certificate: Record<string, unknown>) {
-  const { id, domain_id, created_at, updated_at, ...rest } = certificate;
-  void id;
-  void domain_id;
-  void created_at;
-  void updated_at;
-  return rest;
-}
+const CERTIFICATE_META = ['id', 'domain_id', 'created_at', 'updated_at'];
+
+const certificateOf = (certificate: Record<string, unknown>) =>
+  omit(certificate, CERTIFICATE_META);

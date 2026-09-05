@@ -1,4 +1,4 @@
-import { Observable, map } from 'rxjs';
+import { Observable, firstValueFrom, map } from 'rxjs';
 import type { ApiClient } from './api-client';
 import type {
   DbDomain,
@@ -92,8 +92,8 @@ export class ApiTagQueries {
     return this.api.post<Tag>('/v1/tags', tag);
   }
 
-  createTag(tag: Tag): Observable<unknown> {
-    return this.api.post<unknown>('/v1/tags', tag);
+  createTag(tag: Tag): Observable<Tag> {
+    return this.addTag(tag);
   }
 
   updateTag(tag: Tag): Observable<void> {
@@ -173,7 +173,7 @@ export class ApiNotificationQueries {
   }
 
   async getNotificationChannels(): Promise<NotificationChannels | null> {
-    const response = await firstValue(
+    const response = await firstValueFrom(
       this.api.get<{ channels: NotificationChannels | null }>(
         '/v1/notifications/channels',
       ),
@@ -182,7 +182,7 @@ export class ApiNotificationQueries {
   }
 
   async updateNotificationChannels(preferences: NotificationChannels): Promise<boolean> {
-    await firstValue(
+    await firstValueFrom(
       this.api.put('/v1/notifications/channels', { channels: preferences }),
     );
     return true;
@@ -240,6 +240,19 @@ export interface HistoryEntry {
   updated: number;
 }
 
+function historyFilters(
+  domain?: string,
+  category?: string,
+  changeType?: string,
+  search?: string,
+): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries({ domain, category, changeType, search }).filter(
+      ([, value]) => value,
+    ) as [string, string][],
+  );
+}
+
 export class ApiHistoryQueries {
   constructor(private api: ApiClient) {}
 
@@ -250,11 +263,16 @@ export class ApiHistoryQueries {
     );
   }
 
-  getTotalUpdateCount(domainName?: string): Observable<number> {
+  getTotalUpdateCount(
+    domainName?: string,
+    category?: string,
+    changeType?: string,
+    search?: string,
+  ): Observable<number> {
     return this.api
       .get<{
         total: number;
-      }>('/v1/history/count', domainName ? { domain: domainName } : {})
+      }>('/v1/history/count', historyFilters(domainName, category, changeType, search))
       .pipe(map((response) => response.total));
   }
 
@@ -262,11 +280,14 @@ export class ApiHistoryQueries {
     domainName?: string,
     start = 0,
     end = 24,
+    category?: string,
+    changeType?: string,
+    search?: string,
   ): Observable<DomainUpdateRow[]> {
     return this.api.get<DomainUpdateRow[]>('/v1/history', {
       limit: Math.max(end - start + 1, 1),
       offset: start,
-      ...(domainName ? { domain: domainName } : {}),
+      ...historyFilters(domainName, category, changeType, search),
     });
   }
 }
@@ -421,10 +442,4 @@ export class ApiSubdomainsQueries {
       )
       .pipe(map(() => undefined));
   }
-}
-
-function firstValue<T>(source: Observable<T>): Promise<T> {
-  return new Promise((resolve, reject) => {
-    source.subscribe({ next: resolve, error: reject });
-  });
 }

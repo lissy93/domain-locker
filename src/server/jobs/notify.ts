@@ -1,5 +1,4 @@
-import { currentBackend, getDb } from '../db/client';
-import { createRepos } from '../db/repos';
+import { repos, type Repos } from '../db/repos';
 import { sendWebhookNotification } from '../utils/webhook';
 import Logger from '../utils/logger';
 
@@ -18,34 +17,33 @@ export interface DomainNotification {
  * out to whichever channels the user has enabled.
  */
 export async function notify(notification: DomainNotification): Promise<boolean> {
-  const repos = createRepos(getDb(), currentBackend());
+  const db = repos();
 
-  if (!(await isEnabledForDomain(repos, notification))) {
+  if (!(await isEnabledForDomain(db, notification))) {
     log.debug(`${notification.changeType} not enabled for ${notification.domainName}`);
     return false;
   }
 
-  await repos.notifications.add(
+  await db.notifications.add(
     notification.domainId,
     notification.changeType,
     notification.message,
   );
 
-  return deliver(repos, notification);
+  // Most self-hosted instances have no external channels set up
+  if (!(await deliver(db, notification))) {
+    log.debug(`No external channel took ${notification.changeType}`);
+  }
+  return true;
 }
 
 /** Preferences are per domain and matched by prefix, as the UI groups them */
 async function isEnabledForDomain(
-  repos: ReturnType<typeof createRepos>,
+  db: Repos,
   notification: DomainNotification,
 ): Promise<boolean> {
-  const preferences = await repos.notifications.preferences();
-  const forDomain = preferences.filter(
-    (preference) => preference.domain_id === notification.domainId,
-  );
-  if (!forDomain.length) return false;
-
-  return forDomain.some(
+  const preferences = await db.notifications.preferencesFor(notification.domainId);
+  return preferences.some(
     (preference) =>
       preference.is_enabled &&
       notification.changeType.startsWith(preference.notification_type),
@@ -53,13 +51,10 @@ async function isEnabledForDomain(
 }
 
 /** Sends to every configured channel, reporting success if any of them worked */
-async function deliver(
-  repos: ReturnType<typeof createRepos>,
-  notification: DomainNotification,
-): Promise<boolean> {
+async function deliver(db: Repos, notification: DomainNotification): Promise<boolean> {
   const title = notification.title ?? `Domain Locker: ${notification.domainName}`;
   const body = `[${notification.domainName}] ${notification.message}`;
-  const channels = (await repos.notifications.channels()) ?? {};
+  const channels = (await db.notifications.channels()) ?? {};
 
   const deliveries: Promise<boolean>[] = [
     sendWebhookNotification(body, title, [notification.changeType]),

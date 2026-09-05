@@ -168,10 +168,10 @@ export class NotificationQueries {
     );
   }
 
-  async markAllNotificationsRead(_read = true): Promise<Observable<void>> {
+  async markAllNotificationsRead(read = true): Promise<Observable<void>> {
     const userId = await this.getCurrentUser().then((user) => user?.id);
     return from(
-      this.supabase.from('notifications').update({ read: true }).eq('user_id', userId),
+      this.supabase.from('notifications').update({ read }).eq('user_id', userId),
     ).pipe(
       map(({ error }) => {
         if (error) {

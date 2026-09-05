@@ -1,8 +1,11 @@
-import { z } from 'zod';
 import { defineApiRoute } from '../../../lib/handler';
+import { historyFiltersSchema } from '../../../lib/schemas';
 
-const schema = z.object({ domain: z.string().trim().optional() });
-
-export default defineApiRoute({ query: schema }, async ({ db, query }) => ({
-  total: await db.history.totalCount(query.domain),
+export default defineApiRoute({ query: historyFiltersSchema }, async ({ db, query }) => ({
+  total: await db.history.totalCount({
+    domainName: query.domain,
+    category: query.category,
+    changeType: query.changeType,
+    search: query.search,
+  }),
 }));
