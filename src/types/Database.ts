@@ -12,6 +12,8 @@ import {
   Notification,
   Subdomain,
   Link,
+  UptimeRow,
+  AssetType,
 } from './common';
 import { DnsQueries as SbDnsQueries } from '~/app/services/db-query-services/sb/db-dns.service';
 import { HistoryQueries as SbHistoryQueries } from '~/app/services/db-query-services/sb/db-history.service';
@@ -27,19 +29,19 @@ import { TagQueries as SbTagQueries } from '~/app/services/db-query-services/sb/
 import { ValuationQueries as SbValuationQueries } from '~/app/services/db-query-services/sb/db-valuations.service';
 import { WhoisQueries as SbWhoisQueries } from '~/app/services/db-query-services/sb/db-whois.service';
 
-import { DnsQueries as PgDnsQueries } from '~/app/services/db-query-services/pg/db-dns.service';
-import { HistoryQueries as PgHistoryQueries } from '~/app/services/db-query-services/pg/db-history.service';
-import { HostsQueries as PgHostsQueries } from '~/app/services/db-query-services/pg/db-hosts.service';
-import { IpQueries as PgIpQueries } from '~/app/services/db-query-services/pg/db-ips.service';
-import { LinkQueries as PgLinkQueries } from '~/app/services/db-query-services/pg/db-links.service';
-import { NotificationQueries as PgNotificationQueries } from '~/app/services/db-query-services/pg/db-notifications.service';
-import { RegistrarQueries as PgRegistrarQueries } from '~/app/services/db-query-services/pg/db-registrars.service';
-import { SslQueries as PgSslQueries } from '~/app/services/db-query-services/pg/db-ssl.service';
-import { StatusQueries as PgStatusQueries } from '~/app/services/db-query-services/pg/db-statuses.service';
-import { SubdomainsQueries as PgSubdomainsQueries } from '~/app/services/db-query-services/pg/db-subdomains.service';
-import { TagQueries as PgTagQueries } from '~/app/services/db-query-services/pg/db-tags.service';
-import { ValuationQueries as PgValuationQueries } from '~/app/services/db-query-services/pg/db-valuations.service';
-import { WhoisQueries as PgWhoisQueries } from '~/app/services/db-query-services/pg/db-whois.service';
+import {
+  ApiDnsQueries,
+  ApiHistoryQueries,
+  ApiHostsQueries,
+  ApiIpQueries,
+  ApiLinkQueries,
+  ApiNotificationQueries,
+  ApiRegistrarQueries,
+  ApiSslQueries,
+  ApiSubdomainsQueries,
+  ApiTagQueries,
+  ApiValuationQueries,
+} from '~/app/services/db-query-services/api/api-queries';
 import { Observable } from 'rxjs';
 
 export {
@@ -55,6 +57,7 @@ export {
   Notification,
   Subdomain,
   Link,
+  UptimeRow,
 };
 
 export interface DomainExpiration {
@@ -119,25 +122,33 @@ export interface SaveDomainData {
 export abstract class DatabaseService {
   serviceType: 'supabase' | 'postgres' | 'none' | 'error' = 'none';
 
-  notificationQueries!: SbNotificationQueries | PgNotificationQueries;
-  linkQueries!: SbLinkQueries | PgLinkQueries;
-  tagQueries!: SbTagQueries | PgTagQueries;
-  historyQueries!: SbHistoryQueries | PgHistoryQueries;
-  valuationQueries!: SbValuationQueries | PgValuationQueries;
-  registrarQueries!: SbRegistrarQueries | PgRegistrarQueries;
-  dnsQueries!: SbDnsQueries | PgDnsQueries;
-  hostsQueries!: SbHostsQueries | PgHostsQueries;
-  ipQueries!: SbIpQueries | PgIpQueries;
-  sslQueries!: SbSslQueries | PgSslQueries;
-  whoisQueries!: SbWhoisQueries | PgWhoisQueries;
-  statusQueries!: SbStatusQueries | PgStatusQueries;
-  subdomainsQueries!: SbSubdomainsQueries | PgSubdomainsQueries;
+  notificationQueries!: SbNotificationQueries | ApiNotificationQueries;
+  linkQueries!: SbLinkQueries | ApiLinkQueries;
+  tagQueries!: SbTagQueries | ApiTagQueries;
+  historyQueries!: SbHistoryQueries | ApiHistoryQueries;
+  valuationQueries!: SbValuationQueries | ApiValuationQueries;
+  registrarQueries!: SbRegistrarQueries | ApiRegistrarQueries;
+  dnsQueries!: SbDnsQueries | ApiDnsQueries;
+  hostsQueries!: SbHostsQueries | ApiHostsQueries;
+  ipQueries!: SbIpQueries | ApiIpQueries;
+  sslQueries!: SbSslQueries | ApiSslQueries;
+  subdomainsQueries!: SbSubdomainsQueries | ApiSubdomainsQueries;
+
+  // Only the Supabase path saves these piecemeal; /v1 handles them within saveDomain
+  whoisQueries!: SbWhoisQueries;
+  statusQueries!: SbStatusQueries;
 
   abstract getDomainUptime(
     userId: string,
     domainId: string,
     timeframe: string,
-  ): PromiseLike<unknown>;
+  ): Promise<UptimeRow[]>;
+  /** Batched history, where the backend supports it. Falls back to one call per domain */
+  getDomainUptimeBatch?(
+    domainIds: string[],
+    timeframe: string,
+  ): Promise<Record<string, UptimeRow[]>>;
+
   abstract getDomainUptimeDaily(
     userId: string,
     domainId: string,
@@ -155,7 +166,7 @@ export abstract class DatabaseService {
   ): Observable<Record<string, { domainId: string; domainName: string }[]>>;
   abstract getDomainExpirations(): Observable<DomainExpiration[]>;
   abstract deleteDomain(domainId: string): Observable<void>;
-  abstract getAssetCount(assetType: string): Observable<number>;
+  abstract getAssetCount(assetType: AssetType): Observable<number>;
   abstract listDomainNames(): Observable<string[]>;
   abstract getDomainsByStatus(statusCode: string): Observable<DbDomain[]>;
   abstract getStatusesWithDomainCounts(): Observable<

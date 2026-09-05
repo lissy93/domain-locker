@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
   event.node.res.setHeader('Access-Control-Allow-Origin', '*');
   event.node.res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
 
-  const authHeader = event.node.req.headers['Authorization'] as string | undefined;
+  const authHeader = event.node.req.headers['authorization'] as string | undefined;
 
   const [scheduledCrons, databaseStatus, supabaseStatus, uptimeStatus, ghActions] =
     await Promise.all([

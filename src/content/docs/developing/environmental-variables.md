@@ -9,14 +9,14 @@ index: 5
 Environment variables allow Domain Locker to be configured dynamically at build-time without modifying the source code. They define settings such as database connections, API keys, analytics, and occasionally feature flags.
 
 The app reads environment variables from:
-1. **Build-time variables** (`.env`, `import.meta.env`).
-2. **Runtime variables** (`src/environments/environment.ts`).
+1. **Runtime variables**, from the process environment or a `.env` file next to the app.
+2. **Build-time variables**, baked in from the `.env` present when the app was built.
 
 ### How Environment Variables Work
 
-- Any variable prefixed with `DL_` is exposed to the client-side app. This and must not contain sensitive data, because it will be visible in the built bundle.
-- Anything secret will need to be read server-side
-- The app reads build-time values first, then runtime values, and finally falls back to defaults if no value is found.
+- Only the variables allowlisted in `src/server/utils/client-env.ts` are sent to the browser. Everything else, including `DL_PG_PASSWORD` and `DL_AUTH_PASSWORD`, stays on the server and is never bundled.
+- Self-hosted instances serve their allowlisted values from `/api/env-var`, so a prebuilt Docker image is configured entirely at runtime.
+- Runtime values win over build-time ones, so an image takes the settings it was started with rather than whatever was in the `.env` when it was compiled.
 
 ---
 
@@ -28,10 +28,11 @@ There are multiple ways to set environment variables, depending on the environme
 
 ```bash
 DL_ENV_TYPE=dev
-DL_BASE_URL=http://localhost:5173
 SUPABASE_URL=https://xyz.supabase.co
 SUPABASE_ANON_KEY=your-anon-key
 ```
+
+The app reads this file on startup as well as during the build, so the same `.env` works for `npm run dev` and for a built server started with `node dist/analog/server/index.mjs`. Real environment variables take precedence over it.
 
 ### Using a Vault (Production)
 _For **secure storage**, use HashiCorp Vault, AWS Secrets Manager, or similar:_
@@ -68,10 +69,10 @@ const value = this.environmentService.getEnvVar('DL_BASE_URL', 'http://localhost
 ```
 
 ### How It Works
-1. Checks `import.meta.env[key]` (Build-time variable from `.env`).
-2. Checks `environment.ts` values (Runtime configuration).
-3. Uses fallback if neither is found.
-4. Optionally throws an error if no value is set.
+1. Checks the user's own override in local storage, on self-hosted instances.
+2. Checks the runtime values fetched from `/api/env-var`.
+3. Checks the values baked in at build time.
+4. Uses the fallback if none is found, or optionally throws.
 
 ### Example: Requiring a Variable
 
@@ -102,7 +103,7 @@ In addition to `getEnvVar`, the `EnvService` provides **specific functions** for
 ```typescript
 const envType = this.environmentService.getEnvironmentType(); // 'dev', 'managed', etc.
 const isSupabaseEnabled = this.environmentService.isSupabaseEnabled(); // true/false
-const postgresConfig = this.environmentService.getPostgresConfig(); // { host, port, user, password }
+const isSelfHosted = this.environmentService.isSelfHostedDatabase(); // true/false
 const plausibleConfig = this.environmentService.getPlausibleConfig(); // { site, url, isConfigured }
 ```
 
@@ -128,7 +129,7 @@ This value is used by **FeatureService** to dynamically enable or disable featur
 | Variable | Description | Required? |
 |----------|------------|-----------|
 | `DL_ENV_TYPE` | The environment type (`dev`, `managed`, `selfHosted`, `demo`). | ✅ |
-| `DL_BASE_URL` | Hostname or URL where Domain Locker is running. | ✅ |
+| `DL_BASE_URL` | Public URL of the instance, used for the sitemap and to allow that origin. The browser always calls the app's own origin, so this never needs to point at the API. | ❌ |
 | `SUPABASE_URL` | Supabase project URL. | ❌ (Only for managed) |
 | `SUPABASE_ANON_KEY` | Supabase public API key. | ❌ (Only for managed) |
 | `DL_SUPABASE_PROJECT` | Supabase project ID. | ❌ |

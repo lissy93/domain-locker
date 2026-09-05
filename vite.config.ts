@@ -1,9 +1,30 @@
 /// <reference types="vitest" />
 import analog, { PrerenderContentFile } from '@analogjs/platform';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig, loadEnv, type PluginOption } from 'vite';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import packageJson from './package.json';
 import * as path from 'node:path';
+import { existsSync, readdirSync } from 'node:fs';
+import { pickClientEnv } from './src/server/utils/client-env';
+
+/**
+ * Analog's dev server only forwards `/api` requests to Nitro, so `/v1` calls
+ * would fall through to the app and render its 404 page. Re-prefixing them
+ * gets them forwarded, and Nitro strips the prefix again, leaving it with the
+ * same URL it serves directly in production.
+ */
+function serveApiInDev(): PluginOption {
+  return {
+    name: 'domain-locker-dev-api',
+    apply: 'serve',
+    configureServer(server) {
+      server.middlewares.use((req, _res, next) => {
+        if (req.url?.startsWith('/v1/')) req.url = `/api${req.url}`;
+        next();
+      });
+    },
+  };
+}
 
 const themeTargets = [
   {
@@ -56,7 +77,26 @@ const themeTargets = [
   },
 ];
 
-export default defineConfig( ({ mode }) => {
+/**
+ * Each theme.css references ./fonts, so the sibling directory has to ship too.
+ * Themes share font files, and copying one twice makes the copy plugin fail,
+ * so each filename is taken from a single theme.
+ */
+const themeFontTargets = Object.values(
+  Object.fromEntries(
+    themeTargets
+      .map((target) => target.src.replace('theme.css', 'fonts'))
+      .filter((dir) => existsSync(dir))
+      .flatMap((dir) =>
+        readdirSync(dir).map((file) => [file, path.posix.join(dir, file)] as const),
+      ),
+  ),
+).map((src) => ({ src, dest: 'themes/fonts' }));
+
+export default defineConfig( ({ command, mode }) => {
+
+  // So as to not touch DN or start scheduler while Nitro is building
+  if (command === 'build') process.env['DL_BUILDING'] = 'true';
 
   const env = loadEnv(mode, process.cwd(), '')
   const buildPreset = env['BUILD_PRESET'] || env['NITRO_PRESET'] || 'node_server';
@@ -93,6 +133,7 @@ export default defineConfig( ({ mode }) => {
       },
     },
     plugins: [
+      serveApiInDev(),
       analog({
         prerender: {
           routes: [ // Unauthenticated SSG routes
@@ -132,11 +173,14 @@ export default defineConfig( ({ mode }) => {
         },
       }),
       viteStaticCopy({
-        targets: themeTargets.map((target) => ({
-          src: target.src,
-          dest: 'themes',
-          rename: target.rename,
-        })),
+        targets: [
+          ...themeTargets.map((target) => ({
+            src: target.src,
+            dest: 'themes',
+            rename: target.rename,
+          })),
+          ...themeFontTargets,
+        ],
       }),
     ],
 
@@ -144,13 +188,15 @@ export default defineConfig( ({ mode }) => {
       globals: true,
       environment: 'jsdom',
       setupFiles: ['src/test-setup.ts'],
-      include: ['**/*.spec.ts'],
+      // Node-environment server and schema suites live in test/ (npm run test:server)
+      include: ['src/**/*.spec.ts'],
     },
-    envPrefix: ['VITE_', 'SUPABASE_', 'DL_'],
+    envPrefix: ['VITE_'],
     define: {
       'import.meta.vitest': mode !== 'production',
       __APP_VERSION__: JSON.stringify(packageJson.version),
       __APP_NAME__: JSON.stringify(env['APP_NAME'] || 'Domain Locker'),
+      __DL_CLIENT_ENV__: JSON.stringify(pickClientEnv(env)),
     },
     server: {
       fs: {

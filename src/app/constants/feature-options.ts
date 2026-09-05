@@ -5,6 +5,7 @@
  */
 
 import { BillingPlans } from '~/app/services/billing.service';
+import { BUILD_ENV } from '~/app/utils/client-env';
 
 export interface FeatureConfig<T> {
   default: T;
@@ -22,6 +23,7 @@ export interface FeatureDefinitions {
   domainMonitor: FeatureConfig<boolean>;
   changeHistory: FeatureConfig<boolean>;
   accountSettings: FeatureConfig<boolean>;
+  userAccounts: FeatureConfig<boolean>;
   writePermissions: FeatureConfig<boolean>;
   enableDocs: FeatureConfig<boolean>;
   enableSignUp: FeatureConfig<boolean>;
@@ -48,6 +50,8 @@ export const features: FeatureDefinitions = {
   },
   notificationChannels: {
     default: false,
+    selfHosted: true,
+    dev: true,
     managed: {
       free: false,
       hobby: true,
@@ -57,6 +61,7 @@ export const features: FeatureDefinitions = {
   },
   changeNotifications: {
     default: false,
+    selfHosted: true,
     dev: true,
     managed: {
       free: false,
@@ -97,8 +102,13 @@ export const features: FeatureDefinitions = {
   accountSettings: {
     default: true,
   },
+  // Sign-in, profiles and account deletion only exist where there's a provider
+  userAccounts: {
+    default: true,
+    selfHosted: false,
+  },
   writePermissions: {
-    default: import.meta.env['DL_DISABLE_WRITE_METHODS'] ? false : true,
+    default: BUILD_ENV['DL_DISABLE_WRITE_METHODS'] ? false : true,
     demo: false,
   },
   enableDocs: {
@@ -135,7 +145,7 @@ export const features: FeatureDefinitions = {
     default: true,
   },
   enableDeletionTool: {
-    default: import.meta.env['DL_DISABLE_WRITE_METHODS'] ? false : true,
+    default: BUILD_ENV['DL_DISABLE_WRITE_METHODS'] ? false : true,
   },
 };
 
@@ -154,6 +164,10 @@ export const featureDescriptions: Record<
   changeNotifications: {
     label: 'Change Notifications',
     description: 'Receive notifications when the status of your domains change',
+  },
+  userAccounts: {
+    label: 'User Accounts',
+    description: 'Sign in, manage your profile, and close your account',
   },
   visualStats: {
     label: 'Stats',

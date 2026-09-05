@@ -24,46 +24,10 @@ import {
 } from '~/app/pages/assets/subdomains/subdomain-utils';
 import { SaveDomainData, DbDomain } from '~/app/../types/Database';
 import { Registrar } from '~/app/../types/common';
+import type { DomainInfo } from '~/app/../types/DomainInfo';
 import { EnvService } from '~/app/services/environment.service';
 import { FeatureService } from '~/app/services/features.service';
 import { HitCountingService } from '~/app/services/hit-counting.service';
-
-interface QuickDomainInfo {
-  domainName: string;
-  registrar?: { name: string; id: string; url: string; registryDomainId: string };
-  dates?: { expiry_date?: string; creation_date?: string; updated_date?: string };
-  status?: string[];
-  ipAddresses?: { ipv4?: string[]; ipv6?: string[] };
-  whois?: import('~/app/../types/common').Contact;
-  dns?: {
-    dnssec?: string;
-    nameServers?: string[];
-    mxRecords?: string[];
-    txtRecords?: string[];
-  };
-  ssl?: {
-    issuer?: string | null;
-    valid_from?: string;
-    valid_to?: string;
-    subject?: string;
-    key_size?: number;
-    signature_algorithm?: string;
-    issuer_country?: string;
-    fingerprint?: string;
-  };
-  host?: {
-    query?: string;
-    country?: string;
-    city?: string;
-    region?: string;
-    isp?: string;
-    org?: string;
-    lat?: number;
-    lon?: number;
-    timezone?: string;
-    as?: string;
-  };
-}
 
 @Component({
   selector: 'app-quick-add-domain',
@@ -160,7 +124,7 @@ export default class QuickAddDomain {
       );
       const domainInfo = (
         await lastValueFrom(
-          this.http.get<{ domainInfo: QuickDomainInfo }>(
+          this.http.get<{ domainInfo: DomainInfo }>(
             `${domainInfoEndpoint}?domain=${domainName}`,
           ),
         )
@@ -175,7 +139,7 @@ export default class QuickAddDomain {
 
       // Construct and save domain data
       const domainData = this.constructDomainData(domainInfo);
-      await this.databaseService.instance.saveDomain(domainData);
+      await firstValueFrom(this.databaseService.instance.saveDomain(domainData));
 
       this.messagingService.showSuccess(
         'Domain added successfully.',
@@ -264,7 +228,7 @@ export default class QuickAddDomain {
       );
   }
 
-  private constructDomainData(domainInfo: QuickDomainInfo): SaveDomainData {
+  private constructDomainData(domainInfo: DomainInfo): SaveDomainData {
     return {
       domain: {
         domain_name: domainInfo.domainName.toLowerCase(),
@@ -277,14 +241,14 @@ export default class QuickAddDomain {
       statuses: domainInfo.status || [],
       registrar: domainInfo.registrar,
       ipAddresses: [
-        ...(domainInfo.ipAddresses?.ipv4?.map((ip: string) => ({
+        ...(domainInfo.ip_addresses?.ipv4 || []).map((ip) => ({
           ipAddress: ip,
           isIpv6: false,
-        })) || []),
-        ...(domainInfo.ipAddresses?.ipv6?.map((ip: string) => ({
+        })),
+        ...(domainInfo.ip_addresses?.ipv6 || []).map((ip) => ({
           ipAddress: ip,
           isIpv6: true,
-        })) || []),
+        })),
       ],
       whois: domainInfo.whois || undefined,
       dns: {

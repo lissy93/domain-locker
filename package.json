@@ -3,7 +3,7 @@
   "version": "0.2.4",
   "type": "module",
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   },
   "author": "Alicia Sykes",
   "license": "MIT",
@@ -18,11 +18,15 @@
     "build:netlify": "NITRO_PRESET=netlify NODE_OPTIONS=--max-old-space-size=4096  ng build --configuration production",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
+    "test:server": "vitest run --config test/vitest.config.ts",
     "lint": "eslint 'src/**/*.{ts,html}'",
-    "typecheck": "tsc --noEmit -p tsconfig.app.json",
+    "typecheck": "npm run typecheck:app && npm run typecheck:server",
+    "typecheck:app": "tsc --noEmit -p tsconfig.app.json",
+    "typecheck:server": "tsc --noEmit -p tsconfig.server.json",
     "format": "prettier --write 'src/**/*.{ts,html,scss,css,json}'",
     "format:check": "prettier --check 'src/**/*.{ts,html,scss,css,json}'",
-    "hold-my-beer": "npm run format && npm run typecheck && npm run lint"
+    "hold-my-beer": "npm run format && npm run typecheck && npm run lint",
+    "migrate:pg-to-sqlite": "vite-node -c scripts/vite.config.ts scripts/migrate-pg-to-sqlite.ts"
   },
   "private": true,
   "dependencies": {
@@ -46,11 +50,14 @@
     "@supabase/supabase-js": "^2.45.3",
     "@types/leaflet": "^1.9.21",
     "apexcharts": "^4.7.0",
-    "d3": "^7.9.0",
+    "better-sqlite3": "^12.11.1",
     "d3-cloud": "^1.2.7",
+    "d3-selection": "^3.0.0",
+    "dotenv": "^16.6.1",
     "file-saver": "^2.0.5",
     "front-matter": "^4.0.2",
     "fuse.js": "^7.3.0",
+    "kysely": "^0.28.17",
     "leaflet": "^1.9.4",
     "leaflet.markercluster": "^1.5.3",
     "marked": "12.0.2",
@@ -67,6 +74,7 @@
     "rss-parser": "^3.13.0",
     "rxjs": "~7.8.0",
     "whois-json": "^2.0.4",
+    "zod": "^4.4.3",
     "zone.js": "^0.15.1"
   },
   "devDependencies": {
@@ -78,8 +86,9 @@
     "@nx/angular": "^20.8.4",
     "@nx/devkit": "^20.8.4",
     "@nx/vite": "^20.8.4",
-    "@types/d3": "^7.4.3",
+    "@types/better-sqlite3": "^9.6.0",
     "@types/d3-cloud": "^1.2.9",
+    "@types/d3-selection": "^3.0.11",
     "@types/file-saver": "^2.0.7",
     "@types/pg": "^8.20.0",
     "@types/whois-json": "^2.0.4",

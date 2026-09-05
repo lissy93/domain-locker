@@ -5,13 +5,7 @@ import { NgApexchartsModule } from 'ng-apexcharts';
 import DatabaseService from '~/app/services/database.service';
 import { ErrorHandlerService } from '~/app/services/error-handler.service';
 import { ApexOptions } from 'ng-apexcharts';
-
-interface UptimeData {
-  checked_at: string;
-  is_up: boolean;
-  response_code: number | null;
-  response_time_ms: number | null;
-}
+import type { UptimeRow as UptimeData } from '~/types/common';
 
 interface DailyUptime {
   day: string; // YYYY-MM-DD (UTC)

@@ -52,6 +52,7 @@ export class FieldVisibilityFilterComponent implements OnInit {
 
   @Input() defaultSelectedFields: string[] = ['domainName', 'registrar', 'expiryDate'];
   @Input() showAddButton = true;
+  @Input() initialSearch = '';
   @Output() visibilityChange = new EventEmitter<FieldOption[]>();
   @Output() searchChange = new EventEmitter<string>();
   @Output() layoutChange = new EventEmitter<boolean>();

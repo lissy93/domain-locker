@@ -6,14 +6,17 @@ coverImage:
 index: 4
 ---
 
-Domain Locker supports both **Supabase** and **PostgreSQL** as database backends. The application dynamically selects which to use based on the configured environment variables. This guide explains how the database integration works, the request flow, and how to interact with the database.
+Domain Locker supports **Supabase**, **PostgreSQL** and **SQLite** as database backends. The application dynamically selects which to use based on the configured environment variables. This guide explains how the database integration works, the request flow, and how to interact with the database.
 
 ### Database Options
 
 Domain Locker determines the database type by checking the available environment variables:
-- If **Supabase** credentials (`SUPABASE_URL`, `SUPABASE_ANON_KEY`) are set, the app uses Supabase.
-- If **PostgreSQL** credentials (`DL_PG_HOST`, `DL_PG_USER`, etc.) are set instead, it will use PostgreSQL.
-- Managed instances default to Supabase, whereas self-hosted instances default to PostgreSQL.
+- If **PostgreSQL** credentials (`DL_PG_HOST`, `DL_PG_USER`, etc.) are set, it will use PostgreSQL.
+- Otherwise, if **Supabase** credentials (`SUPABASE_URL`, `SUPABASE_ANON_KEY`) are set, the app uses Supabase.
+- With neither configured, it falls back to **SQLite**, which needs no setup at all.
+- Managed instances always use Supabase, and ignore the self-hosted options above.
+
+Postgres and SQLite are reached through the server's `/v1` API, so their credentials never leave the server. Supabase is called from the browser, under row-level security.
 
 The entry point for database operations is [`database.service.ts`](https://github.com/Lissy93/domain-locker/blob/main/src/app/services/database.service.ts), which forwards calls to the appropriate database service.
 

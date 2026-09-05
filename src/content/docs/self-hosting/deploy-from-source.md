@@ -9,8 +9,8 @@ coverImage:
 ## The App Setup
 
 #### 0. Prerequisites
-You'll need git and Node.js (22) installed.
-If you're using [NVM](https://github.com/nvm-sh/nvm) you can run `nvm use` to download and use the correct Node version
+You'll need git and Node.js 22 or newer installed.
+If you're using [NVM](https://github.com/nvm-sh/nvm) you can run `nvm use` to download and use the version pinned in `.nvmrc`
 
 #### 1. Get the code and install dependencies
 
@@ -22,26 +22,28 @@ npm install
 
 #### 3. Configure the environment
 
-Create a `.env` file in the root of the project.
-Here you'll add the environment variables needed to configure build preferences, and the database connection.
-Be sure these match your database setup (see next section, below).
+If you're using SQLite, then no environmental variables needed 🙂
+The database is created at `./data/domain-locker.db` on first use (or set `DL_SQLITE_PATH` to put it somewhere else).
 
+If you do need to set variables, then create a `.env` file in the root of the project.
+You can view the full list of [environmental variables](/about/developing/environmental-variables),
+or start from the [`.env.sample`](https://github.com/lissy93/domain-locker/blob/main/.env.sample) as a starting point.
+The app reads it both when building and when starting, and any real environment variables you set take precedence over it.
 
 ```bash
 touch .env
 ```
 
+To use Postgres, add its connection details. All four of host, user, password and name are required:
+
 ```bash
-# Database connection
+DL_ENV_TYPE=selfHosted
+
 DL_PG_HOST=localhost
 DL_PG_PORT=5432
 DL_PG_USER=postgres
 DL_PG_PASSWORD=your-password
 DL_PG_NAME=domain_locker
-
-# Build + Runtime
-DL_ENV_TYPE=selfHosted
-NITRO_PRESET=node_server
 ```
 
 #### 4. Build the app
@@ -59,14 +61,18 @@ node dist/analog/server/index.mjs
 #### 6. Access the app
 Visit `http://localhost:3000` in your browser to access the app.
 
+Set `PORT` to serve it somewhere else
+
 ---
 
 ## The Database Setup
 
-The app needs a database to store its data.
-You can either use a Postgres database or a Supabase instance. Postgres is significantly easier to set up on self-hosted environments.
+SQLite needs no setup at all, and is the recommended option for a self-hosted instance.
+
+If you'd rather run Postgres, or want to use Supabase, see:
 
 1. [Postgres Setup](/about/developing/postgres-setup)
-2. [Supabase Setup](/about/developing/supabase-setup)
+2. [SQLite Setup](/about/developing/sqlite-setup)
+3. [Supabase Setup](/about/developing/supabase-setup)
 
 During development, you can skip the database setup, and connect to our hosted dev db instance, by using [these environment variables](https://github.com/Lissy93/domain-locker/blob/main/.env.sample#L5-L14). This is NOT suitable for production.

@@ -152,7 +152,7 @@ export default class LinksIndexPageComponent implements OnInit {
   async loadDomainData() {
     this.loading = true;
 
-    this.databaseService.instance.listDomains().subscribe({
+    this.databaseService.domains$.subscribe({
       next: (domains) => {
         this.domains = domains;
         this.loading = false;

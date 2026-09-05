@@ -127,7 +127,7 @@ export default class HomePageComponent implements OnInit, OnDestroy {
     this.loading = true;
 
     this.subscriptions.add(
-      this.databaseService.instance.listDomains().subscribe({
+      this.databaseService.domains$.subscribe({
         next: (domains) => {
           this.domains = domains;
           this.loading = false;

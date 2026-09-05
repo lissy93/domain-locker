@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PrimeNgModule } from '~/app/prime-ng.module';
 import { FeatureService } from '~/app/services/features.service';
@@ -16,6 +16,7 @@ import {
   getPerformanceColor,
 } from './monitor-helpers';
 import { EnvService } from '~/app/services/environment.service';
+import type { UptimeRow as UptimeData } from '~/types/common';
 
 interface DomainSummary {
   domainId: string;
@@ -30,15 +31,6 @@ interface DomainSummary {
   responseCodeSeries: number[];
   responseCodeLabels: string[];
   responseCodeColors: string[];
-}
-
-interface UptimeData {
-  checked_at: string;
-  is_up: boolean;
-  response_code: number;
-  response_time_ms: number;
-  dns_lookup_time_ms: number;
-  ssl_handshake_time_ms: number;
 }
 
 @Component({
@@ -60,6 +52,7 @@ export default class MonitorPage implements OnInit {
   private databaseService = inject(DatabaseService);
   private errorHandlerService = inject(ErrorHandlerService);
   private envService = inject(EnvService);
+  private cdr = inject(ChangeDetectorRef);
 
   monitorEnabled$ = this.featureService.isFeatureEnabled('domainMonitor');
 
@@ -95,11 +88,11 @@ export default class MonitorPage implements OnInit {
 
   loadDomains(): void {
     this.loading = true;
-    this.databaseService.instance.listDomains().subscribe({
+    this.databaseService.domains$.subscribe({
       next: (domains) => {
         this.domains = domains;
-        this.loadDomainSummaries();
         this.loading = false;
+        this.loadDomainSummaries();
       },
       error: (error) => {
         this.errorHandlerService.handleError({
@@ -113,76 +106,68 @@ export default class MonitorPage implements OnInit {
     });
   }
 
-  loadDomainSummaries(): void {
-    this.domains.forEach((domain) => {
-      this.databaseService.instance
-        .getDomainUptime(domain.user_id, domain.id, 'day')
-        .then((rawData: unknown) => {
-          const data = rawData as { data?: UptimeData[] } & UptimeData[];
-          if (data && !data.data) data.data = data as unknown as UptimeData[]; // data be data with data has data if data not data and data is data. Got it?
-          if (data.data) {
-            const uptimeData: UptimeData[] = data.data;
+  /** One assignment once every history has landed, so a hydrated load renders */
+  async loadDomainSummaries(): Promise<void> {
+    if (!this.domains.length) return;
+    try {
+      const histories = await this.fetchHistories();
+      this.domainSummaries = this.domains.map((domain) =>
+        this.summarise(domain, histories[domain.id] ?? []),
+      );
+    } catch (error) {
+      this.errorHandlerService.handleError({
+        error,
+        message: 'Failed to load uptime history',
+        location: 'Monitor',
+      });
+    }
+    this.cdr.markForCheck();
+  }
 
-            const sparklineData = uptimeData.map((entry: UptimeData) => ({
-              x: entry.checked_at,
-              y: entry.response_time_ms || 0,
-            }));
+  /** Supabase has no batch endpoint, so it falls back to one call per domain */
+  private fetchHistories(): Promise<Record<string, UptimeData[]>> {
+    const service = this.databaseService.instance;
+    const ids = this.domains.map((domain) => domain.id);
+    if (service.getDomainUptimeBatch) {
+      return service.getDomainUptimeBatch(ids, 'day');
+    }
+    return Promise.all(
+      this.domains.map((domain) =>
+        service
+          .getDomainUptime(domain.user_id, domain.id, 'day')
+          .then((rows) => [domain.id, rows] as const),
+      ),
+    ).then((entries) => Object.fromEntries(entries));
+  }
 
-            const responseCodeSummary = this.getResponseCodeSummary(uptimeData);
+  private summarise(domain: DbDomain, uptimeData: UptimeData[]): DomainSummary {
+    const responseCodeSummary = this.getResponseCodeSummary(uptimeData);
+    const average = (pick: (entry: UptimeData) => number | null) =>
+      uptimeData.length
+        ? uptimeData.reduce((sum, entry) => sum + Number(pick(entry) || 0), 0) /
+          uptimeData.length
+        : 0;
 
-            const responseCodeSeries = responseCodeSummary.map((item) => item.count);
-            const responseCodeLabels = responseCodeSummary.map((item) => `${item.code}`);
-            const responseCodeColors = responseCodeSummary.map((item) =>
-              this.getResponseCodeColor(item.code),
-            );
-
-            const uptimePercentage =
-              uptimeData.length > 0
-                ? (uptimeData.filter((entry: UptimeData) => entry.is_up).length /
-                    uptimeData.length) *
-                  100
-                : 0;
-
-            const avgResponseTime =
-              uptimeData.length > 0
-                ? uptimeData.reduce(
-                    (sum, entry) => sum + Number(entry.response_time_ms || 0),
-                    0,
-                  ) / uptimeData.length
-                : 0;
-
-            const avgDnsTime =
-              uptimeData.length > 0
-                ? uptimeData.reduce(
-                    (sum, entry) => sum + Number(entry.dns_lookup_time_ms || 0),
-                    0,
-                  ) / uptimeData.length
-                : 0;
-
-            const avgSslTime =
-              uptimeData.length > 0
-                ? uptimeData.reduce(
-                    (sum, entry) => sum + Number(entry.ssl_handshake_time_ms || 0),
-                    0,
-                  ) / uptimeData.length
-                : 0;
-
-            this.domainSummaries.push({
-              domainId: domain.id,
-              domainName: domain.domain_name,
-              sparklineData,
-              responseCodeSummary,
-              responseCodeSeries,
-              responseCodeLabels,
-              responseCodeColors,
-              uptimePercentage,
-              avgResponseTime,
-              avgDnsTime,
-              avgSslTime,
-            });
-          }
-        });
-    });
+    return {
+      domainId: domain.id,
+      domainName: domain.domain_name,
+      sparklineData: uptimeData.map((entry) => ({
+        x: entry.checked_at,
+        y: entry.response_time_ms || 0,
+      })),
+      responseCodeSummary,
+      responseCodeSeries: responseCodeSummary.map((item) => item.count),
+      responseCodeLabels: responseCodeSummary.map((item) => `${item.code}`),
+      responseCodeColors: responseCodeSummary.map((item) =>
+        this.getResponseCodeColor(item.code),
+      ),
+      uptimePercentage: uptimeData.length
+        ? (uptimeData.filter((entry) => entry.is_up).length / uptimeData.length) * 100
+        : 0,
+      avgResponseTime: average((entry) => entry.response_time_ms),
+      avgDnsTime: average((entry) => entry.dns_lookup_time_ms),
+      avgSslTime: average((entry) => entry.ssl_handshake_time_ms),
+    };
   }
 
   visitDomain(domainName: string): void {

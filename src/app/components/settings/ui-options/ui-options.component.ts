@@ -2,7 +2,7 @@ import { ChangeDetectorRef, Component, Input, OnInit, inject } from '@angular/co
 
 import { PrimeNgModule } from '~/app/prime-ng.module';
 import { ThemeService, Theme, FontOption } from '~/app/services/theme.service';
-import { SupabaseService } from '~/app/services/supabase.service';
+import { AuthService } from '~/app/services/auth.service';
 import { TranslationService } from '~/app/services/translation.service';
 import { Subscription } from 'rxjs';
 import {
@@ -20,7 +20,7 @@ import {
   styleUrls: ['./ui-options.component.scss'],
 })
 export class UiSettingsComponent implements OnInit {
-  supabaseService = inject(SupabaseService);
+  private authService = inject(AuthService);
   private themeService = inject(ThemeService);
   private languageService = inject(TranslationService);
   private accessibilityService = inject(AccessibilityService);
@@ -154,7 +154,7 @@ export class UiSettingsComponent implements OnInit {
   }
 
   async signOut() {
-    await this.supabaseService.signOut();
+    await this.authService.signOut();
     window.location.href = '/login';
   }
 }

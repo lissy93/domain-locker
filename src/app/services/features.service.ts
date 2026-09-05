@@ -134,6 +134,17 @@ export class FeatureService {
     return firstValueFrom(this.isFeatureEnabled(feature));
   }
 
+  /** Drops links whose feature is switched off, so no dead entries are shown */
+  public visibleLinks<T extends { feature?: keyof FeatureDefinitions }>(
+    links: T[],
+  ): Observable<T[]> {
+    return this.activeFeatures$.pipe(
+      map((active) =>
+        links.filter((link) => !link.feature || active[link.feature] === true),
+      ),
+    );
+  }
+
   public async featureReportForDebug(): Promise<{ feature: string; enabled: boolean }[]> {
     const features = this.activeFeatures$.getValue();
     const featurePromises = Object.keys(features).map(async (feature) => ({

@@ -32,6 +32,7 @@ export class HostMapComponent implements OnInit, AfterViewInit {
   private errorHandler = inject(ErrorHandlerService);
 
   private map!: import('leaflet').Map;
+  private tileLayer?: import('leaflet').TileLayer;
   private hosts: (Host & { domainCount: number })[] = [];
   private L!: typeof import('leaflet');
   private isDarkTheme = false;
@@ -88,12 +89,13 @@ export class HostMapComponent implements OnInit, AfterViewInit {
   }
 
   private setTheme() {
-    if (!this.L) return;
-    const darkThemeUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png';
-    const lightThemeUrl = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
-    const layerToLoad = this.isDarkTheme ? darkThemeUrl : lightThemeUrl;
-    const tileLayer = this.L.tileLayer(layerToLoad);
-    tileLayer.addTo(this.map);
+    if (!this.L || !this.map) return;
+    if (this.tileLayer) this.map.removeLayer(this.tileLayer);
+    this.tileLayer = this.L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      className: this.isDarkTheme ? 'map-tiles-dark' : '',
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(this.map);
   }
 
   private initMap() {
@@ -141,7 +143,7 @@ export class HostMapComponent implements OnInit, AfterViewInit {
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
       <path
         stroke="var(--surface-50, black)"
-        stroke-width="10" 
+        stroke-width="10"
         fill="var(--primary-color)"
         d="M0 192c0 87.4 117 243 168.3 307.2c6.1 7.7 14.9 11.5 23.7 11.5s17.6-3.8 23.7-11.5C267 435
         384 279.4 384 192C384 86 298 0 192 0S0 86 0 192zm272 0a80 80 0 1 1 -160 0 80 80 0 1 1 160 0z"

@@ -1,9 +1,12 @@
 # syntax=docker/dockerfile:1.7
 
 # Stage 1 - build: install all dependencies and compile the app
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
+
+# Toolchain for native modules (better-sqlite3 has no musl prebuilds)
+RUN apk add --no-cache python3 make g++
 
 # Copy manifests + npm config for reproducible installs
 COPY package.json package-lock.json .npmrc ./
@@ -28,7 +31,7 @@ RUN find node_modules \( -type d -name '@esbuild' -o -type d -name 'esbuild' \) 
     find node_modules -type l -name esbuild -exec rm -f {} +
 
 # Stage 2 - runner: minimal image to serve the app
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 
 # Postgres client for schema/init, whois for app lookups, wget for healthcheck
 RUN apk add --no-cache postgresql-client whois wget
@@ -44,9 +47,14 @@ COPY --chown=appuser:appgroup --from=builder /app/package.json  ./package.json
 COPY --chown=appuser:appgroup --from=builder /app/db/schema.sql ./schema.sql
 COPY --chown=appuser:appgroup --from=builder /app/start.sh      ./start.sh
 
+# Default home for the SQLite database when no Postgres is configured
+RUN mkdir -p /data && chown appuser:appgroup /data
+VOLUME ["/data"]
+
 USER appuser
 EXPOSE 3000
 ENV DL_ENV_TYPE="selfHosted"
+ENV DL_SQLITE_PATH="/data/domain-locker.db"
 
 HEALTHCHECK --interval=15s --timeout=2s --start-period=5s --retries=5 \
   CMD wget --spider -q http://localhost:3000/api/health || exit 1

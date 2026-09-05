@@ -208,10 +208,10 @@ export class ErrorHandlerService {
     if (!isPlatformBrowser(this.platformId)) return;
     const environment = this.envService.getEnvironmentType();
     const appVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.0.0';
-    const enabledDb = this.envService.isSupabaseEnabled()
-      ? 'Supabase'
-      : this.envService.isPostgresEnabled()
-        ? 'Postgres'
+    const enabledDb = this.envService.isSelfHostedDatabase()
+      ? (this.envService.getDatabaseBackend() ?? 'self-hosted')
+      : this.envService.isSupabaseEnabled()
+        ? 'Supabase'
         : 'None';
 
     console.log(

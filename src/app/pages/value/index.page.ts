@@ -55,7 +55,7 @@ export default class ValuationPageComponent implements OnInit {
   // Fetch all domains, including those without value records
   private loadDomains() {
     this.loading = true;
-    this.databaseService.instance.listDomains().subscribe({
+    this.databaseService.domains$.subscribe({
       next: (domains: DbDomain[]) => {
         this.databaseService.instance.valuationQueries.getDomainCostings().subscribe({
           next: (costings) => {
