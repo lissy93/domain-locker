@@ -164,14 +164,13 @@ describe.skipIf(!pgAvailable)('migration runner (postgres)', () => {
   });
 
   // A server west of Greenwich is where the naive cast loses a day
-  /** A restricted role cannot re-apply the schema, but must still boot */
-  it('carries on when the role may not re-apply the base schema', async () => {
+  it('carries on when the role owns its tables but not the schema', async () => {
     const config = await resetTestDatabase('dl_test_migrate_restricted');
     db = createPostgresTestDb(config);
     // Roles are cluster wide, so drop any left by an earlier run
     await sql`DROP ROLE IF EXISTS dl_restricted`.execute(db);
     await sql`CREATE ROLE dl_restricted LOGIN PASSWORD 'restricted'`.execute(db);
-    await sql`GRANT USAGE ON SCHEMA public TO dl_restricted`.execute(db);
+    await sql`GRANT USAGE, CREATE ON SCHEMA public TO dl_restricted`.execute(db);
     await sql`GRANT SELECT, INSERT, UPDATE, DELETE
                 ON ALL TABLES IN SCHEMA public TO dl_restricted`.execute(db);
     await db.destroy();
@@ -181,8 +180,11 @@ describe.skipIf(!pgAvailable)('migration runner (postgres)', () => {
       user: 'dl_restricted',
       password: 'restricted',
     });
-    await expect(migrateToLatest(db, 'postgres')).resolves.toBeDefined();
+
+    const { applied } = await migrateToLatest(db, 'postgres');
+    expect(applied).toEqual(versionsFor('postgres'));
     await expect(db.selectFrom('domains').selectAll().execute()).resolves.toEqual([]);
+    await expect(db.selectFrom('job_runs').selectAll().execute()).resolves.toEqual([]);
   });
 
   it('narrows the registry dates without shifting them across a timezone', async () => {
