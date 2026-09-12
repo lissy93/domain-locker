@@ -9,7 +9,7 @@ index: 18
 The self-hosted version of Domain Locker supports basic notifications, sent via webhooks.
 These can alert you about upcoming expirations or important changes to your domains.
 
-It's not (yet) possible to use all notification channels (email, WhatsApp, Signal, Discord, etc) like in the managed version, because these rely upon non-free 3rd party services (which cannot be self-hosted). But as a workaround, ntfy does allow you to hook into their API and call whichever third-parties you like.
+It's not (yet) possible to use all notification channels (email, WhatsApp, Signal, etc) like in the managed version, because these rely upon non-free 3rd party services (which cannot be self-hosted). But as a workaround, ntfy does allow you to hook into their API and call whichever third-parties you like.
 
 ## Enabling update crons
 Before you can get notified, you need to setup some cron jobs to periodically check for updates and expirations.
@@ -60,6 +60,18 @@ reverse proxy doing basic auth, and the token takes precedence if you set both.
 Credentials can also be embedded in the base URL (like
 `NOTIFY_WEBHOOK_BASE=https://user:pass@ntfy.example.com`), and will be sent as a
 basic auth header.
+
+---
+
+## Push notifications via Discord
+
+Create a webhook in your Discord server (Server Settings, Integrations, Webhooks), then set:
+
+```
+DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/your-id/your-token
+```
+
+Messages go to every channel you have configured, so Discord and ntfy can be used at the same time.
 
 ---
 
