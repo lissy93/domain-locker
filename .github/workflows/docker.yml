@@ -1,6 +1,7 @@
 # Builds and publishes the multi-arch Docker image
 # - On git tag push, publishes to :X.Y.Z, :X.Y, and :latest
 # - On manual dispatch from main, rebuilds and updates :latest
+# - On manual dispatch with a preview_tag, publishes just that tag to GHCR
 # - On weekly schedule, rebuilds :latest from main for recent patches
 # - Multi-arch (amd64 + arm64) built in parallel on native runners
 # - Trivy scans each arch before push, fails on fixable CRITICAL CVEs
@@ -18,6 +19,11 @@ on:
     - cron: '0 4 * * 0'
   workflow_dispatch:
     inputs:
+      preview_tag:
+        description: 'Publish only this tag, e.g. pr-123'
+        required: false
+        default: ''
+        type: string
       dry_run:
         description: 'Build without pushing'
         required: false
@@ -55,11 +61,22 @@ jobs:
             arch: arm64
     runs-on: ${{ matrix.runner }}
     steps:
-      - name: 🔢 Validate dispatch ref
-        if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
+      - name: 🔢 Validate dispatch inputs
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          PREVIEW_TAG: ${{ inputs.preview_tag }}
         run: |
-          echo "::error::Manual dispatch only allowed from main (got: ${{ github.ref }})"
-          exit 1
+          fail() { echo "::error::$1"; exit 1; }
+          case "$GITHUB_REF" in
+            refs/heads/main) ;;
+            refs/heads/*) [ -n "$PREVIEW_TAG" ] \
+              || fail "Dispatch off main needs a preview_tag (got $GITHUB_REF)" ;;
+            *) fail "Dispatch is only allowed from a branch (got $GITHUB_REF)" ;;
+          esac
+          if [ -n "$PREVIEW_TAG" ] \
+            && ! grep -qE '^(pr|preview)-[a-zA-Z0-9._-]{1,50}$' <<< "$PREVIEW_TAG"; then
+            fail "preview_tag must look like pr-123 or preview-my-branch"
+          fi
 
       - name: 🛎️ Checkout
         uses: actions/checkout@v6
@@ -142,6 +159,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       HAS_DH: ${{ secrets.DOCKER_USERNAME != '' && secrets.DOCKER_PASSWORD != '' }}
+      IS_PREVIEW: ${{ inputs.preview_tag != '' }}
     steps:
       - name: 📥 Download digests
         uses: actions/download-artifact@v7
@@ -173,13 +191,14 @@ jobs:
         with:
           images: |
             ${{ env.GHCR_IMAGE }}
-            ${{ env.HAS_DH == 'true' && env.DH_IMAGE || '' }}
+            ${{ env.HAS_DH == 'true' && env.IS_PREVIEW == 'false' && env.DH_IMAGE || '' }}
           tags: |
-            type=raw,value=latest,enable=${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
+            type=raw,value=${{ inputs.preview_tag }},enable=${{ env.IS_PREVIEW }}
+            type=raw,value=latest,enable=${{ env.IS_PREVIEW == 'false' && (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') }}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
           flavor: |
-            latest=auto
+            latest=${{ env.IS_PREVIEW == 'true' && 'false' || 'auto' }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
@@ -218,6 +237,7 @@ jobs:
           done
 
       - name: 🔐 Generate SBOM (SPDX)
+        if: env.IS_PREVIEW == 'false'
         uses: anchore/sbom-action@v0.24.0
         with:
           image: ${{ steps.manifest.outputs.primary_tag }}
@@ -227,6 +247,7 @@ jobs:
 
       - name: 🪪 Attest SBOM
         id: attest
+        if: env.IS_PREVIEW == 'false'
         uses: actions/attest-sbom@v3
         continue-on-error: true
         with:
@@ -258,7 +279,7 @@ jobs:
               echo ""
               echo "- Subject digest: \`$MANIFEST_DIGEST\`"
               [ -n "$ATTEST_URL" ] && echo "- [View attestation]($ATTEST_URL)"
-            elif [ -n "$ATTEST_OUTCOME" ]; then
+            elif [ -n "$ATTEST_OUTCOME" ] && [ "$ATTEST_OUTCOME" != "skipped" ]; then
               echo "⚠️ Attestation outcome: \`$ATTEST_OUTCOME\`"
             else
               echo "⏭️ Attestation skipped"
