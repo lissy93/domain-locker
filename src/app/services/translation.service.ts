@@ -18,6 +18,7 @@ export class TranslationService {
     { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
     { code: 'es', name: 'Español', flag: '🇪🇸' },
     { code: 'fr', name: 'Français', flag: '🇫🇷' },
+    { code: 'az', name: 'Azərbaycan', flag: '🇦🇿' },
   ];
 
   constructor() {

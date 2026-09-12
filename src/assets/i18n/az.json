@@ -1,0 +1,364 @@
+{
+  "NAV": {
+    "DOMAINS": "Domainlər",
+    "INVENTORY": "İnventar",
+    "VALUATION": "Dəyərin qiymətləndirilməsi",
+    "CHANGE_HISTORY": "Dəyişiklik tarixçəsi",
+    "CATEGORIES": "Kateqoriyalar",
+    "ADD_DOMAIN": "Domain əlavə et",
+    "MOVE_DATA": "Məlumatları köçür",
+    "BULK_IMPORT": "Toplu idxal",
+    "BULK_EXPORT": "Toplu ixrac",
+    "ASSETS": "Aktivlər",
+    "STATISTICS": "Statistika",
+    "REGISTRARS": "Registrarlar",
+    "HOSTS": "Hostinq təminatçıları",
+    "CERTIFICATES": "Sertifikatlar",
+    "IPS": "IP ünvanları",
+    "DNS": "DNS",
+    "TAGS": "Etiketlər",
+    "SECURITY": "Təhlükəsizlik"
+  },
+  "HOME": {
+    "FEATURES": "İmkanlar",
+    "DESCRIPTION": "Domain Locker ağıllı bildirişlər, ətraflı təhlillər və güclü alətlərlə domain portfelinizi asanlıqla idarə etmək, izləmək və optimallaşdırmaq üçün bütün imkanları bir araya gətirən platformadır. O, işlərinizi nizamlı və təhlükəsiz saxlamağa, hər zaman nəzarəti əlinizdə tutmağa kömək edir.",
+    "PRICING": "Qiymətlər",
+    "DEMO_TITLE": "Nümayiş",
+    "LOADING_TITLE": "Yüklənir",
+    "DOCS_TITLE": "Sənədlər və resurslar",
+    "LOADING_DESCRIPTION": "Domainləriniz əldə edilir və statistika hesablanır",
+    "SUBHEADINGS": {
+      "DASHBOARD": "İdarə paneli",
+      "DOMAINS": "Domainlər",
+      "CATEGORIES": "Kateqoriyalar",
+      "ASSETS": "Aktivlər"
+    },
+    "UPCOMING_EXPIRATIONS": "Yaxınlaşan bitmə tarixləri",
+    "DOMAIN_PROVIDERS": "Domain təminatçıları",
+    "SECURITY_PROFILE": "Təhlükəsizlik profili",
+    "HOST_GEOGRAPHY": "Hostinq təminatçılarının coğrafi yerləşməsi",
+    "TAGS": "Etiketlər",
+    "REGISTRATION_TIMELINE": "Qeydiyyatın zaman xətti",
+    "SHOW_MORE_INSIGHTS": "Daha çox təhlil göstər",
+    "EXPAND_STATS": "Statistikanı genişləndir",
+    "HIDE_STATS": "Statistikanı gizlət",
+    "VIEW_ALL_ASSETS": "Bütün aktivlərə bax",
+    "DEMO": {
+      "LIVE_DEMO_TITLE": "Canlı nümayiş",
+      "LIVE_DEMO_DESC": "Canlı nümayiş bu ünvanda yerləşdirilib:",
+      "DEMO_DOMAIN": "demo.domain-locker.com",
+      "CREDENTIALS": "Giriş məlumatları",
+      "USERNAME": "İstifadəçi adı: demo@domain-locker.com",
+      "PASSWORD": "Parol: domainlocker",
+      "VISIT_DEMO": "Nümayişə keç",
+      "VIDEO_DEMO_TITLE": "Video nümayiş",
+      "VIDEO_DEMO_DESC": "Tamamlanmalıdır",
+      "WATCH_VIDEO": "Videoya bax"
+    },
+    "HERO": {
+      "BRAND": "Domain Locker:",
+      "HEADLINE": "Bütün domain adlarınız üçün vahid mərkəz",
+      "SUBHEADLINE": "Ağıllı, sadə və təhlükəsiz domain idarəetməsi",
+      "FEATURES": {
+        "TRACK_DOMAINS": "Müxtəlif registrarlardakı bütün domainlərinizi bir sadə idarə panelindən izləyin",
+        "DETAILED_METRICS": "Hər domain üçün ətraflı göstəricilər və məlumatların canlı vizuallaşdırılması",
+        "ALERTS": "Domainlərin yaxınlaşan bitmə tarixləri və ya konfiqurasiya yeniləmələri barədə bildirişlər alın",
+        "MONITORING": "Hər domain üçün məhsuldarlıq, təhlükəsizlik və konfiqurasiyanın izlənməsi",
+        "MORE": "Və daha çox imkan!"
+      },
+      "BUTTON": {
+        "VIEW_GITHUB": "GitHub-da bax",
+        "GET_STARTED": "Başla"
+      }
+    },
+    "WELCOME": {
+      "TITLE": "Domain Locker-ə xoş gəlmisiniz",
+      "DESCRIPTION": "Burada bütün domain adlarınızı bir yerdə təhlükəsiz şəkildə izləyə bilərsiniz. İstər 1, istərsə də 1 000 domaininiz olsun, təhlükəsizlik təhlilləri, dəyişiklik və vaxtın bitməsi barədə bildirişlər, domain statistikası və digər imkanlarla ehtiyaclarınızı qarşılayırıq.",
+      "GET_STARTED_TITLE": "Gəlin başlayaq!",
+      "GET_STARTED_DESCRIPTION": "İlk domain adınızı əlavə etməklə başlayın, sizə yalnız URL lazımdır.\nOnu istənilən vaxt redaktə edə, həmçinin daha sonra başqa domainlər əlavə edə bilərsiniz.",
+      "BUTTON": {
+        "GET_STARTED": "Başla"
+      },
+      "TIP": "Məsləhət: Yuxarı sağ küncdəki <i class=\"pi pi-palette text-primary mx-1\"></i> işarəsinə klikləməklə dili, mövzunu və görünüş rejimini dəyişə bilərsiniz."
+    }
+  },
+  "STATS": {
+    "BUTTONS": {
+      "SHOW_STATS": "Statistikanı göstər",
+      "HIDE_STATS": "Statistikanı gizlət",
+      "SHOW_MORE_INSIGHTS": "Daha çox təhlil göstər"
+    },
+    "CHARTS": {
+      "DOMAIN_PROVIDERS": "Domain təminatçıları",
+      "SECURITY_PROFILE": "Təhlükəsizlik profili",
+      "HOST_GEOGRAPHY": "Hostinq təminatçılarının coğrafi yerləşməsi",
+      "TAGS": "Etiketlər",
+      "REGISTRATION_TIMELINE": "Qeydiyyatın zaman xətti",
+      "UPCOMING_EXPIRATIONS": "Yaxınlaşan bitmə tarixləri"
+    }
+  },
+  "FOOTER": {
+    "NAME": "Domain Locker",
+    "DESCRIPTION": "Domain idarəetməsi üçün bütün imkanları birləşdirən alət",
+    "CTAS": {
+      "SIGN_UP": "Qeydiyyatdan keç",
+      "GET_CODE": "Kodu əldə et"
+    },
+    "LINKS": {
+      "LEFT": {
+        "FEATURES": "İmkanlar",
+        "PRICING": "Qiymətlər",
+        "SELF_HOSTING": "Öz serverində yerləşdirmə",
+        "ALTERNATIVES": "Alternativlər"
+      },
+      "MIDDLE": {
+        "GITHUB": "GitHub",
+        "STATUS": "Xidmətin vəziyyəti",
+        "SUPPORT": "Dəstək",
+        "ATTRIBUTIONS": "Müəllif istinadları",
+        "MORE_APPS": "Daha çox tətbiq..."
+      },
+      "RIGHT": {
+        "LICENSE": "Lisenziya",
+        "SECURITY": "Təhlükəsizlik",
+        "PRIVACY_POLICY": "Məxfilik siyasəti",
+        "TERMS_OF_SERVICE": "Xidmət şərtləri"
+      }
+    }
+  },
+  "TAGS": {
+    "SUMMARY": "{count} etiket göstərilir -",
+    "VIEW_ALL_TAGS": "Bütün etiketlərə bax",
+    "RIGHT_CLICK_INFO": "Seçimlərə baxmaq üçün etiketin üzərinə sağ klik edin."
+  },
+  "DOMAINS": {
+    "FILTER_FORM": {
+      "FILTER": "Süzgəc",
+      "FIELDS": "Sahələr",
+      "SORT": "Sırala",
+      "LAYOUT": "Düzülüş"
+    },
+    "BUTTONS": {
+      "ADD_DOMAIN": "Domain əlavə et"
+    },
+    "DOMAIN_COLLECTION": {
+      "NO_DOMAINS_FOUND": "Domain tapılmadı",
+      "NO_DOMAINS_TEXT_1": "Bu kolleksiyada hələ heç bir domaininiz yoxdur. Başlamaq üçün ",
+      "ADD_FIRST_DOMAIN": "ilk domaininizi əlavə edin",
+      "VIEWING": "Göstərilir:",
+      "OF": "/",
+      "DOMAINS": "domain",
+      "MATCHING_SEARCH": "axtarış ifadəsinə uyğun:",
+      "WITH": "görünən sahə sayı:",
+      "FIELDS_VISIBLE_IN": "sahə, görünüş:",
+      "GRID_VIEW": "tor",
+      "LIST_VIEW": "siyahı",
+      "RESET_FILTERS": "Süzgəcləri sıfırla",
+      "OR": "və ya",
+      "VIEW_ALL": "Hamısına bax",
+      "INSTRUCTIONS": "Ətraflı məlumatı və dəyişiklik tarixçəsini görmək üçün domain adına klikləyin,<br>əlaqəli domainləri görmək üçün isə etiketə, registrar adına, hostinq təminatçısına və ya sertifikata klikləyin.<br>Sahələri göstərmək və ya gizlətmək, düzülüşü dəyişmək və ya axtarış etmək üçün süzgəcləri tənzimləyin.<br>Redaktə etmək, silmək, baxmaq və ya daha çox əməliyyat görmək üçün istənilən domainə sağ klikləyin.",
+      "COLUMN": {
+        "DOMAIN_NAME": "Domain",
+        "REGISTRAR": "Registrar",
+        "EXPIRY_DATE": "Bitmə tarixi",
+        "TAGS": "Etiketlər",
+        "NOTES": "Qeydlər",
+        "SECURITY_STATUSES": "Təhlükəsizlik statusları",
+        "IP_ADDRESSES": "IP ünvanları",
+        "RENEWAL_COST": "Yenilənmə xərci",
+        "SSL": "SSL",
+        "WHOIS": "WHOIS",
+        "HOST_INFO": "Hostinq təminatçısı haqqında məlumat",
+        "DNS_RECORDS": "DNS qeydləri",
+        "SUB_DOMAINS": "Alt domainlər"
+      },
+      "LIST": {
+        "IPV6": "IPv6",
+        "IPV4": "IPv4",
+        "VALID_UNTIL": "Etibarlılığın bitmə tarixi:",
+        "NS_LABEL": "NS:"
+      },
+      "GRID": {
+        "CLICK_VIEW_REGISTRAR": "{{registrar}} vasitəsilə qeydiyyatdan keçirilmiş bütün domainləri görmək üçün klikləyin",
+        "EXPIRES_ON": "Bitmə tarixi: {{date}}",
+        "UNKNOWN_EXPIRY": "Bitmə tarixi məlum deyil",
+        "SUB_DOMAINS": "Alt domainlər",
+        "SECURITY_FEATURES": "Təhlükəsizlik xüsusiyyətləri",
+        "IP_ADDRESSES": "IP ünvanları",
+        "COSTINGS": "Xərclər",
+        "PAYMENT_DUE": "{{amount}} məbləğində ödəniş {{date}} tarixində edilməlidir",
+        "AUTO_RENEW": "Avtomatik yenilənmə",
+        "AUTO_RENEW_ENABLED": "Aktivdir",
+        "AUTO_RENEW_DISABLED": "Aktiv deyil",
+        "PROFIT_LOSS": "Mənfəət/zərər:",
+        "PURCHASE_PRICE": "Alış qiyməti:",
+        "CURRENT_VALUE": "Cari dəyər",
+        "SSL_CERTIFICATE": "SSL sertifikatı",
+        "SSL_ISSUER": "Verən qurum",
+        "SSL_ISSUER_COUNTRY": "Verən qurumun ölkəsi",
+        "SSL_SUBJECT": "Subyekt",
+        "SSL_VALID_FROM": "Etibarlılığın başlama tarixi",
+        "SSL_VALID_TO": "Etibarlılığın bitmə tarixi",
+        "SSL_KEY_SIZE": "Açar ölçüsü",
+        "SSL_SIGNATURE_ALGORITHM": "İmza alqoritmi",
+        "SSL_FINGERPRINT": "Barmaq izi",
+        "WHOIS_RECORDS": "WHOIS qeydləri",
+        "WHOIS_NAME": "Ad",
+        "WHOIS_ORGANIZATION": "Təşkilat",
+        "WHOIS_ADDRESS": "Ünvan",
+        "WHOIS_COUNTRY": "Ölkə",
+        "HOSTS": "Hostinq təminatçıları",
+        "HOST_ISP": "İnternet provayderi",
+        "HOST_ORG": "Təşkilat",
+        "HOST_AS_REF": "Avtonom sistem istinadı",
+        "HOST_ADDRESS": "Ünvan",
+        "DNS_RECORDS": "DNS qeydləri",
+        "DNS_DNSSEC": "DNS təhlükəsizlik genişləndirmələri",
+        "DNS_NAME_SERVERS": "Ad serverləri",
+        "DNS_MX_RECORDS": "Poçt mübadiləsi qeydləri",
+        "DNS_TXT_RECORDS": "Mətn qeydləri",
+        "IPV6": "IPv6",
+        "IPV4": "IPv4",
+        "CONTEXT_MENU": {
+          "VIEW": "Bax",
+          "EDIT": "Redaktə et",
+          "DELETE": "Sil",
+          "COPY_URL": "URL kopyala",
+          "VISIT_URL": "URL aç",
+          "DELETE_HEADER": "Dağıdıcı əməliyyat",
+          "DELETE_MESSAGE": "Bu domaini silmək istədiyinizə əminsiniz?",
+          "DELETE_SUCCESS_SUMMARY": "Uğurlu",
+          "DELETE_SUCCESS_DETAIL": "Domain uğurla silindi",
+          "DELETE_ERROR_SUMMARY": "Xəta",
+          "DELETE_ERROR_DETAIL": "Domaini silmək mümkün olmadı",
+          "COPY_SUCCESS_SUMMARY": "Uğurlu",
+          "COPY_SUCCESS_DETAIL": "Domain URL ünvanı mübadilə buferinə kopyalandı",
+          "COPY_ERROR": "URL ünvanını mübadilə buferinə kopyalamaq mümkün olmadı"
+        }
+      }
+    }
+  },
+  "ASSETS": {
+    "TAG_GRID": {
+      "ERROR": "Xəta",
+      "LOAD_ERROR": "Etiketləri domain sayları ilə birlikdə yükləmək mümkün olmadı",
+      "CONTEXT_MENU": {
+        "VIEW_TAG": "Etiketə bax",
+        "EDIT": "Redaktə et",
+        "MOVE_DOMAINS": "Domainləri köçür",
+        "DELETE_TAG": "Etiketi sil",
+        "ADD_NEW_TAG": "Yeni etiket əlavə et"
+      },
+      "DELETE_CONFIRM_MESSAGE": "\"{{tag}}\" etiketini silmək istədiyinizə əminsiniz?<br><b class=\"text-red-500\">Bu əməliyyatı geri qaytarmaq mümkün deyil.</b><br><p class=\"text-surface-400 text-sm\">Nəzərə alın ki, bu, etiketlə əlaqəli domainlərə təsir etməyəcək,<br>lakin onların etiketlə əlaqəsi kəsiləcək.</p>",
+      "DELETE_CONFIRM_HEADER": "Etiketin silinməsinin təsdiqi: {{tag}}",
+      "DELETE_SUCCESS_SUMMARY": "Uğurlu",
+      "DELETE_SUCCESS_DETAIL": "\"{{tag}}\" etiketi uğurla silindi.",
+      "DELETE_ERROR_DETAIL": "Etiketi silmək mümkün olmadı",
+      "SHOWING_TAGS": "{{count}} etiket göstərilir",
+      "VIEW_ALL_TAGS": "Bütün etiketlərə bax",
+      "RIGHT_CLICK_INSTRUCTIONS": "Seçimləri görmək üçün etiketə sağ klikləyin",
+      "NO_TAGS_CREATED": "Hələ heç bir etiket yaradılmayıb",
+      "NO_TAGS_INSTRUCTIONS": "Yeni və ya mövcud domainə etiket əlavə edin və ya",
+      "CREATE_NEW_TAG": "Yeni etiket yarat",
+      "TOOLTIP": {
+        "CONTAINS_DOMAINS": "{{count}} domain ehtiva edir",
+        "NO_DOMAINS": "Heç bir domain əlavə edilməyib",
+        "TIP_ADD_DETAILS": "Məsləhət: Etiketlərə rəng, işarə və təsvir əlavə edə bilərsiniz",
+        "RIGHT_CLICK_OPTIONS": "Seçimlər üçün sağ klikləyin"
+      }
+    },
+    "CARDS": {
+      "REGISTRARS": {
+        "SINGLE": "Registrar",
+        "PLURAL": "Registrarlar",
+        "COUNT": "{count} registrar"
+      },
+      "IP_ADDRESSES": {
+        "SINGLE": "IP ünvanı",
+        "PLURAL": "IP ünvanları",
+        "COUNT": "{count} IP ünvanı"
+      },
+      "SSL_CERTIFICATES": {
+        "SINGLE": "SSL sertifikatı",
+        "PLURAL": "SSL sertifikatları",
+        "COUNT": "{count} SSL sertifikatı"
+      },
+      "HOSTS": {
+        "SINGLE": "Hostinq təminatçısı",
+        "PLURAL": "Hostinq təminatçıları",
+        "COUNT": "{count} hostinq təminatçısı"
+      },
+      "DNS_RECORDS": {
+        "SINGLE": "DNS qeydi",
+        "PLURAL": "DNS qeydləri",
+        "COUNT": "{count} DNS qeydi"
+      },
+      "TAGS": {
+        "SINGLE": "Etiket",
+        "PLURAL": "Etiketlər",
+        "COUNT": "{count} etiket"
+      },
+      "SUBDOMAINS": {
+        "SINGLE": "Alt domain",
+        "PLURAL": "Alt domainlər",
+        "COUNT": "{count} alt domain"
+      },
+      "LINKS": {
+        "SINGLE": "Keçid",
+        "PLURAL": "Keçidlər",
+        "COUNT": "{count} keçid"
+      },
+      "STATUSES": {
+        "SINGLE": "Status",
+        "PLURAL": "Statuslar",
+        "COUNT": "{count} status"
+      }
+    }
+  },
+  "DOMAIN_STATS": {
+    "EXPIRATION_BAR": {
+      "NO_DATA": "Məlumat yoxdur",
+      "TIMELINE_SHOW": "Zaman xəttini göstər",
+      "TIMELINE_HIDE": "Zaman xəttini gizlət",
+      "NEXT_EXPIRING": "Müddəti növbəti bitəcək domain:",
+      "NO_DOMAINS": "Domain yoxdur"
+    },
+    "PROVIDERS": {
+      "REGISTRARS": "Registrarlar",
+      "SSL_ISSUERS": "SSL sertifikatı verən qurumlar",
+      "HOSTS": "Hostinq təminatçıları",
+      "VIEW_ALL_REGISTRARS": "Bütün registrarlara bax",
+      "VIEW_ALL_CERT_PROVIDERS": "Bütün sertifikat təminatçılarına bax",
+      "VIEW_ALL_HOSTS": "Bütün hostinq təminatçılarına bax"
+    },
+    "EPP_STATUSES": {
+      "VIEW_ALL_STATUSES": "Bütün statuslara bax"
+    },
+    "HOSTS_MAP": {
+      "VIEW_ALL_HOSTS": "Bütün hostinq təminatçılarına bax"
+    },
+    "TAG_CLOUD": {
+      "VIEW_ALL_TAGS": "Bütün etiketlərə bax",
+      "NO_TAGS_FOUND": "Etiket tapılmadı"
+    }
+  },
+  "GLOBAL": {
+    "COPY": "Kopyala",
+    "CANCEL": "Ləğv et",
+    "OK": "Oldu",
+    "SAVE": "Yadda saxla",
+    "DELETE": "Sil",
+    "CONFIRM": "Əminsiniz?",
+    "LOADING": {
+      "INITIALIZING": "İlkin hazırlıq aparılır",
+      "DEFAULT_DESCRIPTION": "Sizin üçün hər şeyi hazırlayırıq.\nBu, çox çəkməməlidir...",
+      "ERROR_SHORT": "Bu qədər uzun çəkməməli idi...",
+      "ERROR_LONG": "Nəsə səhv getmiş ola bilər",
+      "BUTTON": {
+        "HOME": "Ana səhifə",
+        "RELOAD": "Yenidən yüklə",
+        "DEBUG": "Sazlama məlumatları"
+      }
+    }
+  }
+}
