@@ -1,6 +1,6 @@
 import { defineEventHandler } from 'h3';
 import { getInternalBaseUrl } from '../utils/base-url';
-import { sendWebhookNotification } from '../utils/webhook';
+import { sendNotification } from '../utils/notifications';
 
 export default defineEventHandler(async (event) => {
   const { DL_ENV_TYPE, DL_EXPIRATION_REMINDER_DAYS } = process.env;
@@ -85,7 +85,7 @@ export default defineEventHandler(async (event) => {
       continue;
     }
 
-    const notification_sent = await sendWebhookNotification(msg, title);
+    const notification_sent = await sendNotification(msg, title);
 
     results.push({
       domain: d.domain_name,

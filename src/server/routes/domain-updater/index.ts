@@ -8,6 +8,18 @@ import { getInternalBaseUrl } from '../../utils/base-url';
 const DOMAIN_FETCH_TIMEOUT = 10000; // ms
 const DOMAIN_UPDATE_TIMEOUT = 7000; // ms
 const CONCURRENCY_LIMIT = 5;
+const REQUEST_DELAY_MS = 0;
+
+// Registries such as NIC.it and EURid throttle a source IP once a run sends a
+// burst of WHOIS queries, so both the worker count and the gap between
+// requests can be tuned per deployment.
+function readEnvInt(name: string, fallback: number, min: number): number {
+  const value = Number(getEnvVar(name, String(fallback)));
+  return Number.isFinite(value) && value >= min ? Math.floor(value) : fallback;
+}
+
+const sleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms));
 
 export interface DomainRow {
   id: string;
@@ -25,7 +37,8 @@ type WorkerResult<R> = R | { domain: string; error: string };
 async function runWithConcurrency<T, R>(
   items: T[],
   workerFn: (item: T) => Promise<R>,
-  limit = CONCURRENCY_LIMIT,
+  limit = readEnvInt('DL_WHOIS_CONCURRENCY', CONCURRENCY_LIMIT, 1),
+  delayMs = readEnvInt('DL_WHOIS_DELAY_MS', REQUEST_DELAY_MS, 0),
 ): Promise<WorkerResult<R>[]> {
   const results: WorkerResult<R>[] = [];
   const queue = [...items];
@@ -42,6 +55,7 @@ async function runWithConcurrency<T, R>(
         const name = (item as { domain_name?: string })?.domain_name ?? 'unknown';
         results.push({ domain: name, error: msg });
       }
+      if (delayMs > 0 && queue.length) await sleep(delayMs);
     }
   });
 
