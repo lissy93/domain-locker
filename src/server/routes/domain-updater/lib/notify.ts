@@ -1,5 +1,5 @@
 import { callPgExecutor } from './pgExecutor';
-import { sendWebhookNotification } from '../../../utils/webhook';
+import { sendNotification } from '../../../utils/notifications';
 import Logger from '../../../utils/logger';
 
 const log = new Logger('domain-updater');
@@ -54,8 +54,8 @@ export async function notifyUser(
       [userId, domainId, changeType, message || null],
     );
 
-    // Send webhook notification
-    await sendWebhookNotification(
+    // Send to every configured notification channel
+    await sendNotification(
       message
         ? `[${domainName}] ${message}`
         : `Change detected in ${domainName}: ${changeType}`,
