@@ -7,7 +7,7 @@ import {
   OnDestroy,
   inject,
 } from '@angular/core';
-import * as d3 from 'd3';
+import { select } from 'd3-selection';
 import cloud from 'd3-cloud';
 
 import { PrimeNgModule } from '~/app/prime-ng.module';
@@ -110,7 +110,7 @@ export class DomainTagCloudComponent implements OnInit, OnDestroy {
     if (!element) return; // Early exit if container is not found
 
     // Clear previous SVG on resize or re-render
-    d3.select(element).select('svg').remove();
+    select(element).select('svg').remove();
 
     const { width, height } = element.getBoundingClientRect();
 
@@ -144,8 +144,7 @@ export class DomainTagCloudComponent implements OnInit, OnDestroy {
 
     if (!element) return;
 
-    const svg = d3
-      .select(element)
+    const svg = select(element)
       .append('svg')
       .attr('width', this.width)
       .attr('height', this.height)

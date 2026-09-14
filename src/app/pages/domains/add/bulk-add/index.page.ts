@@ -1,5 +1,6 @@
 import { Component, OnDestroy, inject } from '@angular/core';
 import {
+  AbstractControl,
   FormBuilder,
   FormGroup,
   FormArray,
@@ -76,9 +77,10 @@ export default class BulkAddComponent implements OnDestroy {
    */
   domainsSubMap: Record<string, Omit<Subdomain, 'id' | 'domainId'>[]> = {};
 
-  /** After saving, which domains succeeded/failed? */
+  /** After saving, which domains succeeded, failed, or were already tracked? */
   savedDomains: string[] = [];
   failedDomains: string[] = [];
+  skippedDomains: string[] = [];
 
   /** Our standard notification type definitions */
   public readonly notificationOptions = notificationTypes;
@@ -296,7 +298,11 @@ export default class BulkAddComponent implements OnDestroy {
                       }[],
                     );
                   }),
-                  map((subdomains) => ({ domain: d, subdomains })),
+                  // An unconfigured provider answers with something other than a list
+                  map((subdomains) => ({
+                    domain: d,
+                    subdomains: Array.isArray(subdomains) ? subdomains : [],
+                  })),
                 ),
             ),
           ),
@@ -373,22 +379,31 @@ export default class BulkAddComponent implements OnDestroy {
 
   /**
    * Step 3 -> Step 4: save all domains.
-   * If domain exists -> update, else -> saveDomain.
+   * Domains already tracked are left alone, so pasting a whole portfolio can't
+   * overwrite the notes, tags, links and subdomains they already carry.
    */
   saveDomains(): void {
     this.savingDomains = true;
     this.savedDomains = [];
     this.failedDomains = [];
+    this.skippedDomains = [];
 
     const notificationSettings = this.bulkAddForm.get('notifications')?.value || {};
 
-    // 1) get existing domain names so we know which to update
+    // 1) get the names already tracked, so we can skip them
     this.databaseService.instance
       .listDomainNames()
       .pipe(
-        concatMap((existingDomains: string[]) => {
-          // 2) sequentially process each domain in the form
-          return from(this.domains.controls).pipe(
+        map((names) => new Set(names.map((name) => name.toLowerCase()))),
+        concatMap((existing) => {
+          // 2) sequentially process each domain that isn't already tracked
+          const pending: AbstractControl[] = [];
+          for (const domainForm of this.domains.controls) {
+            const name = (domainForm.get('domainName')?.value as string).toLowerCase();
+            if (existing.has(name)) this.skippedDomains.push(name);
+            else pending.push(domainForm);
+          }
+          return from(pending).pipe(
             concatMap((domainForm) => {
               const domainName: string = domainForm.get('domainName')?.value;
               const registrar: string = domainForm.get('registrar')?.value;
@@ -453,11 +468,7 @@ export default class BulkAddComponent implements OnDestroy {
                 links: domainInfo?.links || [],
               };
 
-              const operation = existingDomains.includes(domainName)
-                ? this.databaseService.instance.updateDomain(domainName, domainData)
-                : this.databaseService.instance.saveDomain(domainData);
-
-              return operation.pipe(
+              return this.databaseService.instance.saveDomain(domainData).pipe(
                 map(() => ({ domain: domainName, success: true })),
                 catchError((error) => {
                   this.errorHandler.handleError({
@@ -503,7 +514,7 @@ export default class BulkAddComponent implements OnDestroy {
           this.step = 4; // summary screen
           this.messageService.showInfo(
             'Bulk Add Complete',
-            `${this.savedDomains.length} domains saved, ${this.failedDomains.length} failed.`,
+            `${this.savedDomains.length} saved, ${this.skippedDomains.length} already tracked, ${this.failedDomains.length} failed.`,
           );
         },
       });

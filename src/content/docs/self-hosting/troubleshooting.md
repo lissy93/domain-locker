@@ -34,7 +34,12 @@ After setting up, you can fetch subdomains for your existing domains by going to
 
 ---
 
+## Database errors
+The app logs which database it's using, and any migrations it applied, when it starts. For problems specific to SQLite, such as where the file lives, permissions on it, or writes timing out, see [SQLite Setup](/about/developing/sqlite-setup).
+
+---
+
 ## Some features not visible
-Some features are off by default on self-hosted, since they were built for a Supabase-based architecture. All our Supabase code is open source, and so can be self-hosted to enable full feature access, it is just a significantly more involved setup. See [Self-hosting Domain Locker and Supabase](/about/self-hosting/self-hosting-supabase) for more details.
+User accounts and sign-in aren't available on self-hosted, since they were built for a Supabase-based architecture. All our Supabase code is open source, and so can be self-hosted if you need them, it is just a significantly more involved setup. See [Self-hosting Domain Locker and Supabase](/about/self-hosting/self-hosting-supabase) for more details.
 
 ---

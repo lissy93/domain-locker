@@ -1,95 +1,32 @@
+# Domain Locker, in one container with one volume.
+# Data lives in a SQLite file at /data, and the app runs its own scheduled jobs.
+# To use Postgres instead, see docker-compose.postgres.yml
+
 services:
-  postgres:
-    image: postgres:15-alpine
-    container_name: domain-locker-db
-    restart: unless-stopped
-
-    # Env vars for initial DB
-    environment:
-      POSTGRES_DB: ${DL_PG_NAME:-domain_locker}
-      POSTGRES_USER: ${DL_PG_USER:-postgres}
-      POSTGRES_PASSWORD: ${DL_PG_PASSWORD:-changeme2420}
-
-    ports:
-      - "127.0.0.1:${DL_PG_PORT:-5432}:5432"
-
-    volumes:
-      # This is where the Postgres data will be stored
-      - postgres_data:/var/lib/postgresql/data
-      # If you want to skip the init script, you can use the SQL to seed the db
-      # - ./db/schema.sql:/docker-entrypoint-initdb.d/init-schema.sql:ro
-    networks:
-      - domain_locker_network
-
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DL_PG_USER:-postgres} -d ${DL_PG_NAME:-domain_locker}"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-
   app:
     image: lissy93/domain-locker:latest # or ghcr.io/lissy93/domain-locker:latest
     # build: . # Uncomment to build from source instead
-    container_name: domain-locker-app
+    container_name: domain-locker
     restart: unless-stopped
-    # secrets: # Uncomment to use Docker secrets
-    #   - dl_pg_password
+
     environment:
-      DL_ENV_TYPE: ${DL_ENV_TYPE:-selfHosted}
-      DL_PG_HOST: ${DL_PG_HOST:-postgres}
-      DL_PG_PORT: ${DL_PG_PORT:-5432}
-      DL_PG_USER: ${DL_PG_USER:-postgres}
-      DL_PG_PASSWORD: ${DL_PG_PASSWORD:-changeme2420}
-      DL_PG_NAME: ${DL_PG_NAME:-domain_locker}
+      DL_ENV_TYPE: selfHosted
+      # Uncomment to require a password to use the app
+      # DL_AUTH_PASSWORD: ${DL_AUTH_PASSWORD}
+
     ports:
       - "${DL_APP_PORT:-3000}:3000"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - domain_locker_network
+
+    volumes:
+      - domain_locker_data:/data
+
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
       interval: 15s
       timeout: 3s
       retries: 3
       start_period: 30s
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.domainlocker.rule=Host(`domain-locker.local`)"
-      - "traefik.http.routers.domainlocker.entrypoints=http"
-      - "traefik.http.services.domainlocker.loadbalancer.server.port=3000"
-
-  updater:
-    image: alpine:3.20
-    container_name: domain-locker-updater
-    restart: unless-stopped
-    depends_on:
-      app:
-        condition: service_healthy
-    networks:
-      - domain_locker_network
-    command: >
-      /bin/sh -c "
-        apk add --no-cache curl &&
-        echo '0 3 * * * /usr/bin/curl -f -X POST http://app:3000/api/domain-updater || echo \"ERROR: domain-updater failed at \$(date)\" >&2' > /etc/crontabs/root &&
-        echo '0 4 * * * /usr/bin/curl -f -X POST http://app:3000/api/expiration-reminders || echo \"ERROR: expiration-reminders failed at \$(date)\" >&2' >> /etc/crontabs/root &&
-        echo '*/15 * * * * /usr/bin/curl -f -X POST http://app:3000/api/domain-monitor || echo \"ERROR: domain-monitor failed at \$(date)\" >&2' >> /etc/crontabs/root &&
-        echo '0 2 * * 0 /usr/bin/curl -f -X POST http://app:3000/api/cleanup-monitor-data || echo \"ERROR: cleanup-monitor-data failed at \$(date)\" >&2' >> /etc/crontabs/root &&
-        crond -f -L /dev/stdout
-      "
 
 volumes:
-  postgres_data:
-    name: domain_locker_postgres_data
-    external: false
-
-networks:
-  domain_locker_network:
-    driver: bridge
-
-# secrets:
-#   dl_pg_password:
-#     file: ./secrets/dl_pg_password.txt
-#   postgres_password:
-#     file: ./secrets/postgres_password.txt
+  domain_locker_data:
+    name: domain_locker_data

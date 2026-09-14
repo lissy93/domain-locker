@@ -3,7 +3,7 @@ slug: supabase-setup
 title: Supabase Setup
 description: Configuring a self-hosted Supabase instance for Domain Locker
 coverImage: 
-index: 3
+index: 4
 ---
 
 The code for the Supabase setup is at [github.com/Lissy93/dl-sb-iac](https://github.com/Lissy93/dl-sb-iac).
@@ -16,7 +16,7 @@ We use Supabase on the managed instance, for it's PostgresDB, auth handling and 
 [!NOTE]<br>
 Setting up Supabase for the first time can be quite tricky, and we cannot offer support for it.<br>
 There is also some reliance on non-free third-parties, such as Google, Twilio, Resend, Turnstile and Stripe.<br>
-<b>Where possible, we recommend self-hosted user to use Postgres instead.</b>
+<b>Where possible, we recommend self-hosted users to use SQLite or Postgres instead.</b>
 </blockquote>
 
 ---
@@ -293,5 +293,5 @@ We are not accepting feature requests or bug reports (except security issues) ei
 The difficulty of deploying this project is graded at moderate to hard
 You'll need a solid understanding of Deno, Supabase, Postgres and Docker
 
-It is also possible to run Domain Locker without Supabase, using Postgres only, which is recommended.
+It is also possible to run Domain Locker without Supabase, using SQLite or Postgres, which is recommended.
 

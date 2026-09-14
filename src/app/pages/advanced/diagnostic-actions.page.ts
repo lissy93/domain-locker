@@ -147,13 +147,12 @@ export default class ErrorPage implements OnInit {
         params: { domain: 'example.com' },
       },
       {
-        label: 'Postgres Executer',
+        label: 'Domain List',
         description:
-          'Used to execute SQL commands server-side on self-hosted instances of Domain Locker.',
-        url: '/api/pg-executer',
+          'Reads the tracked domains through the data API, confirming the database is reachable.',
+        url: '/v1/domains',
         loading: false,
         success: null,
-        method: 'POST',
       },
       {
         label: 'Status Info',

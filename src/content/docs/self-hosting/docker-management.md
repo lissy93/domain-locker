@@ -14,20 +14,20 @@ Environment variables control how Domain Locker behaves. You can set them in sev
 **In docker-compose.yml:**
 ```yaml
 environment:
-  DL_PG_HOST: postgres
-  DL_PG_PASSWORD: your-strong-password
+  DL_AUTH_PASSWORD: your-strong-password
+  DL_SQLITE_PATH: /data/domain-locker.db
 ```
 
 **In a .env file:**
 ```bash
-DL_PG_PASSWORD=your-strong-password
+DL_AUTH_PASSWORD=your-strong-password
 DL_DNSDUMP_URL=https://api.dnsdumpster.com/domain/
 DNS_DUMPSTER_TOKEN=your-api-key
 ```
 
 **At runtime:**
 ```bash
-docker run -e DL_PG_PASSWORD=secret domain-locker
+docker run -e DL_AUTH_PASSWORD=secret domain-locker
 ```
 
 Never commit secrets to version control. Use `.env` files and restrict permissions with `chmod 600 .env`. For production, consider [Docker Secrets](https://docs.docker.com/engine/swarm/secrets/) or a secrets manager like [HashiCorp Vault](https://www.vaultproject.io/).
@@ -38,37 +38,31 @@ For more details on how Domain Locker handles environmental variables, see [Envi
 
 ## Using Docker Secrets
 
-Docker Secrets provide a secure way to store sensitive data like passwords and API keys. Domain Locker automatically loads secrets from `/run/secrets/` if they exist.
+Docker Secrets provide a secure way to store sensitive data like passwords and API keys. Any environment variable can be read from a file instead, by setting `<VARIABLE>_FILE` to the path of that file.
 
 **Create secret files:**
 ```bash
 mkdir -p secrets
-echo 'your-strong-password' > secrets/dl_pg_password.txt
-echo 'your-api-key' > secrets/dl_turnstile_key.txt
+echo 'your-strong-password' > secrets/dl_auth_password.txt
 chmod 600 secrets/*
 ```
 
 **Update docker-compose.yml:**
 ```yaml
 secrets:
-  dl_pg_password:
-    file: ./secrets/dl_pg_password.txt
+  dl_auth_password:
+    file: ./secrets/dl_auth_password.txt
 
 services:
   app:
     secrets:
-      - dl_pg_password
+      - dl_auth_password
     environment:
-      # Other non-sensitive env vars
-      DL_PG_HOST: postgres
+      DL_AUTH_PASSWORD_FILE: /run/secrets/dl_auth_password
 ```
 
-**Supported secrets:**
-- `dl_pg_password`, `dl_pg_user`, `dl_pg_host`, `dl_pg_port`, `dl_pg_name`
-- `supabase_url`, `supabase_anon_key`
-- `dl_turnstile_key`, `dl_glitchtip_dsn`
-
-Secrets take precedence over environment variables. Existing configurations without secrets continue to work unchanged.
+This works for any variable, such as `DL_PG_PASSWORD_FILE` or `SUPABASE_ANON_KEY_FILE`.
+The file takes precedence over the variable itself, and configurations without secrets continue to work unchanged.
 
 ---
 
@@ -77,7 +71,7 @@ Secrets take precedence over environment variables. Existing configurations with
 Execute commands inside the running container:
 
 ```bash
-docker exec -it domain-locker-app /bin/sh
+docker exec -it domain-locker /bin/sh
 ```
 
 View all running containers:
@@ -93,10 +87,10 @@ docker ps
 View application logs:
 
 ```bash
-docker logs domain-locker-app --follow
+docker logs domain-locker --follow
 ```
 
-Check Postgres logs:
+If you're running Postgres, it logs to its own container:
 
 ```bash
 docker logs domain-locker-db
@@ -127,14 +121,16 @@ docker run -d \
 
 ## Backing Up
 
-Back up the Postgres data volume:
+Back up the data volume:
 
 ```bash
 docker run --rm \
-  -v domain_locker_postgres_data:/volume \
+  -v domain_locker_data:/volume \
   -v /tmp:/backup alpine \
-  tar -cjf /backup/pgdata.tar.bz2 -C /volume .
+  tar -cjf /backup/domain-locker-data.tar.bz2 -C /volume .
 ```
+
+SQLite runs in WAL mode, so stop the app first, or take a live snapshot from the host with `sqlite3 /path/to/domain-locker.db "VACUUM INTO '/backup/domain-locker.db'"`. If you're running Postgres, back up the `domain_locker_postgres_data` volume instead, or use `pg_dump`.
 
 For automated backups, use [offen/docker-volume-backup](https://github.com/offen/docker-volume-backup). Store backups offsite with [rclone](https://rclone.org/) or [restic](https://restic.net/).
 
@@ -142,7 +138,7 @@ For automated backups, use [offen/docker-volume-backup](https://github.com/offen
 
 ## Authentication
 
-The self-hosted version of Domain Locker does not include built-in multi-user authentication, it's better to integrate into your own current auth solution for access control.
+You can password-protect your instance by setting `DL_AUTH_PASSWORD`. It's a single shared password though, so if you need multi-user authentication, it's better to integrate into your own current auth solution for access control.
 
 You've got several options:
 - **Reverse proxy authentication** with [Authelia](https://www.authelia.com/), [Authentik](https://goauthentik.io/), or [oauth2-proxy](https://oauth2-proxy.github.io/oauth2-proxy/).
@@ -167,7 +163,7 @@ For secure remote access:
 - [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/) - Expose services without opening ports
 - [WireGuard](https://www.wireguard.com/) - The bestest vpn, fast and modern
 
-Never expose the Postgres database directly to the internet
+Never expose your database directly to the internet
 
 ---
 
@@ -214,10 +210,10 @@ Use [Certbot](https://certbot.eff.org/) for Let's Encrypt certificates
 
 ## Healthchecks
 
-Domain Locker includes healthchecks for the app and database. View health status:
+Domain Locker includes a healthcheck for the app (and for Postgres, if you're running it). View health status:
 
 ```bash
-docker inspect --format '{{json .State.Health}}' domain-locker-app
+docker inspect --format '{{json .State.Health}}' domain-locker
 ```
 
 You can use [Autoheal](https://github.com/willfarrell/docker-autoheal) to automatically restart unhealthy containers:
@@ -281,18 +277,17 @@ For Kubernetes deployments with Helm charts, see [Deploying with Kubernetes](/ab
 
 ## Scheduling Tasks
 
-The updater container runs cron jobs for domain updates and expiration checks. To modify schedules, edit the cron expressions in your `docker-compose.yml`:
+The app runs its own jobs for domain updates, monitoring, expiration reminders and cleanup. To change how often, set the intervals (in minutes) in your `docker-compose.yml`:
 
 ```yaml
-command: >
-  /bin/sh -c "
-    apk add --no-cache curl &&
-    echo '0 3 * * * curl -X POST http://app:3000/api/domain-updater' > /etc/crontabs/root &&
-    crond -f
-  "
+environment:
+  DL_UPDATER_INTERVAL_MINUTES: 1440
+  DL_MONITOR_INTERVAL_MINUTES: 15
+  DL_REMINDERS_INTERVAL_MINUTES: 1440
+  DL_CLEANUP_INTERVAL_MINUTES: 10080
 ```
 
-For more complex scheduling, consider [Ofelia](https://github.com/mcuadros/ofelia)
+To drive them from your own scheduler instead, set `DL_DISABLE_SCHEDULER=true`, then POST to `/api/domain-updater`, `/api/domain-monitor`, `/api/expiration-reminders` and `/api/cleanup-monitor-data` yourself. For that, consider [Ofelia](https://github.com/mcuadros/ofelia)
 
 ---
 
@@ -301,16 +296,18 @@ For more complex scheduling, consider [Ofelia](https://github.com/mcuadros/ofeli
 You can mount custom assets using volumes, e.g.
 
 ```bash
--v ~/my-logo.svg:/app/dist/logo.svg
+-v ~/my-logo.svg:/app/dist/analog/public/logo.svg
 ```
 
-Note that static files are served from `/app/dist/` (not `/app/src/assets/`)
+Note that static files are served from `/app/dist/analog/public/` (not `/app/src/assets/`)
 
 ---
 
 ## Database Management
 
-If you'd like to inspect or manage the Postgres database directly, you can connect using any Postgres client. For example
+Your SQLite database is a single file, at `/data/domain-locker.db` on the app's volume. To inspect it, copy it off the volume and open it in any SQLite client, such as [DB Browser for SQLite](https://sqlitebrowser.org/) or [Beekeeper Studio](https://www.beekeeperstudio.io/). Note that the image doesn't include the `sqlite3` CLI.
+
+If you're running Postgres, you can connect to it directly using any Postgres client. For example
 - [pgAdmin](https://www.pgadmin.org/)
 - [Postico](https://eggerapps.at/postico2/)
 - [DBeaver](https://dbeaver.io/)
@@ -365,17 +362,19 @@ For more complex setups, consider using [Traefik](https://traefik.io/) as a reve
 
 ## Data Persistence
 
-The Postgres data volume `domain_locker_postgres_data` persists your domain data. To inspect it:
+The `domain_locker_data` volume persists your domain data. To inspect it:
 
 ```bash
-docker volume inspect domain_locker_postgres_data
+docker volume inspect domain_locker_data
 ```
 
 ---
 
 ## Troubleshooting
 
-If the app can't connect to Postgres, check that both containers are on the same network:
+The app logs which database it's using on start, so `docker logs domain-locker` is the first place to look.
+
+If you're running Postgres and the app can't connect to it, check that both containers are on the same network:
 
 ```bash
 docker network inspect domain_locker_network

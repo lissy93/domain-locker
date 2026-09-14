@@ -9,6 +9,7 @@ index: 2
 
 <blockquote class="markdown-alert markdown-alert-note">
 Helm charts are provided for reference only, and are not officially supported.
+Note that the chart still deploys Postgres alongside the app, rather than using SQLite.
 If you encounter issues, please feel free to submit a pull request to improve the documentation or the charts.
 </blockquote>
 

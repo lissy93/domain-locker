@@ -113,6 +113,8 @@ export interface Host {
   isp: string;
   org: string;
   asNumber: string;
+  /** ip-api names the AS this way, so lookup responses carry it instead */
+  as?: string;
   domain_count?: number;
   ip?: string;
 }
@@ -123,3 +125,50 @@ export interface Link {
   link_name: string;
   link_description?: string;
 }
+
+export interface UptimeRow {
+  checked_at: string;
+  is_up: boolean;
+  response_code: number | null;
+  response_time_ms: number | null;
+  dns_lookup_time_ms: number | null;
+  ssl_handshake_time_ms: number | null;
+}
+
+/** Countable asset tables, shared by the /v1 counts route and the UI cards */
+export const ASSET_TYPES = [
+  'domains',
+  'registrars',
+  'tags',
+  'hosts',
+  'ip_addresses',
+  'ssl_certificates',
+  'dns_records',
+  'links',
+  'subdomains',
+  'domain_statuses',
+] as const;
+
+export type AssetType = (typeof ASSET_TYPES)[number];
+
+/** Engine and storage details, for the self-hosted database connection page */
+export type DatabaseInfo = { schemaVersion: string | null } & (
+  | {
+      backend: 'sqlite';
+      version: string;
+      path: string;
+      sizeBytes: number | null;
+      walBytes: number | null;
+      reclaimableBytes: number;
+      journalMode: string;
+      foreignKeys: boolean;
+      busyTimeoutMs: number;
+      lastModified: string | null;
+    }
+  | {
+      backend: 'postgres';
+      version: string;
+      database: string;
+      sizeBytes: number | null;
+    }
+);

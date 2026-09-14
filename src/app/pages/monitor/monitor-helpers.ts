@@ -1,11 +1,4 @@
-export interface UptimeData {
-  checked_at: string;
-  is_up: boolean;
-  response_code: number;
-  response_time_ms: number;
-  dns_lookup_time_ms: number;
-  ssl_handshake_time_ms: number;
-}
+export type { UptimeRow as UptimeData } from '~/types/common';
 
 export function getUptimeColor(percentage: number, prefix = 'text-'): string {
   if (isNaN(percentage)) return `${prefix}bluegray-400`;
@@ -26,7 +19,7 @@ export function getResponseCodeColor(code: number): string {
 }
 
 export function getPerformanceColor(
-  value: number,
+  value: number | null,
   type: 'ssl' | 'dns' | 'response',
   prefix = 'text-',
   postfix = '-400',

@@ -39,7 +39,7 @@ export default class EditDomainValuePage implements OnInit {
   // Fetch all domains, including those without value records
   private loadDomains() {
     this.loading = true;
-    this.databaseService.instance.listDomains().subscribe({
+    this.databaseService.domains$.subscribe({
       next: (domains) => {
         // Fetch domain costings and merge with domains
         this.databaseService.instance.valuationQueries.getDomainCostings().subscribe({

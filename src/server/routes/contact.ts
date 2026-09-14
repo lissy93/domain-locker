@@ -1,6 +1,23 @@
 import { defineEventHandler, readBody } from 'h3';
 import { verifyAuth } from '../utils/auth';
 
+const HTML_ENTITIES: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+};
+
+const escapeHtml = (value: unknown): string =>
+  String(value ?? '').replace(/[&<>"']/g, (char) => HTML_ENTITIES[char]);
+
+/** Strips CR/LF so a crafted name cannot inject extra email headers */
+const sanitiseHeader = (value: unknown): string =>
+  String(value ?? '')
+    .replace(/[\r\n]+/g, ' ')
+    .slice(0, 200);
+
 export default defineEventHandler(async (event) => {
   const authResult = await verifyAuth(event);
 
@@ -22,14 +39,14 @@ export default defineEventHandler(async (event) => {
       return { error: 'Missing required fields: name, email, queryType, body' };
     }
 
-    // Construct email content
+    // Construct email content, escaping every user-supplied value
     const emailContent = `
-      <p><strong>Name:</strong> ${name}</p>
-      <p><strong>Email:</strong> ${email}</p>
-      <p><strong>Query Type:</strong> ${queryType}</p>
+      <p><strong>Name:</strong> ${escapeHtml(name)}</p>
+      <p><strong>Email:</strong> ${escapeHtml(email)}</p>
+      <p><strong>Query Type:</strong> ${escapeHtml(queryType)}</p>
       <p><strong>Message:</strong></p>
-      <p>${body}</p>
-      ${meta ? `<p><strong>Additional Info:</strong> ${JSON.stringify(meta, null, 2)}</p>` : ''}
+      <p>${escapeHtml(body)}</p>
+      ${meta ? `<p><strong>Additional Info:</strong> ${escapeHtml(JSON.stringify(meta, null, 2))}</p>` : ''}
     `;
 
     // Send email via Resend API
@@ -43,7 +60,7 @@ export default defineEventHandler(async (event) => {
         from: 'noreply@domain-locker.com',
         to: ['support@as93.freshdesk.com'],
         reply_to: email,
-        subject: `Support Request: ${queryType} from ${name}`,
+        subject: `Support Request: ${sanitiseHeader(queryType)} from ${sanitiseHeader(name)}`,
         html: emailContent,
       }),
     });

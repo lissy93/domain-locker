@@ -11,14 +11,6 @@ import {
   getPerformanceColor,
 } from '~/app/pages/monitor/monitor-helpers';
 
-interface UptimeData {
-  checked_at: string;
-  is_up: boolean;
-  response_code: number;
-  response_time_ms: number;
-  dns_lookup_time_ms: number;
-  ssl_handshake_time_ms: number;
-}
 interface ResponseCode {
   code: number;
   count: number;
@@ -26,7 +18,7 @@ interface ResponseCode {
 }
 interface Series {
   x: string;
-  y: number;
+  y: number | null;
 }
 interface MinMax {
   min: number;
@@ -34,10 +26,11 @@ interface MinMax {
 }
 interface DateValue {
   date: string;
-  value: number;
+  value: number | null;
 }
 type ChartType = 'response' | 'ssl' | 'dns';
 type Timeframe = 'day' | 'week' | 'month' | 'year';
+import type { UptimeRow as UptimeData } from '~/types/common';
 
 @Component({
   selector: 'app-domain-sparklines',
@@ -95,25 +88,18 @@ export class DomainSparklineComponent implements OnInit {
   fetchUptimeData(): void {
     this.databaseService.instance
       .getDomainUptime(this.userId, this.domainId, this.timeframe)
-      .then((raw: unknown) => {
-        const data = raw as {
-          data?: UptimeData[];
-          length?: number;
-          error?: unknown;
-        } & UptimeData[];
-        if (!data.data && data.length) data.data = data; // Note to future me: I am sorry.
-        if (data.data) {
-          this.uptimeData = data.data;
-          this.processUptimeData();
-          this.processResponseCodes();
-        } else {
-          this.errorHandler.handleError({
-            error: data?.error,
-            message: 'Failed to load uptime data',
-            showToast: true,
-            location: 'Domain Uptime',
-          });
-        }
+      .then((data) => {
+        this.uptimeData = data;
+        this.processUptimeData();
+        this.processResponseCodes();
+      })
+      .catch((error) => {
+        this.errorHandler.handleError({
+          error,
+          message: 'Failed to load uptime data',
+          showToast: true,
+          location: 'Domain Uptime',
+        });
       });
   }
 
@@ -165,16 +151,16 @@ export class DomainSparklineComponent implements OnInit {
     }));
   }
 
-  calculateAverage(times: number[]): number {
-    const filteredTimes = times.filter((t) => t != null);
+  calculateAverage(times: (number | null)[]): number {
+    const filteredTimes = times.filter((time): time is number => time != null);
     return (
       filteredTimes.reduce((acc, time) => Number(acc) + Number(time), 0) /
       filteredTimes.length
     );
   }
 
-  calculateMinMax(times: number[]): MinMax {
-    const filteredTimes = times.filter((t) => t != null);
+  calculateMinMax(times: (number | null)[]): MinMax {
+    const filteredTimes = times.filter((time): time is number => time != null);
     return {
       min: Math.min(...filteredTimes),
       max: Math.max(...filteredTimes),

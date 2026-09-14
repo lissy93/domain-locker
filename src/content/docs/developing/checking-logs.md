@@ -95,9 +95,11 @@ Tip: Don’t let logs grow endlessly — pipe them into a logging tool like `log
 
 ---
 
-### Database Logs (Postgres)
+### Database Logs
 
-If you’re self-hosting Postgres, logs are stored by default in `/var/log/postgresql/`.
+The app logs which database it's using, and any migrations it applied, when it starts. SQLite has no log of its own, so that's all there is to check.
+
+If you’re self-hosting Postgres, its logs are stored by default in `/var/log/postgresql/`.
 You’ll see connection attempts, failed queries, permissions issues, and constraint violations.
 
 ```bash

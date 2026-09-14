@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { SupabaseService } from '~/app/services/supabase.service';
 import {
   DatabaseService,
+  UptimeRow,
   DbDomain,
   SaveDomainData,
   DomainExpiration,
@@ -39,11 +40,39 @@ import { SubdomainsQueries } from '~/app/services/db-query-services/sb/db-subdom
 
 import { createDbProxy } from '~/app/utils/db-proxy.factory';
 import { FeatureService } from '../features.service';
+import type { AssetType } from '~/types/common';
+
+/** Countable asset types mapped onto the tables Supabase holds them in */
+const ASSET_TABLES: Record<AssetType, string> = {
+  domains: 'domains',
+  registrars: 'registrars',
+  tags: 'tags',
+  hosts: 'hosts',
+  ip_addresses: 'ip_addresses',
+  ssl_certificates: 'ssl_certificates',
+  dns_records: 'dns_records',
+  links: 'domain_links',
+  subdomains: 'sub_domains',
+  domain_statuses: 'domain_statuses',
+};
 
 @Injectable({
   providedIn: 'root',
 })
 export default class MainDatabaseService extends DatabaseService {
+  // Narrowed from the shared union: this service only ever holds Supabase variants
+  declare tagQueries: TagQueries;
+  declare linkQueries: LinkQueries;
+  declare notificationQueries: NotificationQueries;
+  declare historyQueries: HistoryQueries;
+  declare valuationQueries: ValuationQueries;
+  declare registrarQueries: RegistrarQueries;
+  declare dnsQueries: DnsQueries;
+  declare hostsQueries: HostsQueries;
+  declare ipQueries: IpQueries;
+  declare sslQueries: SslQueries;
+  declare subdomainsQueries: SubdomainsQueries;
+
   private supabase = inject(SupabaseService);
   private errorHandler = inject(ErrorHandlerService);
   private globalMessagingService = inject(GlobalMessageService);
@@ -265,19 +294,7 @@ export default class MainDatabaseService extends DatabaseService {
       throw new Error('Write permissions disabled');
     }
 
-    const {
-      domain,
-      ipAddresses,
-      tags,
-      notifications,
-      dns,
-      ssl,
-      whois,
-      registrar,
-      host,
-      statuses,
-      subdomains,
-    } = data;
+    const { domain } = data;
 
     const dbDomain: Partial<DbDomain> = {
       domain_name: domain.domain_name,
@@ -297,20 +314,52 @@ export default class MainDatabaseService extends DatabaseService {
     if (domainError) throw domainError;
     if (!insertedDomain) throw new Error('Failed to insert domain');
 
-    await Promise.all([
-      this.ipQueries.saveIpAddresses(insertedDomain.id, ipAddresses),
-      this.tagQueries.saveTags(insertedDomain.id, tags),
-      this.notificationQueries.saveNotifications(insertedDomain.id, notifications),
-      this.dnsQueries.saveDnsRecords(insertedDomain.id, dns),
-      this.sslQueries.saveSslInfo(insertedDomain.id, ssl),
-      this.whoisQueries.saveWhoisInfo(insertedDomain.id, whois),
-      this.registrarQueries.saveRegistrar(insertedDomain.id, registrar),
-      this.hostsQueries.saveHost(insertedDomain.id, host),
-      this.statusQueries.saveStatuses(insertedDomain.id, statuses),
-      this.subdomainsQueries.saveSubdomains(insertedDomain.id, subdomains),
-    ]);
+    await this.saveDomainAssets(insertedDomain.id, data);
 
     return this.getDomainById(insertedDomain.id);
+  }
+
+  /**
+   * Saves everything hanging off a domain. The domain row is already in, so a
+   * failing asset is reported rather than thrown, which would lose the add
+   */
+  private async saveDomainAssets(domainId: string, data: SaveDomainData): Promise<void> {
+    const assets: [string, unknown][] = [
+      ['IP addresses', this.ipQueries.saveIpAddresses(domainId, data.ipAddresses)],
+      ['tags', this.tagQueries.saveTags(domainId, data.tags)],
+      [
+        'notifications',
+        this.notificationQueries.saveNotifications(domainId, data.notifications),
+      ],
+      ['DNS records', this.dnsQueries.saveDnsRecords(domainId, data.dns)],
+      ['SSL certificate', this.sslQueries.saveSslInfo(domainId, data.ssl)],
+      ['WHOIS details', this.whoisQueries.saveWhoisInfo(domainId, data.whois)],
+      ['registrar', this.registrarQueries.saveRegistrar(domainId, data.registrar)],
+      ['host', this.hostsQueries.saveHost(domainId, data.host)],
+      ['statuses', this.statusQueries.saveStatuses(domainId, data.statuses)],
+      ['subdomains', this.subdomainsQueries.saveSubdomains(domainId, data.subdomains)],
+    ];
+
+    const results = await Promise.allSettled(assets.map(([, task]) => task));
+    const failed: string[] = [];
+
+    results.forEach((result, index) => {
+      if (result.status !== 'rejected') return;
+      const label = assets[index][0];
+      failed.push(label);
+      this.errorHandler.handleError({
+        error: result.reason,
+        message: `Saved the domain, but not its ${label}`,
+        location: 'sb-database.saveDomainAssets',
+      });
+    });
+
+    if (failed.length) {
+      this.globalMessagingService.showWarn(
+        'Domain added, with some details missing',
+        `We couldn't save the ${failed.join(', ')}. You can add these by editing the domain.`,
+      );
+    }
   }
 
   async getDomainById(id: string): Promise<DbDomain> {
@@ -641,40 +690,8 @@ export default class MainDatabaseService extends DatabaseService {
     );
   }
 
-  getAssetCount(assetType: string): Observable<number> {
-    let table: string;
-    switch (assetType) {
-      case 'registrars':
-        table = 'registrars';
-        break;
-      case 'ip addresses':
-        table = 'ip_addresses';
-        break;
-      case 'ssl certificates':
-        table = 'ssl_certificates';
-        break;
-      case 'hosts':
-        table = 'hosts';
-        break;
-      case 'dns records':
-        table = 'dns_records';
-        break;
-      case 'tags':
-        table = 'tags';
-        break;
-      case 'links':
-        table = 'domain_links';
-        break;
-      case 'subdomains':
-        table = 'sub_domains';
-        break;
-      case 'domain statuses':
-        table = 'domain_statuses';
-        break;
-      default:
-        throw new Error(`Unknown asset type: ${assetType}`);
-    }
-
+  getAssetCount(assetType: AssetType): Observable<number> {
+    const table = ASSET_TABLES[assetType];
     return from(this.supabase.supabase.from(table).select('id', { count: 'exact' })).pipe(
       map((response) => response.count || 0),
     );
@@ -832,12 +849,21 @@ export default class MainDatabaseService extends DatabaseService {
    * @param domainId The ID of the domain
    * @param timeframe The timeframe to filter data (e.g., 'day', 'week', etc.)
    */
-  getDomainUptime(userId: string, domainId: string, timeframe: string) {
-    return this.supabase.supabase.rpc('get_domain_uptime', {
+  async getDomainUptime(
+    userId: string,
+    domainId: string,
+    timeframe: string,
+  ): Promise<UptimeRow[]> {
+    const { data, error } = await this.supabase.supabase.rpc('get_domain_uptime', {
       user_id: userId,
       domain_id: domainId,
       timeframe: timeframe,
     });
+    if (error) {
+      this.handleError(error);
+      throw error;
+    }
+    return data || [];
   }
 
   /* One averaged response time per day, for the uptime calendar heatmap */

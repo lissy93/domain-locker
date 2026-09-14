@@ -29,20 +29,17 @@ Or to build for a particular platform, use the `build:vercel`, `build:netlify` c
 While running in dev, you will be automatically connected to our public development Supabase instance,
 so there is no need to setup or configure a database. (Note that the dev database is frequently wiped).
 
-Alternatively, you can deploy your own database, either a (self-hosted or Pro) Supabase instance or a Postgres database.
+Alternatively, you can deploy your own database, either SQLite, Postgres, or a (self-hosted or Pro) Supabase instance.
 
-### Option 1) Postgres
+### Option 1) SQLite
 
-With Postgres, follow the setup instructions in [Postgres Setup](/about/developing/postgres-setup).
+There's nothing to set up. With no Postgres or Supabase env vars set, the app creates a SQLite database at `./data/domain-locker.db` on first use. See [SQLite Setup](/about/developing/sqlite-setup).
 
-If your database and user are already created, apply the schema directly:
-```bash
-psql -h $DL_PG_HOST -U $DL_PG_USER -d $DL_PG_NAME -f ./db/schema.sql
-```
+### Option 2) Postgres
 
-Or if creating from scratch, use `./db/setup-postgres.sh` (requires superuser access) to import the [`schema.sql`](https://github.com/Lissy93/domain-locker/blob/main/db/schema.sql).
+Create a database and user, following the setup instructions in [Postgres Setup](/about/developing/postgres-setup).
 
-You'll then just need to pass the following env vars to the app, so it can connect to your Postgres instance.
+You'll then just need to pass the following env vars to the app, so it can connect to your Postgres instance. The schema is applied automatically on first start.
 
 ```
 DL_PG_HOST='localhost'
@@ -52,7 +49,7 @@ DL_PG_PASSWORD='supersecret'
 DL_PG_NAME='domain_locker'
 ```
 
-### Option 2) Supabase
+### Option 3) Supabase
 
 Deploy a new Supabase instance, apply the config from [dl-sb-iac](https://github.com/Lissy93/dl-sb-iac) and set the following environmental variables:
 
@@ -90,10 +87,9 @@ If you run into issues, see our [Debugging Guide](/about/developing/debugging).
 
 ### Self-Hosted Version
 
-The self-hosted app is very simple, and consists of 3 containers:
-- The app itself (client, server and optional webhooks for notifications)
-- A Postgres database (to store your data)
-- A cron service (optional, to keep domains up-to-date and trigger notifications)
+The self-hosted app is very simple, and runs in a single container:
+- The app itself (client, server, scheduled jobs and optional webhooks for notifications)
+- Your data, in a SQLite file, or in Postgres if you'd rather run one
 
 ### Managed Version
 

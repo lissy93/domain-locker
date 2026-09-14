@@ -11,45 +11,69 @@ import { tryWhoisXml } from './providers/whoisxml';
 
 const log = new Logger('whois');
 
+type Provider = (domain: string) => Promise<WhoisResult | null>;
+
+/**
+ * RDAP first: it is structured, resolves its endpoint per TLD from the IANA
+ * bootstrap, and is far less prone to the rate limiting and parse failures
+ * that port-43 WHOIS suffers from. The rest are fallbacks, in order.
+ */
+const PROVIDERS: Record<string, Provider> = {
+  rdap: tryRdapLookup,
+  'whois-json': tryWhoisJson,
+  'who-dat': tryWhoDat,
+  native: tryNativeWhois,
+  whoisxml: tryWhoisXml,
+};
+
+const DEFAULT_ORDER = ['rdap', 'whois-json', 'who-dat', 'native', 'whoisxml'];
+
+/** Order is overridable, so an instance can prefer its own source */
+function providerOrder(): string[] {
+  const configured = (process.env['DL_WHOIS_PROVIDERS'] || '')
+    .split(',')
+    .map((name) => name.trim())
+    .filter((name) => name in PROVIDERS);
+  return configured.length ? configured : DEFAULT_ORDER;
+}
+
 export const getWhoisInfo = async (domain: string): Promise<WhoisResult | null> => {
   const trimmed = domain
     .replace(/^(?:https?:\/\/)?(?:www\.)?/i, '')
     .trim()
     .toLowerCase();
 
-  // Each fallback source returns useful data or null, tried in order until one sticks
-  const fallback = async (): Promise<WhoisResult | null> => {
-    for (const provider of [tryWhoDat, tryNativeWhois, tryRdapLookup, tryWhoisXml]) {
-      const result = await provider(trimmed);
-      if (hasUsefulWhoisData(result)) return result;
-    }
-    return null;
-  };
-
-  try {
-    const raw = await Promise.race([
-      whois(trimmed) as Promise<RawWhois>,
-      new Promise<RawWhois>((_, reject) =>
-        setTimeout(
-          () =>
-            reject(new Error(`WHOIS timeout after ${FETCH_TIMEOUT_MS}ms for ${domain}`)),
-          FETCH_TIMEOUT_MS,
-        ),
-      ),
-    ]);
-    if (raw && typeof raw === 'object' && Object.keys(raw).length > 0 && !raw.error) {
-      const normalized = normalizeWhoisJson(raw);
-      if (hasUsefulWhoisData(normalized)) {
-        log.success(`Got WHOIS data via whois-json for ${domain}`);
-        return normalized;
+  for (const name of providerOrder()) {
+    try {
+      const result = await PROVIDERS[name](trimmed);
+      if (hasUsefulWhoisData(result)) {
+        log.success(`Got WHOIS data via ${name} for ${trimmed}`);
+        return result;
       }
-      log.warn(`whois-json returned incomplete data for ${domain}, falling back`);
-      return await fallback();
+      log.debug(`${name} returned no useful data for ${trimmed}`);
+    } catch (err) {
+      log.warn(`${name} failed for ${trimmed}: ${(err as Error).message}`);
     }
-    log.warn(`whois-json returned empty or error for ${domain}, falling back`);
-    return await fallback();
-  } catch (err) {
-    log.error(`whois-json failed for ${domain}: ${(err as Error).message}`);
-    return await fallback();
   }
+
+  log.warn(`No WHOIS provider returned data for ${trimmed}`);
+  return null;
 };
+
+/** Port-43 WHOIS, wrapped with a timeout because the library has none */
+async function tryWhoisJson(domain: string): Promise<WhoisResult | null> {
+  const raw = await Promise.race([
+    whois(domain) as Promise<RawWhois>,
+    new Promise<RawWhois>((_, reject) =>
+      setTimeout(
+        () => reject(new Error(`WHOIS timeout after ${FETCH_TIMEOUT_MS}ms`)),
+        FETCH_TIMEOUT_MS,
+      ),
+    ),
+  ]);
+
+  if (!raw || typeof raw !== 'object' || !Object.keys(raw).length || raw.error) {
+    return null;
+  }
+  return normalizeWhoisJson(raw);
+}

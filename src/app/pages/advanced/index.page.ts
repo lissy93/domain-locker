@@ -114,7 +114,7 @@ export default class AdvancedIndexPage {
         {
           title: 'Data Deep Search',
           icon: 'pi pi-search',
-          link: '/search',
+          link: '/domains/search',
         },
         {
           title: 'Bulk Import',

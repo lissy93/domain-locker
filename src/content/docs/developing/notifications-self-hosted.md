@@ -11,28 +11,7 @@ These can alert you about upcoming expirations or important changes to your doma
 
 It's not (yet) possible to use all notification channels (email, WhatsApp, Signal, etc) like in the managed version, because these rely upon non-free 3rd party services (which cannot be self-hosted). But as a workaround, ntfy does allow you to hook into their API and call whichever third-parties you like.
 
-## Enabling update crons
-Before you can get notified, you need to setup some cron jobs to periodically check for updates and expirations.
-
-In your Docker Compose, add a section for calling these endpoints as a cron. For example:
-
-```yml
-  updater:
-    image: alpine:3.20
-    container_name: domain-locker-updater
-    restart: unless-stopped
-    depends_on:
-      - app
-    networks:
-      - domain_locker_network
-    command: >
-      /bin/sh -c "
-        apk add --no-cache curl &&
-        echo '0 3 * * * /usr/bin/curl -s -X POST http://app:3000/api/domain-updater' > /etc/crontabs/root &&
-        echo '0 4 * * * /usr/bin/curl -s -X POST http://app:3000/api/expiration-reminders' >> /etc/crontabs/root &&
-        crond -f -L /dev/stdout
-      "
-```
+The checks which trigger these run automatically, on a timer inside the app, so there's no cron to set up.
 
 ---
 

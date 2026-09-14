@@ -14,6 +14,7 @@
         <input
           id="global-search"
           pInputText
+          [value]="initialSearch"
           (input)="onSearch($event)"
           type="text"
           placeholder="Search"

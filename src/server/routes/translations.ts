@@ -17,7 +17,7 @@ export default defineEventHandler((event) => {
   const lang = /^[a-zA-Z0-9.-]+$/.test(requestedLang as string) ? requestedLang : 'en';
 
   // Paths can vary depending on environment
-  const productionPath = join(process.cwd(), `dist/i18n/${lang}.json`);
+  const productionPath = join(process.cwd(), `dist/analog/public/i18n/${lang}.json`);
   const devPath = join(process.cwd(), `src/assets/i18n/${lang}.json`);
   const filePath = existsSync(productionPath) ? productionPath : devPath;
 
