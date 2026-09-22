@@ -42,6 +42,7 @@ export class DomainCollectionComponent implements OnInit, OnChanges {
   @Input() showFooter = true;
   @Input() preFilteredText: string | undefined;
   @Input() loading = false;
+  @Input() initialSearch = '';
 
   @Input() triggerReload: () => void = () => {
     /* no-op */
@@ -109,6 +110,7 @@ export class DomainCollectionComponent implements OnInit, OnChanges {
     this.sortDomains();
     this.initializeFuse();
     this.updateVisibleColumns();
+    if (this.initialSearch) this.onSearchChange(this.initialSearch);
   }
 
   ngOnChanges(changes: SimpleChanges) {
@@ -117,6 +119,7 @@ export class DomainCollectionComponent implements OnInit, OnChanges {
       this.filteredDomains = this.domains;
       this.initializeFuse();
       this.sortDomains();
+      if (this.searchTerm) this.filterDomains();
       this.cdr.markForCheck();
     }
   }

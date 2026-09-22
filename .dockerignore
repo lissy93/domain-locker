@@ -1,5 +1,10 @@
+.git
 .github
 node_modules
 .nitro
 .output
+.cache
+dist
+.vercel
+out-tsc
 .env

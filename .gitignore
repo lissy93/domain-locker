@@ -148,3 +148,6 @@ dist
 .yarn/install-state.gz
 .pnp.*
 .claude/settings.local.json
+
+# SQLite database, where DL_SQLITE_PATH defaults to
+/data

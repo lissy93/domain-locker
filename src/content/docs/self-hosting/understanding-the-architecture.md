@@ -7,7 +7,7 @@ index: 8
 coverImage:
 ---
 
-Self-hosted architecture is pretty simple; you have the pre-built app, served with Deno in one container, which then connects to Postgres in another container. The app includes some API endpoints which can be called to keep data updated, monitor domains and trigger notifications (via webhooks), so you might want a third container to manage crons to call these endpoints periodically.
+Self-hosted architecture is pretty simple; you have the pre-built app in a single container, which stores your data in a SQLite file (or in Postgres, in another container, if you'd prefer). The app runs its own scheduled jobs to keep data updated, monitor domains and trigger notifications (via webhooks), so there's no need for a separate cron container.
 
 <details>
 <summary>How this differs from the managed instance?</summary>

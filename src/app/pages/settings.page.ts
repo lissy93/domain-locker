@@ -1,6 +1,5 @@
 import {
   Component,
-  OnInit,
   ViewChild,
   ElementRef,
   PLATFORM_ID,
@@ -11,13 +10,11 @@ import {
 import { Router, RouterOutlet } from '@angular/router';
 import { PrimeNgModule } from '~/app/prime-ng.module';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { MenuItem } from 'primeng/api';
 import { settingsLinks } from '~/app/constants/navigation-links';
-import { SupabaseService } from '~/app/services/supabase.service';
+import { AuthService } from '~/app/services/auth.service';
 import { ProfilePictureComponent } from '~/app/components/misc/profile-picture.component';
 import { FeatureService } from '../services/features.service';
 import { FeatureNotEnabledComponent } from '~/app/components/misc/feature-not-enabled.component';
-import DatabaseService from '~/app/services/database.service';
 
 @Component({
   standalone: true,
@@ -31,32 +28,25 @@ import DatabaseService from '~/app/services/database.service';
   ],
   templateUrl: './settings/index.page.html',
 })
-export default class SettingsIndexPage implements OnInit, AfterViewInit, OnDestroy {
+export default class SettingsIndexPage implements AfterViewInit, OnDestroy {
   private router = inject(Router);
   private featureService = inject(FeatureService);
-  supabaseService = inject(SupabaseService);
-  databaseService = inject(DatabaseService);
+  private authService = inject(AuthService);
   private platformId = inject<object>(PLATFORM_ID);
 
-  items: MenuItem[] | undefined;
+  items$ = this.featureService.visibleLinks(settingsLinks);
   hideSideBar = false;
   @ViewChild('sidebarNav', { static: false }) sidebarNav!: ElementRef;
   hideTextLabels = false;
 
-  databaseServiceType = '';
   settingsEnabled$ = this.featureService.isFeatureEnabled('accountSettings');
-
-  ngOnInit() {
-    this.items = settingsLinks;
-    this.databaseServiceType = this.databaseService.serviceType;
-  }
 
   isActive(link: string): boolean {
     return this.router.url === link;
   }
 
   async logout() {
-    await this.supabaseService.signOut();
+    await this.authService.signOut();
     window.location.href = '/login';
   }
 

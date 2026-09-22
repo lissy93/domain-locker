@@ -1,7 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 
 import { PrimeNgModule } from '~/app/prime-ng.module';
 import { DomainFaviconComponent } from '~/app/components/misc/favicon.component';
+import { EnvService } from '~/app/services/environment.service';
 
 import {
   selfHostedLinks,
@@ -18,6 +19,9 @@ import {
   templateUrl: './admin-links.page.html',
 })
 export default class AdminLinksPage {
+  private envService = inject(EnvService);
+  private isSelfHosted = this.envService.getEnvironmentType() === 'selfHosted';
+
   public sections: {
     title: string;
     id: string;
@@ -54,7 +58,7 @@ export default class AdminLinksPage {
         "There's no requirement for any third-party services.",
       links: selfHostedLinks,
     },
-  ];
+  ].filter((section) => !this.isSelfHosted || section.id !== 'third-party');
 
   public details = [
     'ℹ️ These are links to the admin panels of external and third-party services used by Domain Locker.',

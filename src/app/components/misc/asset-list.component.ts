@@ -5,9 +5,11 @@ import { DlIconComponent } from '~/app/components/misc/svg-icon.component';
 import DatabaseService from '~/app/services/database.service';
 import { ErrorHandlerService } from '~/app/services/error-handler.service';
 import { TranslateService, TranslateModule } from '@ngx-translate/core';
+import type { AssetType } from '~/types/common';
 
 interface Asset {
   title: string;
+  assetType: AssetType;
   link: string;
   icon: string;
   viewBox?: string;
@@ -84,6 +86,7 @@ export default class AssetListComponent implements OnInit {
   assets: Asset[] = [
     {
       title: 'Registrars',
+      assetType: 'registrars',
       link: '/assets/registrars',
       icon: 'registrar',
       viewBox: '0 0 620 512',
@@ -91,24 +94,28 @@ export default class AssetListComponent implements OnInit {
     },
     {
       title: 'IP Addresses',
+      assetType: 'ip_addresses',
       link: '/assets/ips',
       icon: 'ips',
       titleKey: 'ASSETS.CARDS.IP_ADDRESSES.PLURAL',
     },
     {
       title: 'SSL Certificates',
+      assetType: 'ssl_certificates',
       link: '/assets/certs',
       icon: 'ssl',
       titleKey: 'ASSETS.CARDS.SSL_CERTIFICATES.PLURAL',
     },
     {
       title: 'Hosts',
+      assetType: 'hosts',
       link: '/assets/hosts',
       icon: 'host',
       titleKey: 'ASSETS.CARDS.HOSTS.PLURAL',
     },
     {
       title: 'DNS Records',
+      assetType: 'dns_records',
       link: '/assets/dns',
       icon: 'dns',
       viewBox: '0 0 620 512',
@@ -116,24 +123,28 @@ export default class AssetListComponent implements OnInit {
     },
     {
       title: 'Subdomains',
+      assetType: 'subdomains',
       link: '/assets/subdomains',
       icon: 'subdomains',
       titleKey: 'ASSETS.CARDS.SUBDOMAINS.PLURAL',
     },
     {
       title: 'Links',
+      assetType: 'links',
       link: '/assets/links',
       icon: 'links',
       titleKey: 'ASSETS.CARDS.LINKS.PLURAL',
     },
     {
       title: 'Tags',
+      assetType: 'tags',
       link: '/assets/tags',
       icon: 'tags',
       titleKey: 'ASSETS.CARDS.TAGS.PLURAL',
     },
     {
       title: 'Domain Statuses',
+      assetType: 'domain_statuses',
       link: '/assets/statuses',
       icon: 'status',
       titleKey: 'ASSETS.CARDS.STATUSES.PLURAL',
@@ -149,7 +160,7 @@ export default class AssetListComponent implements OnInit {
 
   private fetchAssetCounts() {
     this.assets.forEach((asset) => {
-      this.databaseService.instance.getAssetCount(asset.title.toLowerCase()).subscribe({
+      this.databaseService.instance.getAssetCount(asset.assetType).subscribe({
         next: (count) => {
           this.ngZone.run(() => {
             asset.count = count;

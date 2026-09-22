@@ -1,5 +1,14 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { catchError, from, map, Observable, of, switchMap, throwError } from 'rxjs';
+import {
+  catchError,
+  firstValueFrom,
+  from,
+  map,
+  Observable,
+  of,
+  switchMap,
+  throwError,
+} from 'rxjs';
 import { GlobalMessageService } from '../../messaging.service';
 
 interface SubdomainRow {
@@ -54,19 +63,13 @@ export class SubdomainsQueries {
     );
   }
 
+  /** Having no subdomains to save is normal, and must not fail the caller */
   async saveSubdomains(
     domainId: string,
     subdomains: { name: string; sd_info?: string }[],
   ): Promise<void> {
-    if (!subdomains || subdomains.length === 0) {
-      throw new Error('Skipping subdomains, none found');
-    }
-
-    // Filter out invalid subdomains
-    const validSubdomains = subdomains.filter((sd) => sd.name?.trim());
-    if (validSubdomains.length === 0) {
-      throw new Error('Skipping subdomains, no valid subdomains listed');
-    }
+    const validSubdomains = (subdomains || []).filter((sd) => sd.name?.trim());
+    if (validSubdomains.length === 0) return;
 
     try {
       const { data, error } = await this.supabase
@@ -81,9 +84,7 @@ export class SubdomainsQueries {
         (sd) => !existingNames.includes(sd.name),
       );
 
-      if (subdomainsToInsert.length === 0) {
-        throw new Error('Skipping subdomains, all already exist');
-      }
+      if (subdomainsToInsert.length === 0) return;
 
       const formattedSubdomains = subdomainsToInsert.map((sd) => ({
         domain_id: domainId,
@@ -124,7 +125,7 @@ export class SubdomainsQueries {
 
   async deleteSubdomainsByDomain(domain: string): Promise<void> {
     try {
-      const domainId = await this.fetchDomainId(domain);
+      const domainId = await firstValueFrom(this.fetchDomainId(domain));
 
       const { error: deleteError } = await this.supabase
         .from('sub_domains')

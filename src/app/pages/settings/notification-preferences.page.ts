@@ -1,4 +1,5 @@
-import { Component, OnInit, inject, AfterViewInit } from '@angular/core';
+import { DestroyRef, Component, OnInit, inject, AfterViewInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { PrimeNgModule } from '../../prime-ng.module';
@@ -49,6 +50,7 @@ interface NotificationChannel {
   styles: ['::ng-deep .p-card-content { padding: 0; } '],
 })
 export default class NotificationPreferencesPage implements OnInit, AfterViewInit {
+  private destroyRef = inject(DestroyRef);
   private fb = inject(FormBuilder);
   private globalMessageService = inject(GlobalMessageService);
   private databaseService = inject(DatabaseService);
@@ -237,7 +239,8 @@ export default class NotificationPreferencesPage implements OnInit, AfterViewIni
     this.notificationForm
       .get('webHook')
       ?.get('provider')
-      ?.valueChanges.subscribe(() => {
+      ?.valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
         this.setDefaultWebhookNotificationUrls();
       });
   }

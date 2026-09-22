@@ -19,25 +19,11 @@
               <p class="m-0 font-semibold">No monitoring data available yet</p>
               @if (isSelfHosted) {
                 <p class="m-0">
-                  Domain monitoring is now enabled for your self-hosted instance, but no
-                  data has been collected yet. The monitoring cron job runs every 15
-                  minutes to check your domains' uptime and performance.
+                  Your instance checks each domain's uptime and performance every 15
+                  minutes, so the first results should appear shortly after startup.
                 </p>
-              }
-              @if (isSelfHosted) {
+              } @else {
                 <p class="m-0">
-                  If you recently updated your deployment, please ensure the
-                  <code>domain-locker-updater</code> container is running. You can also
-                  manually trigger monitoring by running:
-                </p>
-              }
-              @if (isSelfHosted) {
-                <code class="bg-surface-100 dark:bg-surface-800 p-2 rounded">
-                  curl -X POST http://localhost:3000/api/domain-monitor
-                </code>
-              }
-              @if (!isSelfHosted) {
-                <p class="m-0 mt-2">
                   Monitoring data will appear here once your domains have been checked.
                   This typically happens within a few minutes.
                 </p>

@@ -23,6 +23,21 @@ This is made possible with Nitro, and you can view the [relevant docs](https://n
 
 ---
 
+### Data Endpoints
+
+The self-hosted data API lives in [src/server/routes/v1](https://github.com/Lissy93/domain-locker/tree/main/src/server/routes/v1). These routes are defined with `defineApiRoute` instead, which applies the origin check, auth, request validation and error envelope that every data endpoint needs.
+
+```typescript
+import { defineApiRoute } from '../../../lib/handler';
+import { tagSchema } from '../../../lib/schemas';
+
+export default defineApiRoute({ write: true, body: tagSchema }, ({ db, body }) =>
+  db.tags.create(body),
+);
+```
+
+---
+
 ### Authorization for API Endpoints
 
 For the endpoints within `./src/server/routes/*` we can easily prevent access to users
@@ -47,7 +62,7 @@ export default defineEventHandler(async (event) => {
 });
 ```
 
-Note that this is currently only setup to support auth from Supabase instances.
+Note that `verifyAuth` only supports auth from Supabase instances. Self-hosted requests are authorized by `defineApiRoute`, using the optional password session or `DL_API_KEY`.
 
 ---
 

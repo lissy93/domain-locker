@@ -131,18 +131,23 @@ if [ ! -f /.dockerenv ]; then
   echo "${WARN} This doesn't appear to be a Docker container${RESET}"
 fi
 
-# Check required environment variables
-REQUIRED_VARS="DL_PG_HOST DL_PG_PORT DL_PG_USER DL_PG_NAME DL_PG_PASSWORD"
-for VAR in $REQUIRED_VARS; do
-  if [ -z "$(eval echo \$$VAR)" ]; then
-    echo "${WARN} Environment variable $VAR is not set${RESET}"
-    WARNINGS_FOUND=1
-  fi
-done
+# Postgres is optional: without it the app uses SQLite and manages itself
+USE_POSTGRES=0
+if [ -n "$DL_PG_HOST" ] || [ -n "$DL_PG_NAME" ] || [ -n "$DL_PG_USER" ]; then
+  USE_POSTGRES=1
+  REQUIRED_VARS="DL_PG_HOST DL_PG_PORT DL_PG_USER DL_PG_NAME DL_PG_PASSWORD"
+  for VAR in $REQUIRED_VARS; do
+    if [ -z "$(eval echo \$$VAR)" ]; then
+      echo "${WARN} Postgres is partly configured, but $VAR is not set${RESET}"
+      WARNINGS_FOUND=1
+    fi
+  done
 
-# Warn if using default insecure password
-if [ "$DL_PG_PASSWORD" = "changeme2420" ]; then
-  echo "${WARN} Using default password! Set DL_PG_PASSWORD in .env for production${RESET}"
+  if [ "$DL_PG_PASSWORD" = "changeme2420" ]; then
+    echo "${WARN} Using default password! Set DL_PG_PASSWORD in .env for production${RESET}"
+  fi
+else
+  echo "${INFO} No Postgres configured, using SQLite at ${DL_SQLITE_PATH:-/data/domain-locker.db}${RESET}"
 fi
 
 # Success message if everything looks good
@@ -161,42 +166,44 @@ fi
 # Postgres initialisation, schema application, and connection test
 #==============================================================================#
 
-# Wait for Postgres to be ready
-echo "${INFO} Waiting for Postgres at ${DL_PG_HOST}:${DL_PG_PORT}...${RESET}"
-elapsed=0
-while ! pg_isready -h "$DL_PG_HOST" -p "$DL_PG_PORT" -U "$DL_PG_USER" > /dev/null 2>&1; do
-  sleep 1
-  elapsed=$((elapsed + 1))
-  if [ $((elapsed % 30)) -eq 0 ]; then
-    echo "${WARN} Postgres doesn't appear to be ready yet, after ${elapsed}s." \
-      "Still waiting...${RESET}"
-  fi
-  if [ "$elapsed" -ge "$MAX_WAIT" ]; then
-    echo "${ERR} Postgres not ready after ${MAX_WAIT}s. Exiting.${RESET}"
-    exit 1
-  fi
-done
-echo "${SUCCESS} Postgres is ready (took ${elapsed}s)${RESET}"
+if [ "$USE_POSTGRES" -eq 1 ]; then
+  # Wait for Postgres to be ready
+  echo "${INFO} Waiting for Postgres at ${DL_PG_HOST}:${DL_PG_PORT}...${RESET}"
+  elapsed=0
+  while ! pg_isready -h "$DL_PG_HOST" -p "$DL_PG_PORT" -U "$DL_PG_USER" > /dev/null 2>&1; do
+    sleep 1
+    elapsed=$((elapsed + 1))
+    if [ $((elapsed % 30)) -eq 0 ]; then
+      echo "${WARN} Postgres doesn't appear to be ready yet, after ${elapsed}s." \
+        "Still waiting...${RESET}"
+    fi
+    if [ "$elapsed" -ge "$MAX_WAIT" ]; then
+      echo "${ERR} Postgres not ready after ${MAX_WAIT}s. Exiting.${RESET}"
+      exit 1
+    fi
+  done
+  echo "${SUCCESS} Postgres is ready (took ${elapsed}s)${RESET}"
 
-# Check if schema is applied / and apply it
-SCHEMA_FILE=./schema.sql
-[ -f "$SCHEMA_FILE" ] || SCHEMA_FILE=./db/schema.sql
-echo "${INFO} Applying schema from ${SCHEMA_FILE}...${RESET}"
-PGPASSWORD="$DL_PG_PASSWORD" \
-  psql -h "$DL_PG_HOST" -p "$DL_PG_PORT" -U "$DL_PG_USER" \
-  -d "$DL_PG_NAME" -f "$SCHEMA_FILE" || {
-    echo "${ERR} Failed to apply schema. See error above.${RESET}"
-  } \
-  && echo "${SUCCESS} Schema applied successfully${RESET}" \
-  || echo "${ERR} Failed to apply schema${RESET}"
+  # Check if schema is applied / and apply it
+  SCHEMA_FILE=./schema.sql
+  [ -f "$SCHEMA_FILE" ] || SCHEMA_FILE=./db/schema.sql
+  echo "${INFO} Applying schema from ${SCHEMA_FILE}...${RESET}"
+  PGPASSWORD="$DL_PG_PASSWORD" \
+    psql -h "$DL_PG_HOST" -p "$DL_PG_PORT" -U "$DL_PG_USER" \
+    -d "$DL_PG_NAME" -f "$SCHEMA_FILE" || {
+      echo "${ERR} Failed to apply schema. See error above.${RESET}"
+    } \
+    && echo "${SUCCESS} Schema applied successfully${RESET}" \
+    || echo "${ERR} Failed to apply schema${RESET}"
 
-# Testing the database connection
-echo "${INFO} Testing database connection...${RESET}"
-PGPASSWORD="$DL_PG_PASSWORD" \
-  psql -h "$DL_PG_HOST" -p "$DL_PG_PORT" -U "$DL_PG_USER" \
-  -d "$DL_PG_NAME" -c "SELECT 1;" > /dev/null 2>&1 \
-  && echo "${SUCCESS} Database connection test succeeded${RESET}" \
-  || echo "${ERR} Database connection test failed${RESET}"
+  # Testing the database connection
+  echo "${INFO} Testing database connection...${RESET}"
+  PGPASSWORD="$DL_PG_PASSWORD" \
+    psql -h "$DL_PG_HOST" -p "$DL_PG_PORT" -U "$DL_PG_USER" \
+    -d "$DL_PG_NAME" -c "SELECT 1;" > /dev/null 2>&1 \
+    && echo "${SUCCESS} Database connection test succeeded${RESET}" \
+    || echo "${ERR} Database connection test failed${RESET}"
+fi
 
 #==============================================================================#
 # All done, start the app!

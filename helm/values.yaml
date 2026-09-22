@@ -53,5 +53,11 @@ postgres:
     enabled: true
     size: 1Gi
 
+# Deprecated. The app schedules these jobs internally, so this is off by
+# default. Enable it only to drive the jobs from outside the cluster.
 updater:
-  enabled: true
+  enabled: false
+  schedule: "0 3 * * *"
+  image: alpine:3.20
+  # Needed only when DL_API_KEY is set on the app
+  apiKey: ""

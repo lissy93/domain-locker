@@ -10,6 +10,7 @@ import DatabaseService from '~/app/services/database.service';
 import { Observable, from } from 'rxjs';
 import { User } from '@supabase/supabase-js';
 import { settingsLinks } from '~/app/constants/navigation-links';
+import { FeatureService } from '~/app/services/features.service';
 
 @Component({
   selector: 'app-settings-page',
@@ -19,6 +20,7 @@ import { settingsLinks } from '~/app/constants/navigation-links';
 })
 export default class SettingsPage {
   private billingService = inject(BillingService);
+  private featureService = inject(FeatureService);
   private themeService = inject(ThemeService);
   private supabaseService = inject(SupabaseService);
   private translationService = inject(TranslationService);
@@ -46,7 +48,9 @@ export default class SettingsPage {
 
   showAccountInfo = false;
   isAccountInfoLoading = false;
-  settingsLinks = settingsLinks;
+  settingsLinks$ = this.featureService.visibleLinks(settingsLinks);
+  userAccounts$ = this.featureService.isFeatureEnabled('userAccounts');
+  billingEnabled$ = this.featureService.isFeatureEnabled('enableBilling');
 
   public toggleAccountInfo(): void {
     this.showAccountInfo = !this.showAccountInfo;
@@ -57,15 +61,17 @@ export default class SettingsPage {
     }
   }
 
-  private loadAccountInfo(): void {
+  private async loadAccountInfo(): Promise<void> {
     this.isAccountInfoLoading = true;
 
-    // For Observables:
-    // 1) Make sure we call the services
-    this.billingService.fetchUserPlan(); // triggers plan retrieval
-    this.currentPlan$ = this.billingService.getUserPlan();
-
-    this.user$ = from(this.supabaseService.getCurrentUser());
+    // Plan and profile only exist where there's a billing or auth provider
+    if (await this.featureService.isFeatureEnabledPromise('enableBilling')) {
+      this.billingService.fetchUserPlan();
+      this.currentPlan$ = this.billingService.getUserPlan();
+    }
+    if (await this.featureService.isFeatureEnabledPromise('userAccounts')) {
+      this.user$ = from(this.supabaseService.getCurrentUser());
+    }
 
     // Synchronous calls
     this.displayOptions = this.themeService.getUserPreferences();

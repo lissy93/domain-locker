@@ -6,6 +6,7 @@ import {
   lastValueFrom,
   map,
   Observable,
+  of,
   throwError,
 } from 'rxjs';
 import { SupabaseService } from '~/app/services/supabase.service';
@@ -104,6 +105,7 @@ export class BillingService {
 
   /** Returns an Observable that emits the user's billing row or throws an error. */
   getBillingData(): Observable<Record<string, unknown> | null> {
+    if (!this.envService.isSupabaseEnabled()) return of(null);
     return from(this.supabaseService.supabase.from('billing').select('*').single()).pipe(
       map(({ data, error }) => {
         if (error) {
