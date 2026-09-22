@@ -7,6 +7,8 @@ import { catchError, map } from 'rxjs/operators';
 
 import { ErrorHandlerService } from '~/app/services/error-handler.service';
 import { DomainFaviconComponent } from '~/app/components/misc/favicon.component';
+import { FeatureNotEnabledComponent } from '~/app/components/misc/feature-not-enabled.component';
+import { FeatureService } from '~/app/services/features.service';
 import { serviceLinks, type LinkItem } from '~/app/constants/admin-links';
 
 export interface StatusSummary {
@@ -97,7 +99,12 @@ interface StatusMetrics {
 @Component({
   standalone: true,
   selector: 'app-advanced-status-page',
-  imports: [CommonModule, PrimeNgModule, DomainFaviconComponent],
+  imports: [
+    CommonModule,
+    PrimeNgModule,
+    DomainFaviconComponent,
+    FeatureNotEnabledComponent,
+  ],
   templateUrl: './status.page.html',
   styles: [
     `
@@ -112,6 +119,9 @@ interface StatusMetrics {
 export default class StatusPage {
   private http = inject(HttpClient);
   private errorHandler = inject(ErrorHandlerService);
+  private featureService = inject(FeatureService);
+
+  readonly statusEnabled$ = this.featureService.isFeatureEnabled('enableServiceStatus');
 
   readonly statusInfo$: Observable<StatusData> = this.fetchStatusData();
   readonly internalStatusInfo$: Observable<InternalStatus> =
@@ -564,6 +574,11 @@ export default class StatusPage {
     });
 
     this.currentStatuses = statusData;
+
+    if (!datasets.some((dataset) => dataset.data.length)) {
+      this.uptimeChartUrl = '';
+      return;
+    }
 
     // Just using the first dataset's timestamps to generate HH:mm labels
     const firstDataset = datasets[0]?.data || [];

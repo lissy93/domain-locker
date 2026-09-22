@@ -14,7 +14,8 @@ meta:
 </blockquote>
 
 <blockquote class="error">
-‼️ Domain Locker is not intended to be publicly exposed to the internet. It does not come with authentication, and may be susceptible unrestricted or arbitrary SQL execution unless properly secured behind a firewall, with correct access controls implemented.
+‼️ Domain Locker is not intended to be publicly exposed to the internet.
+It is up to you to secure your own instance and implement proper access controls.
 </blockquote>
 
 ---
@@ -38,11 +39,13 @@ Domain Locker is intended to be run with Docker, so you will need to have Docker
 - ![🐙](https://pixelflare.cc/alicia/icons/github/w128) [From Source](/about/self-hosting/deploying-from-source)
 - ![🗃️](https://pixelflare.cc/alicia/icons/supabase/w128) [With Supabase](/about/self-hosting/self-hosting-supabase)
 
-#### One-Liner
+#### From Source
 
-```
-curl -fsSL https://install.domain-locker.com | bash
-```
+Alternatively you can build and run Domain Locker from source. Following the [this guide](/about/self-hosting/deploying-from-source), along with a database:
+
+- ![🪶](https://pixelflare.cc/alicia/icons/sqlite.png/w128) [SQLite setup instructions](/about/developing/sqlite-setup)
+- ![🐘](https://pixelflare.cc/alicia/icons/postgres.png/w128) [Postgres setup instructions](/about/developing/postgres-setup)
+- ![🗃️](https://pixelflare.cc/alicia/icons/supabase/w128) [Supabase setup instructions](/about/developing/supabase-setup)
 
 ---
 

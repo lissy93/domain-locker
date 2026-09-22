@@ -81,6 +81,20 @@ jobs:
       - name: 🛎️ Checkout
         uses: actions/checkout@v6
 
+      - name: 🏷️ Resolve image metadata
+        id: labels
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_EVENT_NAME" = 'push' ]; then
+            version="${GITHUB_REF_NAME#v}"
+          else
+            version="$(jq -r .version package.json)"
+          fi
+          {
+            echo "version=$version"
+            echo "created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          } >> "$GITHUB_OUTPUT"
+
       - name: 🔌 Set up Buildx
         uses: docker/setup-buildx-action@v4
 
@@ -102,6 +116,10 @@ jobs:
           load: true
           tags: dl-scan:${{ matrix.arch }}
           provenance: false
+          build-args: |
+            VERSION=${{ steps.labels.outputs.version }}
+            REVISION=${{ github.sha }}
+            CREATED=${{ steps.labels.outputs.created }}
 
       - name: 🛡️ Trivy vulnerability scan
         uses: aquasecurity/trivy-action@v0.36.0
@@ -110,6 +128,7 @@ jobs:
           TRIVY_JAVA_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-java-db:1
         with:
           image-ref: dl-scan:${{ matrix.arch }}
+          cache-dir: ${{ runner.temp }}/trivy
           severity: CRITICAL
           ignore-unfixed: true
           exit-code: ${{ github.event_name == 'schedule' && '1' || '0' }}
@@ -127,6 +146,10 @@ jobs:
           cache-from: type=gha,scope=build-${{ matrix.arch }}
           outputs: type=image,name=${{ env.GHCR_IMAGE }},push-by-digest=true,name-canonical=true,push=true
           provenance: false
+          build-args: |
+            VERSION=${{ steps.labels.outputs.version }}
+            REVISION=${{ github.sha }}
+            CREATED=${{ steps.labels.outputs.created }}
 
       - name: 🧬 Export build metadata
         if: env.PUSH == 'true'
@@ -199,9 +222,6 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
           flavor: |
             latest=${{ env.IS_PREVIEW == 'true' && 'false' || 'auto' }}
-          labels: |
-            org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.revision=${{ github.sha }}
 
       - name: 🧩 Create & push manifest
         id: manifest

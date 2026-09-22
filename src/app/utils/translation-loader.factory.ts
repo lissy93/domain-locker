@@ -35,7 +35,7 @@ export class ServerSafeTranslateLoader implements TranslateLoader {
         // Get path to translation file (it vary depending on environment)
         const productionPath = path.join(
           process.cwd(),
-          'dist/i18n',
+          'dist/analog/public/i18n',
           `${sanitizedLang}.json`,
         );
         const devPath = path.join(

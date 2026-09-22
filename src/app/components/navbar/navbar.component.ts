@@ -12,6 +12,7 @@ import { RouterModule } from '@angular/router';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { PrimeNgModule } from '~/app/prime-ng.module';
 import { SupabaseService } from '~/app/services/supabase.service';
+import { AuthService } from '~/app/services/auth.service';
 import { FormsModule } from '@angular/forms';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { RadioButtonModule } from 'primeng/radiobutton';
@@ -51,6 +52,7 @@ import { FeatureService } from '~/app/services/features.service';
 })
 export class NavbarComponent implements OnInit, AfterViewInit {
   supabaseService = inject(SupabaseService);
+  private authService = inject(AuthService);
   private databaseService = inject(DatabaseService);
   private billingService = inject(BillingService);
   private environmentService = inject(EnvService);
@@ -230,7 +232,7 @@ export class NavbarComponent implements OnInit, AfterViewInit {
 
   // Sign out the user and redirect. Goodbye!
   async signOut() {
-    await this.supabaseService.signOut();
+    await this.authService.signOut();
     window.location.href = '/login';
   }
 }

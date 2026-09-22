@@ -71,6 +71,9 @@
                       <p-calendar
                         [inputId]="'expiryDate-' + i"
                         formControlName="expiryDate"
+                        dateFormat="yy-mm-dd"
+                        placeholder="YYYY-MM-DD"
+                        [showIcon]="true"
                         class="w-full"
                       ></p-calendar>
                     </div>
@@ -160,6 +163,24 @@
                   @for (domain of savedDomains; track domain) {
                     <li>
                       <i class="pi pi-check-circle text-green-400 mr-2"></i>
+                      <a
+                        [routerLink]="'/domains/' + domain"
+                        class="text-default hover:text-primary"
+                        >{{ domain }}</a
+                      >
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+            @if (skippedDomains.length > 0) {
+              <div>
+                <h4>Already in your Collection</h4>
+                <p>These were left exactly as they were, nothing was overwritten.</p>
+                <ul class="list-none p-0">
+                  @for (domain of skippedDomains; track domain) {
+                    <li>
+                      <i class="pi pi-info-circle text-blue-400 mr-2"></i>
                       <a
                         [routerLink]="'/domains/' + domain"
                         class="text-default hover:text-primary"

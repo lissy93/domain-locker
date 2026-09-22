@@ -1,6 +1,7 @@
 import { FeatureService } from '~/app/services/features.service';
 import { GlobalMessageService } from '~/app/services/messaging.service';
 import { defer, from, Observable, switchMap, throwError } from 'rxjs';
+import { BUILD_ENV } from '~/app/utils/client-env';
 
 const defaultWriteMethods = new Set([
   // Save domain and assets
@@ -45,8 +46,8 @@ const defaultWriteMethods = new Set([
   'updateDomainCostings',
 ]);
 
-const environmentType = import.meta.env['DL_ENV_TYPE'];
-const disableWriteEnvVar = import.meta.env['DL_DISABLE_WRITE_METHODS'];
+const environmentType = BUILD_ENV['DL_ENV_TYPE'];
+const disableWriteEnvVar = BUILD_ENV['DL_DISABLE_WRITE_METHODS'];
 const writeMethods =
   environmentType === 'demo' || disableWriteEnvVar
     ? defaultWriteMethods

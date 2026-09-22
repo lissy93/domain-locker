@@ -1,0 +1,22 @@
+/* Type checking for Nitro server routes, the data core, and the test suites,
+   none of which are reached by tsconfig.app.json's Angular entry points. */
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./out-tsc/server",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "types": ["node", "vitest/globals", "vite/client"],
+    "noEmit": true
+  },
+  /* The legacy routes directly under src/server/routes has never been
+     type-checked and carries pre-existing errors; it joins this list as
+     Phase 2 replaces it. */
+  "include": [
+    "src/server/lib/**/*.ts",
+    "src/server/db/**/*.ts",
+    "src/server/routes/v1/**/*.ts",
+    "src/server/utils/**/*.ts",
+    "test/**/*.ts"
+  ]
+}

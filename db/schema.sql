@@ -27,10 +27,11 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- =========================
--- Replace User ID Dependencies
+-- Users
 -- =========================
 
-CREATE TABLE IF NOT EXISTS "users" (
+-- Self-hosted has no auth provider, so every row belongs to this static user
+CREATE TABLE IF NOT EXISTS "public"."users" (
     id uuid DEFAULT 'a0000000-aaaa-42a0-a0a0-00a000000a69'::uuid,
     email text,
     created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
@@ -38,83 +39,52 @@ CREATE TABLE IF NOT EXISTS "users" (
     CONSTRAINT users_pkey PRIMARY KEY (id)
 );
 
--- Default user_id for self-hosted environments
--- User authentication is removed; all data is linked to a static user ID 'a0000000-aaaa-42a0-a0a0-00a000000a69'
-DO $$ BEGIN
-  PERFORM 'a0000000-aaaa-42a0-a0a0-00a000000a69';
-EXCEPTION WHEN OTHERS THEN
-  -- Create default user ID if necessary logic goes here
-END $$;
-
 -- =========================
 -- Functions
 -- =========================
 
-CREATE OR REPLACE FUNCTION public.delete_domain(domain_id uuid) RETURNS void
-LANGUAGE plpgsql AS $$
-BEGIN
-    -- Delete associated records from tables with direct foreign key references to the domain
-    DELETE FROM notifications WHERE domain_id = $1;
-    DELETE FROM domain_tags WHERE domain_id = $1;
-    DELETE FROM ip_addresses WHERE domain_id = $1;
-    DELETE FROM ssl_certificates WHERE domain_id = $1;
-    DELETE FROM whois_info WHERE domain_id = $1;
-    DELETE FROM dns_records WHERE domain_id = $1;
-    DELETE FROM domain_costings WHERE domain_id = $1;
-    DELETE FROM domain_statuses WHERE domain_id = $1;
-    DELETE FROM uptime WHERE domain_id = $1;
-    DELETE FROM sub_domains WHERE domain_id = $1;
-    DELETE FROM domain_updates WHERE domain_id = $1;
-    DELETE FROM notification_preferences WHERE domain_id = $1;
-    DELETE FROM domain_links WHERE domain_id = $1;
-
-    -- Delete the domain itself
-    DELETE FROM domains WHERE id = $1;
-
-    -- Clean orphaned records from related tables
-    DELETE FROM tags WHERE id NOT IN (SELECT DISTINCT tag_id FROM domain_tags);
-    DELETE FROM registrars WHERE id NOT IN (SELECT DISTINCT registrar_id FROM domains);
-    DELETE FROM hosts WHERE id NOT IN (SELECT DISTINCT host_id FROM ip_addresses);
-END;
-$$;
-
-
-
-SET statement_timeout = 0;
-SET lock_timeout = 0;
-SET idle_in_transaction_session_timeout = 0;
-SET client_encoding = 'UTF8';
-SET standard_conforming_strings = on;
-SET check_function_bodies = false;
-SET xmloption = content;
-SET client_min_messages = warning;
-SET row_security = off;
-
-CREATE SCHEMA IF NOT EXISTS "public";
-ALTER SCHEMA "public" OWNER TO CURRENT_USER;
-COMMENT ON SCHEMA "public" IS 'standard public schema';
-
--- Domain management functions
+-- Deletes a domain and everything hanging off it, then tidies records that
+-- the owner no longer references. Columns are table-qualified because the
+-- parameter shares its name with the domain_id column.
 CREATE OR REPLACE FUNCTION "public"."delete_domain"("domain_id" uuid) RETURNS void
     LANGUAGE plpgsql
 AS $$
+DECLARE
+  domain_owner uuid;
 BEGIN
-  DELETE FROM notifications WHERE domain_id = $1;
-  DELETE FROM ip_addresses WHERE domain_id = $1;
-  DELETE FROM domain_tags WHERE domain_id = $1;
-  DELETE FROM notification_preferences WHERE domain_id = $1;
-  DELETE FROM dns_records WHERE domain_id = $1;
-  DELETE FROM ssl_certificates WHERE domain_id = $1;
-  DELETE FROM whois_info WHERE domain_id = $1;
-  DELETE FROM domain_hosts WHERE domain_id = $1;
-  DELETE FROM domain_costings WHERE domain_id = $1;
-  DELETE FROM sub_domains WHERE domain_id = $1;
-  DELETE FROM domains WHERE id = $1;
+  SELECT d.user_id INTO domain_owner FROM domains d WHERE d.id = $1;
+  IF domain_owner IS NULL THEN
+    RETURN;
+  END IF;
 
-  -- Clean orphaned tags, hosts, and registrars
-  DELETE FROM tags WHERE id NOT IN (SELECT DISTINCT tag_id FROM domain_tags);
-  DELETE FROM hosts WHERE id NOT IN (SELECT DISTINCT host_id FROM domain_hosts);
-  DELETE FROM registrars WHERE id NOT IN (SELECT DISTINCT registrar_id FROM domains);
+  DELETE FROM notifications WHERE notifications.domain_id = $1;
+  DELETE FROM notification_preferences WHERE notification_preferences.domain_id = $1;
+  DELETE FROM ip_addresses WHERE ip_addresses.domain_id = $1;
+  DELETE FROM domain_tags WHERE domain_tags.domain_id = $1;
+  DELETE FROM domain_hosts WHERE domain_hosts.domain_id = $1;
+  DELETE FROM dns_records WHERE dns_records.domain_id = $1;
+  DELETE FROM ssl_certificates WHERE ssl_certificates.domain_id = $1;
+  DELETE FROM whois_info WHERE whois_info.domain_id = $1;
+  DELETE FROM domain_costings WHERE domain_costings.domain_id = $1;
+  DELETE FROM domain_statuses WHERE domain_statuses.domain_id = $1;
+  DELETE FROM domain_updates WHERE domain_updates.domain_id = $1;
+  DELETE FROM domain_links WHERE domain_links.domain_id = $1;
+  DELETE FROM uptime WHERE uptime.domain_id = $1;
+  DELETE FROM sub_domains WHERE sub_domains.domain_id = $1;
+
+  DELETE FROM domains WHERE domains.id = $1;
+
+  -- NOT EXISTS (never NOT IN) so a null FK cannot turn these into no-ops,
+  -- and scoped to the owner so one user's delete cannot touch another's rows
+  DELETE FROM tags t
+   WHERE t.user_id = domain_owner
+     AND NOT EXISTS (SELECT 1 FROM domain_tags dt WHERE dt.tag_id = t.id);
+  DELETE FROM hosts h
+   WHERE h.user_id = domain_owner
+     AND NOT EXISTS (SELECT 1 FROM domain_hosts dh WHERE dh.host_id = h.id);
+  DELETE FROM registrars r
+   WHERE r.user_id = domain_owner
+     AND NOT EXISTS (SELECT 1 FROM domains d WHERE d.registrar_id = r.id);
 END;
 $$;
 
@@ -138,8 +108,8 @@ CREATE TABLE IF NOT EXISTS "public"."domains" (
     created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
     updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
     registrar_id uuid,
-    registration_date timestamp with time zone,
-    updated_date timestamp with time zone,
+    registration_date date,
+    updated_date date,
     CONSTRAINT domains_pkey PRIMARY KEY (id),
     CONSTRAINT domains_user_id_domain_name_key UNIQUE (user_id, domain_name)
 );
@@ -390,21 +360,6 @@ CREATE TABLE IF NOT EXISTS "public"."sub_domains" (
 CREATE INDEX IF NOT EXISTS idx_sub_domains_domain_id ON "public"."sub_domains" (domain_id);
 
 -- Domain cost breakdowns
-CREATE TABLE IF NOT EXISTS "public"."domain_costings" (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    domain_id uuid NOT NULL,
-    purchase_price numeric(10,2) DEFAULT 0,
-    renewal_cost numeric(10,2) DEFAULT 0,
-    current_value numeric(10,2) DEFAULT 0,
-    auto_renew boolean DEFAULT false,
-    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT domain_costings_pkey PRIMARY KEY (id),
-    CONSTRAINT domain_costings_domain_id_fkey FOREIGN KEY (domain_id) REFERENCES "public"."domains" (id) ON DELETE CASCADE
-);
-
-CREATE INDEX IF NOT EXISTS idx_domain_costings_domain_id ON "public"."domain_costings" (domain_id);
-
 -- Domain links table
 CREATE TABLE IF NOT EXISTS "public"."domain_links" (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -436,13 +391,6 @@ CREATE TABLE IF NOT EXISTS "public"."billing" (
 CREATE INDEX IF NOT EXISTS idx_billing_user_id ON "public"."billing" (user_id);
 
 -- Users information table (to replace `auth.users` functionality in self-hosted environments)
-CREATE TABLE IF NOT EXISTS "public"."users" (
-    id uuid DEFAULT 'a0000000-aaaa-42a0-a0a0-00a000000a69',
-    email text,
-    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT users_pkey PRIMARY KEY (id)
-);
 
 -- User info table (notification channels and plan, per self-hosted user)
 CREATE TABLE IF NOT EXISTS "public"."user_info" (

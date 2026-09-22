@@ -1,4 +1,5 @@
-import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
+import { DestroyRef, ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { ActivatedRoute } from '@angular/router';
 import { PrimeNgModule } from '~/app/prime-ng.module';
@@ -44,6 +45,7 @@ import { ErrorHandlerService } from '~/app/services/error-handler.service';
   `,
 })
 export default class RegistrarDomainsPageComponent implements OnInit {
+  private destroyRef = inject(DestroyRef);
   private route = inject(ActivatedRoute);
   private databaseService = inject(DatabaseService);
   private errorHandler = inject(ErrorHandlerService);
@@ -55,7 +57,7 @@ export default class RegistrarDomainsPageComponent implements OnInit {
   loading = true;
 
   ngOnInit() {
-    this.route.params.subscribe((params) => {
+    this.route.params.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       this.registrarName = decodeURIComponent(params['registrar']);
       this.loadDomains();
     });

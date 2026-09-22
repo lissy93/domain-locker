@@ -61,7 +61,11 @@ export default class DebugInfoPage implements OnInit {
   public appName = typeof __APP_NAME__ !== 'undefined' ? __APP_NAME__ : 'DL-App';
   public environmentType!: EnvironmentType;
   public errorLog: ErrorLogEntry[] = [];
-  public enabledDb = { supabase: false, postgres: false };
+  public enabledDb: { supabase: boolean; selfHosted: boolean; backend: string | null } = {
+    supabase: false,
+    selfHosted: false,
+    backend: null,
+  };
 
   // Observables / data from services
   currentPlan$?: Observable<string | null>;
@@ -102,7 +106,8 @@ export default class DebugInfoPage implements OnInit {
     this.environmentType = this.envService.getEnvironmentType();
     this.enabledDb = {
       supabase: this.envService.isSupabaseEnabled(),
-      postgres: this.envService.isPostgresEnabled(),
+      selfHosted: this.envService.isSelfHostedDatabase(),
+      backend: this.envService.getDatabaseBackend(),
     };
 
     // 2) Observables

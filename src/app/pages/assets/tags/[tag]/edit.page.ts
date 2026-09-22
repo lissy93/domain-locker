@@ -1,4 +1,5 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { DestroyRef, Component, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { ActivatedRoute, Router } from '@angular/router';
 import { PrimeNgModule } from '~/app/prime-ng.module';
@@ -18,6 +19,7 @@ import { ErrorHandlerService } from '~/app/services/error-handler.service';
     </div>`,
 })
 export default class TagDomainsPageComponent implements OnInit {
+  private destroyRef = inject(DestroyRef);
   private route = inject(ActivatedRoute);
   private databaseService = inject(DatabaseService);
   private messageService = inject(MessageService);
@@ -31,7 +33,7 @@ export default class TagDomainsPageComponent implements OnInit {
   tag: Partial<Tag> = {};
 
   ngOnInit() {
-    this.route.params.subscribe((params) => {
+    this.route.params.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       this.tagName = params['tag'];
       this.loadTag();
     });

@@ -22,19 +22,12 @@ At a high-level, it calls an API endpoint which looks up info from various sourc
 
 ## Keeping Domain Data Updated
 
-Domains can be updated to fetch the latest info by sending a POST request to the `/api/domain-updater` endpoint.
-To keep domains-up-to-date automatically, set up a cron job to call this endpoint periodically.
+Domains are refreshed automatically, by a job which the app runs daily. You can change how often with the `DL_UPDATER_INTERVAL_MINUTES` env var.
 
-For example:
-
-```bash
-( crontab -l 2>/dev/null; \
-  echo "0 3 * * * curl -s -X POST http://app:3000/api/domain-updater"; \
-  echo "0 4 * * * curl -s -X POST http://app:3000/api/expiration-reminders" ) | crontab -
-```
+To update them right away, send a POST request to the `/api/domain-updater` endpoint.
 
 
-You can see more about how to do this, as well as about setting up change and expiration notificiations [here](/about/self-hosting/notifications-self-hosted).
+You can see more about setting up change and expiration notifications [here](/about/self-hosting/notifications-self-hosted).
 
 ---
 

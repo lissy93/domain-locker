@@ -37,7 +37,11 @@ APP INFO
 Version:    {{ appVersion }}
 Env Type:   {{ environmentType }}
 Database:   {{
-      enabledDb.postgres ? 'Postgres' : enabledDb.supabase ? 'Supabase' : '⚠️ None'
+      enabledDb.selfHosted
+        ? (enabledDb.backend | titlecase)
+        : enabledDb.supabase
+          ? 'Supabase'
+          : '⚠️ None'
     }}
 App ID:     {{ appId }}
 Platform ID {{ platformId }}

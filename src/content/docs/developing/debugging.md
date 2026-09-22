@@ -22,7 +22,7 @@ If you're a Pro user using the hosted instance, then
   <br>B) A third-party issue, in which case check the [Third-Party Docs](/about/developing/third-party-docs)
 4. If applicable, check the [Service Status](/advanced/status) for ongoing issues or maintenance
 5. If the web app loads, but data does not work, then check:
-  <br>A) The database connection, which can be tested at [`/advanced/database-connection`](/advanced/database-connection)
+  <br>A) The database in use, which is shown at [`/advanced/database-connection`](/advanced/database-connection)
   <br>B) The backend/API using [`/advanced/diagnostic-actions`](/advanced/diagnostic-actions)
   <br>C) The client app's logs, at [`/advanced/error-logs`](/advanced/error-logs)
 
@@ -60,7 +60,7 @@ We've taken the time to build out a suit of embedded debugging and diagnostic to
   <br>Path: [`/advanced/debug-info`](/advanced/debug-info)
 4. **Diagnostic Actions** - execute scripts to fix, test and debug common issues relating to data updates and your user configuration
   <br>Path: [`/advanced/diagnostic-actions`](/advanced/diagnostic-actions)
-5. **Database Connections** - view and edit which database the app is connected to, and test the connection
+5. **Database Connections** - view which database the app is connected to, and clear any credentials left in your browser by older versions
   <br>Path: [`/advanced/database-connection`](/advanced/database-connection)
 6. **Admin Links** - links to all third-party services, settings and dashboards, as well as docs and sources for developers
   <br>Path: [`/advanced/admin-links`](/advanced/admin-links)

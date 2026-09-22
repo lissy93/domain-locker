@@ -7,16 +7,16 @@ index: 10
 coverImage:
 ---
 
-Deploying Domain Locker on top of a self-hosted Supabase instance gives you full access to all features. However, the setup process is much more complex and requires considerably higher system resources.
+Deploying Domain Locker on top of a self-hosted Supabase instance gives you user accounts and sign-in. However, the setup process is much more complex and requires considerably higher system resources.
 
 ---
 
 ### Backstory
-In the self-hosted version of Domain Locker, there's some features which are not available. This isn't us trying to restrict you or gate-keep anything, but rather that Domain Locker was initially built to run on a serverless architecture (Deno functions) and was very tightly integrated with the Supabase ecosystem.
+In the self-hosted version of Domain Locker, user accounts and sign-in are not available. This isn't us trying to restrict you or gate-keep anything, but rather that Domain Locker was initially built to run on a serverless architecture (Deno functions) and was very tightly integrated with the Supabase ecosystem.
 
-It wasn't until much later, when people started asking for an easier way to self-host Domain Locker, that I started porting the API to a Node-based architecture and the DB to Postgres (which makes running in Docker, Kubernetes and self-hosting systems).
+It wasn't until much later, when people started asking for an easier way to self-host Domain Locker, that I started porting the API to a Node-based architecture and the DB to Postgres and SQLite (which makes running in Docker, Kubernetes and self-hosting systems).
 
-Anyway, you can get access to all pro features (like we have on the [domain-locker.com](https://domain-locker.com/) version), by self-hosting your own Supabase instance (instead of using Postgres and Node). The only caveat being that... Supabase is a bloody pain to get running!
+Anyway, you can get the account features (like we have on the [domain-locker.com](https://domain-locker.com/) version), by self-hosting your own Supabase instance (instead of using SQLite or Postgres with Node). The only caveat being that... Supabase is a bloody pain to get running!
 
 ---
 

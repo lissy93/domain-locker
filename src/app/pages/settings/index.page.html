@@ -21,7 +21,7 @@
             </h3>
           </a>
           <ul class="list-none p-0 mt-2 flex flex-col gap-0.5 w-fit">
-            @for (item of items; track item.label) {
+            @for (item of (items$ | async) ?? []; track item.label) {
               <li
                 class="rounded-lg py-2 px-3 transition-all ease-in-out hover:surface-50
                   {{
@@ -65,7 +65,7 @@
     <div
       class="py-2 px-4 pb-4 w-full border-2 !border-l-0 border-surface-50 rounded-r overflow-y-visible"
     >
-      @if ((settingsEnabled$ | async) && databaseServiceType === 'supabase') {
+      @if (settingsEnabled$ | async) {
         <router-outlet></router-outlet>
       } @else {
         <app-feature-not-enabled feature="accountSettings" />

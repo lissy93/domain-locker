@@ -18,13 +18,17 @@ command -v docker >/dev/null || {
   exit 1
 }
 
-# 2. Download the docker-compose
-echo "📥 Downloading docker-compose.yml..."
-curl -fsSL https://raw.githubusercontent.com/Lissy93/domain-locker/HEAD/docker-compose.yml \
-  -o docker-compose.yml || {
-    echo "❌ Failed to download docker-compose.yml"
-    exit 1
-  }
+# 2. Download the docker-compose, without overwriting an existing setup
+if [ -f docker-compose.yml ]; then
+  echo "ℹ️  Keeping your existing docker-compose.yml"
+else
+  echo "📥 Downloading docker-compose.yml..."
+  curl -fsSL https://raw.githubusercontent.com/Lissy93/domain-locker/HEAD/docker-compose.yml \
+    -o docker-compose.yml || {
+      echo "❌ Failed to download docker-compose.yml"
+      exit 1
+    }
+fi
 
 # 3. Start docker compose, and print logs
 echo "🚀 Starting Domain Locker..."

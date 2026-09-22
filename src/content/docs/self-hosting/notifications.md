@@ -11,31 +11,6 @@ These can alert you about upcoming expirations or important changes to your doma
 
 It's not (yet) possible to use all notification channels (email, WhatsApp, Signal, etc) like in the managed version, because these rely upon non-free 3rd party services (which cannot be self-hosted). But as a workaround, ntfy does allow you to hook into their API and call whichever third-parties you like.
 
-## Enabling update crons
-Before you can get notified, you need to setup some cron jobs to periodically check for updates and expirations.
-
-In your Docker Compose, add a section for calling these endpoints as a cron. For example:
-
-```yml
-  updater:
-    image: alpine:3.20
-    container_name: domain-locker-updater
-    restart: unless-stopped
-    depends_on:
-      - app
-    networks:
-      - domain_locker_network
-    command: >
-      /bin/sh -c "
-        apk add --no-cache curl &&
-        echo '0 3 * * * /usr/bin/curl -s -X POST http://app:3000/api/domain-updater' > /etc/crontabs/root &&
-        echo '0 4 * * * /usr/bin/curl -s -X POST http://app:3000/api/expiration-reminders' >> /etc/crontabs/root &&
-        crond -f -L /dev/stdout
-      "
-```
-
----
-
 ## Push notifications via NTFY
 
 > [ntfy.sh](https://ntfy.sh/) is a free and simple pub-sub notification service, which can delivery push notifications to your devices, when a webhook is triggered.
@@ -123,3 +98,26 @@ You can decide which change events you want to be notified about on a per-domain
 
 
 If you consistently get false notifications for a specific domain, you may want to disable change notifications for that domain specifically while keeping them enabled for others.
+
+---
+
+## Enabling update crons
+There's nothing to do here. The app checks for updates and expirations itself, on a timer, whichever database you're using. You can change how often with the `DL_UPDATER_INTERVAL_MINUTES` and `DL_REMINDERS_INTERVAL_MINUTES` env vars.
+
+If you'd rather drive these yourself, set `DL_DISABLE_SCHEDULER=true` and call the endpoints from your own cron. For example, in your Docker Compose:
+
+```yml
+  updater:
+    image: alpine:3.20
+    container_name: domain-locker-updater
+    restart: unless-stopped
+    depends_on:
+      - app
+    command: >
+      /bin/sh -c "
+        apk add --no-cache curl &&
+        echo '0 3 * * * /usr/bin/curl -s -X POST http://app:3000/api/domain-updater' > /etc/crontabs/root &&
+        echo '0 4 * * * /usr/bin/curl -s -X POST http://app:3000/api/expiration-reminders' >> /etc/crontabs/root &&
+        crond -f -L /dev/stdout
+      "
+```
