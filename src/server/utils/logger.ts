@@ -105,4 +105,12 @@ class Logger {
   }
 }
 
+/** Error text for a log line, with the cause that fetch otherwise hides */
+export function errorMessage(err: unknown): string {
+  if (!(err instanceof Error)) return String(err);
+  const cause = err.cause as NodeJS.ErrnoException | undefined;
+  const detail = cause?.message || cause?.code;
+  return detail ? `${err.message}: ${detail}` : err.message;
+}
+
 export default Logger;
