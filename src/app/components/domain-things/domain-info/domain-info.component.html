@@ -31,14 +31,19 @@
               [size]="24"
               class="mr-1"
             ></app-domain-favicon>
-            <a [href]="domain.registrar.url" target="_blank" rel="noopener noreferrer"
+            <a
+              [href]="domain.registrar.url"
+              [pTooltip]="domain.registrar.url"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="truncate"
               >{{
                 (domain.registrar.url || '')
                   .replace('https://', '')
                   .replace('http://', '')
                   .replace('www.', '')
-              }}
-            </a>
+              }}</a
+            >
           </p>
         }
       </p-card>
