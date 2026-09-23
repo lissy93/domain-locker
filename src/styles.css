@@ -36,6 +36,7 @@ body {
   color: var(--text-color);
   padding: 0;
   margin: 0;
+  overflow-wrap: anywhere;
 }
 
 h1,
