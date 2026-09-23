@@ -1,3 +1,4 @@
+import { sendAppriseNotification } from './apprise';
 import { sendDiscordNotification } from './discord';
 import { sendWebhookNotification } from './webhook';
 
@@ -10,6 +11,7 @@ export async function sendNotification(
   const sent = await Promise.all([
     sendWebhookNotification(message, title, tags),
     sendDiscordNotification(message, title),
+    sendAppriseNotification(message, title),
   ]);
   return sent.some(Boolean);
 }

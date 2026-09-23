@@ -1,4 +1,4 @@
-import Logger from './logger';
+import Logger, { errorMessage } from './logger';
 
 const log = new Logger('discord');
 
@@ -25,7 +25,7 @@ export async function sendDiscordNotification(
     log.info(`Discord sent: ${title} - ${message}`);
     return true;
   } catch (err) {
-    log.error(`Discord failed: ${err instanceof Error ? err.message : String(err)}`);
+    log.error(`Discord failed: ${errorMessage(err)}`);
     return false;
   }
 }
