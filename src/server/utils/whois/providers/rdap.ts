@@ -9,11 +9,15 @@ const RDAP_BOOTSTRAP_URL = 'https://data.iana.org/rdap/dns.json';
 let rdapBootstrapCache: Record<string, string> | null = null;
 
 /* Determine the url for an rdap lookup, based on the domains TLD */
-const getRdapUrlForTld = async (tld: string): Promise<string | null> => {
+const getRdapUrlForTld = async (
+  tld: string,
+  deadline: number,
+): Promise<string | null> => {
   try {
     if (!rdapBootstrapCache) {
       const json = await fetchJson<{ services: [string[], string[]][] }>(
         RDAP_BOOTSTRAP_URL,
+        deadline,
       );
       rdapBootstrapCache = {};
       for (const [tlds, urls] of json.services) {
@@ -47,18 +51,21 @@ interface RdapResponse {
   secureDNS?: { zoneSigned?: boolean };
 }
 
-export const tryRdapLookup = async (domain: string): Promise<WhoisResult | null> => {
+export const tryRdapLookup = async (
+  domain: string,
+  deadline: number,
+): Promise<WhoisResult | null> => {
   try {
     const tld = domain.split('.').pop();
     if (!tld) return null;
 
-    const rdapBase = await getRdapUrlForTld(tld);
+    const rdapBase = await getRdapUrlForTld(tld, deadline);
     if (!rdapBase) {
       log.warn(`No RDAP base found for TLD .${tld}`);
       return null;
     }
 
-    const json = await fetchJson<RdapResponse>(`${rdapBase}/domain/${domain}`);
+    const json = await fetchJson<RdapResponse>(`${rdapBase}/domain/${domain}`, deadline);
 
     const events = json.events || [];
     const getEvent = (action: string) =>

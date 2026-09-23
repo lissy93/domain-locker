@@ -12,6 +12,7 @@ import {
 type Fns = {
   updateDomainDates: typeof import('~/server/jobs/updater/fns/dates').updateDomainDates;
   updateExpiryDate: typeof import('~/server/jobs/updater/fns/expiry').updateExpiryDate;
+  updateRegistrar: typeof import('~/server/jobs/updater/fns/registrar').updateRegistrar;
   updateSSL: typeof import('~/server/jobs/updater/fns/ssl').updateSSL;
 };
 
@@ -39,6 +40,8 @@ describe.each(BACKENDS)('updater writes (%s)', (backend) => {
         .updateDomainDates,
       updateExpiryDate: (await import('~/server/jobs/updater/fns/expiry'))
         .updateExpiryDate,
+      updateRegistrar: (await import('~/server/jobs/updater/fns/registrar'))
+        .updateRegistrar,
       updateSSL: (await import('~/server/jobs/updater/fns/ssl')).updateSSL,
     };
   });
@@ -94,6 +97,27 @@ describe.each(BACKENDS)('updater writes (%s)', (backend) => {
 
     expect(changes).toEqual(['Expiry Date']);
     expect(row.expiry_date).toBe('2030-07-01');
+  });
+
+  it('stores a new registrar with the casing the registry gave', async () => {
+    const changes: string[] = [];
+    await fns.updateRegistrar(
+      { id: domainId, domain_name: 'updated.com' },
+      { registrar: { name: 'MarkMonitor Inc.', url: 'https://markmonitor.com' } },
+      changes,
+    );
+
+    const registrar = await db
+      .selectFrom('domains')
+      .innerJoin('registrars', 'registrars.id', 'domains.registrar_id')
+      .where('domains.id', '=', domainId)
+      .select(['registrars.name', 'registrars.url'])
+      .executeTakeFirstOrThrow();
+    expect(changes).toEqual(['Registrar']);
+    expect(registrar).toEqual({
+      name: 'MarkMonitor Inc.',
+      url: 'https://markmonitor.com',
+    });
   });
 
   it('inserts a certificate, then updates the fields that moved', async () => {

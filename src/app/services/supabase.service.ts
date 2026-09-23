@@ -1,6 +1,5 @@
 // ~/app/services/supabase.service.ts
-import { Injectable, PLATFORM_ID, inject } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
+import { Injectable, inject } from '@angular/core';
 import {
   createClient,
   Factor,
@@ -18,7 +17,6 @@ import { GlobalMessageService } from './messaging.service';
   providedIn: 'root',
 })
 export class SupabaseService {
-  private platformId = inject<object>(PLATFORM_ID);
   private envService = inject(EnvService);
   private errorHandler = inject(ErrorHandlerService);
   private messagingService = inject(GlobalMessageService);
@@ -28,7 +26,6 @@ export class SupabaseService {
   authState$ = this.authStateSubject.asObservable();
   private userSubject = new BehaviorSubject<User | null>(null);
   user$ = this.userSubject.asObservable();
-  private token: string | null = null;
 
   constructor() {
     try {
@@ -57,20 +54,8 @@ export class SupabaseService {
     // Listen to future auth changes
     this.supabase.auth.onAuthStateChange((_event, session) => {
       this.setAuthState(!!session);
+      this.userSubject.next(session?.user ?? null);
     });
-
-    if (isPlatformBrowser(this.platformId)) {
-      try {
-        this.initializeAuth();
-      } catch (error) {
-        this.errorHandler.handleError({
-          message: 'Failed to initialize authentication',
-          error,
-          showToast: true,
-          location: 'SupabaseService.constructor',
-        });
-      }
-    }
   }
 
   isSupabaseEnabled(): boolean {
@@ -107,21 +92,15 @@ export class SupabaseService {
     return aal.currentLevel === 'aal2'; // Only consider authenticated if they've completed MFA (AAL2)
   }
 
+  /* Always read via getSession, so an expired token is refreshed before it's sent */
   async getSessionToken(): Promise<string | null> {
     if (!this.isSupabaseEnabled()) {
       return null;
     }
-    if (this.token) {
-      return this.token;
-    }
     const {
       data: { session },
     } = await this.supabase.auth.getSession();
-    if (session) {
-      this.token = session.access_token;
-      return this.token;
-    }
-    return null;
+    return session?.access_token ?? null;
   }
 
   async getSessionData() {
@@ -129,20 +108,6 @@ export class SupabaseService {
       return {};
     }
     return (await this.supabase.auth.getSession()).data || {};
-  }
-
-  private initializeAuth() {
-    this.token = localStorage.getItem('supabase_token');
-    this.supabase.auth.onAuthStateChange((event, session) => {
-      this.userSubject.next(session?.user ?? null);
-      if (session) {
-        this.token = session.access_token;
-        localStorage.setItem('supabase_token', session.access_token);
-      } else {
-        this.token = null;
-        localStorage.removeItem('supabase_token');
-      }
-    });
   }
 
   setAuthState(isAuthenticated: boolean) {
@@ -307,24 +272,6 @@ export class SupabaseService {
     const { error } = await this.supabase.auth.signOut();
     this.setAuthState(false);
     if (error) throw error;
-  }
-
-  getToken(): string | null {
-    if (isPlatformBrowser(this.platformId)) {
-      return localStorage.getItem('supabase_token');
-    }
-    return this.token;
-  }
-
-  setToken(token: string | null) {
-    this.token = token;
-    if (isPlatformBrowser(this.platformId)) {
-      if (token) {
-        localStorage.setItem('supabase_token', token);
-      } else {
-        localStorage.removeItem('supabase_token');
-      }
-    }
   }
 
   /**
@@ -542,8 +489,8 @@ export class SupabaseService {
   async deleteAccount(): Promise<void> {
     // Get the user ID and token, and check
     const currentUser = await this.getCurrentUser();
-    const token = this.token || this.getToken();
-    if (!currentUser) throw new Error('Not authenticated');
+    const token = await this.getSessionToken();
+    if (!currentUser || !token) throw new Error('Not authenticated');
 
     // Delete everything the user added (required before we can remove their account). Bye bye data.
     try {

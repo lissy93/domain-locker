@@ -206,6 +206,42 @@ describe.each(BACKENDS)('repositories (%s)', (backend) => {
       expect(await repo.assets.domainsByRegistrar('Reg One')).toEqual(['reg.com']);
     });
 
+    it('collapses variant spellings of the same registrar', async () => {
+      const variants = ['NAMECHEAP INC', 'Namecheap, Inc.', 'NameCheap, Inc.'];
+      for (const [index, name] of variants.entries()) {
+        const { id } = await db
+          .insertInto('registrars')
+          .values({
+            name,
+            url: index === 0 ? 'https://namecheap.com' : null,
+            user_id: SELF_HOST_USER,
+          })
+          .returning('id')
+          .executeTakeFirstOrThrow();
+        await db
+          .insertInto('domains')
+          .values({
+            domain_name: `v${index}.com`,
+            registrar_id: id,
+            user_id: SELF_HOST_USER,
+          })
+          .execute();
+      }
+      const domains = ['v0.com', 'v1.com', 'v2.com'];
+
+      const registrars = await repo.assets.registrars();
+      expect(registrars).toHaveLength(1);
+      expect(registrars[0]).toMatchObject({
+        name: 'NameCheap, Inc.',
+        url: 'https://namecheap.com',
+      });
+      expect(registrars[0].domains.sort()).toEqual(domains);
+      expect(await repo.assets.registrarDomainCounts()).toEqual({ 'NameCheap, Inc.': 3 });
+      expect(await repo.assets.domainsByRegistrar('namecheap inc')).toEqual(domains);
+      const listed = await repo.domains.listByRegistrar('NameCheap, Inc.');
+      expect(listed.map((domain) => domain.domain_name).sort()).toEqual(domains);
+    });
+
     it('counts domains per ssl issuer', async () => {
       await repo.domains.save(domainInput('ssl-a.com'));
       await repo.domains.save(domainInput('ssl-b.com'));

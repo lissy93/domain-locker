@@ -38,7 +38,10 @@ interface WhoisXmlResponse {
 }
 
 /* Last resort, a paid third-party API (only when an api key is configured) */
-export const tryWhoisXml = async (domain: string): Promise<WhoisResult | null> => {
+export const tryWhoisXml = async (
+  domain: string,
+  deadline: number,
+): Promise<WhoisResult | null> => {
   if (!WHOISXML_API_KEY) return null;
   try {
     const url = new URL('https://www.whoisxmlapi.com/whoisserver/WhoisService');
@@ -46,7 +49,7 @@ export const tryWhoisXml = async (domain: string): Promise<WhoisResult | null> =
     url.searchParams.set('outputFormat', 'json');
     url.searchParams.set('domainName', domain);
 
-    const data = await fetchJson<WhoisXmlResponse>(url.toString());
+    const data = await fetchJson<WhoisXmlResponse>(url.toString(), deadline);
     const whoisRecord = data.WhoisRecord;
     const record = whoisRecord?.registryData;
     const registrant = record?.registrant;

@@ -9,7 +9,7 @@ index: 8
 The self-hosted version of Domain Locker supports basic notifications, sent via webhooks.
 These can alert you about upcoming expirations or important changes to your domains.
 
-It's not (yet) possible to use all notification channels (email, WhatsApp, Signal, etc) like in the managed version, because these rely upon non-free 3rd party services (which cannot be self-hosted). But as a workaround, ntfy does allow you to hook into their API and call whichever third-parties you like.
+The managed version's built-in channels (email, WhatsApp, Signal, etc) rely upon non-free 3rd party services, so they're not available when self-hosting. But Apprise (below) can relay notifications to pretty much any service, including those, and ntfy lets you hook into their API and call whichever third-parties you like.
 
 ## Push notifications via NTFY
 
@@ -46,7 +46,26 @@ Create a webhook in your Discord server (Server Settings, Integrations, Webhooks
 DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/your-id/your-token
 ```
 
-Messages go to every channel you have configured, so Discord and ntfy can be used at the same time.
+Messages go to every channel you have configured, so ntfy, Discord and Apprise can all be used at the same time.
+
+---
+
+## Push notifications via Apprise
+
+> [Apprise](https://github.com/caronc/apprise) delivers notifications to over 100 services (Telegram, email, Matrix, Pushover, etc), through a single self-hosted [Apprise API](https://github.com/caronc/apprise-api) server.
+
+Point Domain Locker at your Apprise API instance, then tell it what to notify. That's either a config key you've saved on the server, or the Apprise URLs themselves:
+
+```
+APPRISE_API_URL=http://apprise:8000
+
+# Either a config key stored in Apprise
+APPRISE_KEY=domain-locker
+# Or one or more Apprise URLs, separated by commas
+APPRISE_URLS=tgram://bot-token/chat-id,mailto://user:pass@gmail.com
+```
+
+The key is used when both are set. By default only the untagged entries of a stored config are notified, so set `APPRISE_TAG` to target tagged ones, or to `all` for everything. If your instance sits behind basic auth, put the credentials in the URL, like `http://user:pass@apprise:8000`.
 
 ---
 

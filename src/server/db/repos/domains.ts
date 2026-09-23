@@ -4,6 +4,7 @@ import {
   currentUserId,
   groupBy,
   indexBy,
+  matchingRegistrarIds,
   omit,
   toBoolean,
   toJsonString,
@@ -408,7 +409,11 @@ export function domainsRepo(db: Kysely<Database>) {
       name: string,
       userId = currentUserId(),
     ): Promise<DomainRecord[]> {
-      const rows = await baseQuery(userId).where('registrars.name', '=', name).execute();
+      const registrarIds = await matchingRegistrarIds(db, name, userId);
+      if (!registrarIds.length) return [];
+      const rows = await baseQuery(userId)
+        .where('domains.registrar_id', 'in', registrarIds)
+        .execute();
       return withRelations(rows);
     },
 

@@ -1,0 +1,10 @@
+# zizmor config, for static analysis of our GitHub Actions workflows
+# Run with: `zizmor .github/workflows/`. Docs: https://docs.zizmor.sh
+
+rules:
+  # All actions are pinned to release tags rather than commit hashes
+  unpinned-uses:
+    disable: true
+  # Not having persist credentials is fine, because we never upload any checked out tree as an artifact
+  artipacked:
+    disable: true

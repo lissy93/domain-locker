@@ -6,7 +6,7 @@
 # - Otherwise (if the PR did bump version) we use the new version from package.json
 # - Creates and pushes a git tag for the new version
 # - That git tag then triggers Docker publishing and AWS deployment in other CI
-# - Add tags to issues from newly released features/fixes (if applicable)
+# - Add labels and release comments to referenced issues (if applicable)
 # - Finally, shows summary of actions taken and new tag published
 #
 # Manual dispatch flow:
@@ -23,7 +23,8 @@ on:
         description: 'Version to release (e.g. 0.2.0). Leave blank to auto-increment patch.'
         required: false
         type: string
-  pull_request_target:
+  # Safe here, as it only runs once a reviewed PR has been merged
+  pull_request_target: # zizmor: ignore[dangerous-triggers]
     types: [closed]
     branches: [main]
 
@@ -48,6 +49,7 @@ jobs:
       github.event_name == 'workflow_dispatch'
       || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: 🔢 Validate manual dispatch
         if: env.IS_MANUAL == 'true'
@@ -55,11 +57,12 @@ jobs:
           INPUT_VERSION: ${{ inputs.version }}
           DISPATCH_REF: ${{ github.ref }}
         run: |
+          set -euo pipefail
           if [ "$DISPATCH_REF" != "refs/heads/main" ]; then
             echo "::error::Manual dispatch only allowed from main (got: $DISPATCH_REF)"
             exit 1
           fi
-          if [ -n "$INPUT_VERSION" ] && ! echo "$INPUT_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+          if [ -n "$INPUT_VERSION" ] && ! printf '%s' "$INPUT_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
             echo "::error::Invalid version '${INPUT_VERSION}'. Must be semver (e.g. 0.2.0)."
             exit 1
           fi
@@ -136,6 +139,12 @@ jobs:
         uses: actions/github-script@v9
         with:
           script: |
+            const author = context.payload.pull_request.user?.login || '';
+            if (author.startsWith('dependabot')) {
+              core.info('Dependabot PR, skipping issue references');
+              core.setOutput('numbers', '');
+              return;
+            }
             const body = context.payload.pull_request.body || '';
             const prNumber = String(context.payload.pull_request.number);
             const matches = body.match(/#(\d+)(?![a-fA-F0-9])/g);
@@ -155,12 +164,14 @@ jobs:
             core.setOutput('numbers', unique.join(','));
 
       - name: ⬆️ Bump version
+        id: bump
         if: >-
           env.IS_MANUAL == 'true'
           || steps.check_pr.outputs.needs_bump == 'true'
         env:
           INPUT_VERSION: ${{ inputs.version }}
         run: |
+          set -euo pipefail
           if [ "$IS_MANUAL" = "true" ] && [ -n "$INPUT_VERSION" ]; then
             npm version "$INPUT_VERSION" --no-git-tag-version --allow-same-version
           else
@@ -170,8 +181,9 @@ jobs:
           if git diff --cached --quiet; then
             echo "No version change to commit, skipping"
           else
-            git commit -m "Bump version to $(node -p "require('./package.json').version")"
+            git commit -m "chore: bump version to $(node -p "require('./package.json').version")"
             git push
+            echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           fi
 
       - name: 🏷️ Create and push tag
@@ -184,6 +196,7 @@ jobs:
           MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
           ISSUES: ${{ steps.issues.outputs.numbers }}
         run: |
+          set -euo pipefail
           VERSION=$(node -p "require('./package.json').version")
           TAG="${TAG_PREFIX}${VERSION}"
           git fetch --tags --force
@@ -277,7 +290,7 @@ jobs:
                     `this has now been implemented${byLine} in #${prNumber},`,
                     `and will be released shortly in ${tag} 😇`,
                   ];
-                  if (isOld) parts.push(`\n\nWe're sorry this one took so long 😔`);
+                  if (isOld) parts.push(`\nWe're sorry this one took so long 😔`);
                   parts.push(`<!-- ${marker} -->`);
                   const body = parts.join(' ');
                   await github.rest.issues.createComment({
@@ -300,17 +313,18 @@ jobs:
         env:
           PR_NUMBER: ${{ github.event.pull_request.number || '' }}
           PR_TITLE: ${{ github.event.pull_request.title || '' }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login || github.actor }}
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
-          NEEDS_BUMP: ${{ steps.check_pr.outputs.needs_bump }}
           NEEDS_TAG: ${{ steps.check_pr.outputs.needs_tag }}
           ISSUES: ${{ steps.issues.outputs.numbers }}
+          BUMP_SHA: ${{ steps.bump.outputs.sha }}
           TAG_OUTCOME: ${{ steps.tag.outcome }}
           TAG_RESULT: ${{ steps.tag.outputs.result }}
           LABEL_OUTCOME: ${{ steps.label.outcome }}
         run: |
+          set -euo pipefail
           VERSION=$(node -p "require('./package.json').version" 2>/dev/null || echo "unknown")
           TAG="${TAG_PREFIX}${VERSION}"
-          HAS_VERSION=$([ "$VERSION" != "unknown" ] && echo true || echo false)
 
           {
             echo "## 🏷️ Tag new versions"
@@ -321,11 +335,16 @@ jobs:
             if [ "$IS_MANUAL" = "true" ]; then
               echo "| Trigger | Manual dispatch |"
             elif [ -n "$PR_NUMBER" ]; then
-              echo "| PR | [#${PR_NUMBER}](${REPO_URL}/pull/${PR_NUMBER}) — ${PR_TITLE} |"
+              echo "| PR | [#${PR_NUMBER}](${REPO_URL}/pull/${PR_NUMBER}): ${PR_TITLE} |"
+            fi
+            echo "| Author | [@${PR_AUTHOR}](${GITHUB_SERVER_URL}/${PR_AUTHOR}) |"
+
+            if [ "$NEEDS_TAG" = "false" ]; then
+              echo "| Result | ⏭️ No code changes, nothing to do |"
             fi
 
-            if [ "$HAS_VERSION" = "true" ] && { [ "$IS_MANUAL" = "true" ] || [ "$NEEDS_BUMP" = "true" ]; }; then
-              echo "| Version bump | ✅ \`${VERSION}\` |"
+            if [ -n "$BUMP_SHA" ]; then
+              echo "| Version bump | ✅ \`${VERSION}\` ([\`${BUMP_SHA:0:7}\`](${REPO_URL}/commit/${BUMP_SHA})) |"
             else
               echo "| Version bump | ⏭️ Skipped |"
             fi

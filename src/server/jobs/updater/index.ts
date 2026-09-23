@@ -2,7 +2,7 @@ import { repos } from '../../db/repos';
 import type { DomainRecord } from '../../db/repos/domains';
 import { fetchDomainInfo } from './fetch-info';
 import { compareAndUpdateDomain } from './compare';
-import { withConcurrency, withRetry } from '../runner';
+import { withConcurrency } from '../runner';
 import { numberFromEnv } from '../../utils/config';
 import Logger from '../../utils/logger';
 
@@ -78,8 +78,7 @@ export async function runUpdater(): Promise<{
 /** Looks a domain up and applies what changed, reporting failure rather than throwing */
 async function refreshDomain(domain: DomainRecord): Promise<UpdaterResult> {
   try {
-    // Lookups are rate limited upstream, so back off rather than give up
-    const fresh = await withRetry(() => fetchDomainInfo(domain.domain_name));
+    const fresh = await fetchDomainInfo(domain.domain_name);
     const { changes } = await compareAndUpdateDomain(
       {
         id: domain.id,

@@ -12,9 +12,20 @@ This page covers specific bugs, common user errors, and known limitations.
 ## Can't fetch domain data / TLD Support
 Different TLDs expose different levels of registration data, and the structure of that data can vary between registries and registrars. While most modern TLDs support RDAP (the successor to WHOIS), the amount of publicly accessible information depends on registry policies, locale, and access restrictions. As a result, for some domain extensions certain details (such as registrant information) may not be available for automated retrieval. In these cases, the only workaround to this is to enter this info manually when adding a domain.
 
-Firstly, check weather or not your domain extension is supported at [deployment.rdap.org](https://deployment.rdap.org/)
+Firstly, check whether or not your domain extension is supported at [deployment.rdap.org](https://deployment.rdap.org/)
 
 Then, test out which data is returned, by running `whois example.com`, and the same for RDAP with `https://<rdap-server>/domain/<domain-name>`
+
+---
+
+## Lookups time out or come back empty
+Domain Locker tries several sources in turn: RDAP, then WHOIS on port 43, then the public [who-dat](https://github.com/lissy93/who-dat) API, then the `whois` command if it's installed. The logs show which source answered, or why each one didn't.
+
+- **Port 43 is blocked or slow on your host**: many ccTLDs (such as `.de`, `.ch`, `.it`, `.jp` and `.io`) have no RDAP yet, so they depend on it. Skip it with `DL_WHOIS_PROVIDERS=rdap,who-dat`
+- **A registry is rate limiting you**: slow the updater down with `DL_WHOIS_DELAY_MS` and `DL_WHOIS_CONCURRENCY`
+- **You'd rather not rely on the public who-dat instance**: run your own with `docker run -p 8080:8080 lissy93/who-dat` and point `DL_WHO_DAT_URL` at it. It needs the same network access as the app, so it won't help if port 43 is blocked
+
+All of these are listed in [Environmental Variables](/about/developing/environmental-variables).
 
 ---
 
@@ -26,7 +37,7 @@ You can enable automatic discovery for subdomains with either [dnsdumpster.com](
 - **DNSDumpster**: Sign up for an API key [here](https://dnsdumpster.com/membership/), and then set the the `DNS_DUMPSTER_TOKEN` env var
 - **Shodan**: Sign up for an API key [here](https://developer.shodan.io/) (requires paid plan), and then set the `SHODAN_TOKEN` env var
 
-You can choose which service is used for subdomain lookups by setting the `DL_PREFERRED_SUBDOMAIN_PROVIDER` env var to either `shod`,, `dnsdump`, `both` or `none`.
+You can choose which service is used for subdomain lookups by setting the `DL_PREFERRED_SUBDOMAIN_PROVIDER` env var to either `shod`, `dnsdump`, `both` or `none`.
 
 After setting up, you can fetch subdomains for your existing domains by going to `http://[domain-locker]/assets/subdomains/[your-domain]`.
 

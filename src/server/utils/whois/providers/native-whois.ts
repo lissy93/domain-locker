@@ -3,13 +3,17 @@ import { promisify } from 'util';
 import type { WhoisResult } from '../types';
 import { parseDate } from '../dates';
 import { parseStatusArray } from '../status';
+import { timeLeft } from '../fetch-json';
 import Logger from '../../logger';
 
 const execFileAsync = promisify(execFile);
 const log = new Logger('whois');
 
 /* Try the native whois command as a fallback when libraries fail */
-export const tryNativeWhois = async (domain: string): Promise<WhoisResult | null> => {
+export const tryNativeWhois = async (
+  domain: string,
+  deadline: number,
+): Promise<WhoisResult | null> => {
   // Skip native whois on serverless environments where system packages aren't available
   if (
     process.env['VERCEL'] ||
@@ -28,7 +32,7 @@ export const tryNativeWhois = async (domain: string): Promise<WhoisResult | null
     }
 
     const { stdout } = await execFileAsync('whois', [sanitizedDomain], {
-      timeout: 10000,
+      timeout: timeLeft(deadline),
     });
 
     if (!stdout || stdout.length < 50) {

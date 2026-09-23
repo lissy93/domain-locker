@@ -31,6 +31,7 @@ describe('updater lookup', () => {
   });
 
   beforeEach(async () => {
+    vi.clearAllMocks();
     await clearData(db);
     const row = await db
       .insertInto('domains')
@@ -85,6 +86,16 @@ describe('updater lookup', () => {
     expect(result.changed).toBe(0);
     expect(result.results[0]).toMatchObject({ domain: 'example.com' });
     expect(result.results[0].error).toContain('WHOIS refused');
+  });
+
+  it('gives up after one failed lookup rather than retrying it', async () => {
+    const spy = vi
+      .spyOn(lookup, 'lookupDomainInfo')
+      .mockRejectedValue(new Error('Timed out'));
+
+    await runUpdater();
+
+    expect(spy).toHaveBeenCalledTimes(1);
   });
 
   it('moves a domain to the back of the queue even when its lookup failed', async () => {
