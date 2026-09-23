@@ -1,7 +1,7 @@
 import type { Kysely, Transaction } from 'kysely';
 import type { Database } from '../schema';
-import { normalizeRegistrarName, removeUrlChars } from '../../jobs/updater/utils';
-import { currentUserId, toJsonString } from './helpers';
+import { removeUrlChars } from '../../jobs/updater/utils';
+import { currentUserId, matchingRegistrarIds, toJsonString } from './helpers';
 
 type Db = Kysely<Database> | Transaction<Database>;
 
@@ -285,14 +285,8 @@ export async function upsertRegistrar(
   const url = typeof registrar === 'string' ? null : (registrar?.url ?? null);
 
   // Loose match, so NameCheap and Namecheap don't become two registrars
-  const target = normalizeRegistrarName(name);
-  const rows = await db
-    .selectFrom('registrars')
-    .where('user_id', '=', userId)
-    .select(['id', 'name'])
-    .execute();
-  const existing = rows.find((row) => normalizeRegistrarName(row.name) === target);
-  if (existing) return existing.id;
+  const [existingId] = await matchingRegistrarIds(db, name, userId);
+  if (existingId) return existingId;
 
   const inserted = await db
     .insertInto('registrars')

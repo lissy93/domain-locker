@@ -85,10 +85,9 @@ Not all domains can have their data fetched automatically. Here are some common 
 - Recently registered domains
   - WHOIS data may take time to propagate for new domains
 - Domains with flakey WHOIS servers
-  - Some domains have really unreliable WHOIS servers, that can be slow, time out, or limit requests from certain IPs.
-  
-  
-Unfortunately there's not much that can be done by us in these cases, and the only option is to enter the data manually.
+  - Some domains have really unreliable WHOIS servers, that can be slow, time out, or limit requests from certain IPs. See [Lookups time out or come back empty](/about/self-hosting/troubleshooting#lookups-time-out-or-come-back-empty) for what you can change.
+
+For the other cases there's not much that can be done by us, and the only option is to enter the data manually.
 
 ---
 

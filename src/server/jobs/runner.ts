@@ -115,23 +115,4 @@ export async function withConcurrency<T, R>(
   return results;
 }
 
-/** Retries transient failures, backing off between attempts (WHOIS rate limits) */
-export async function withRetry<T>(
-  work: () => Promise<T>,
-  { attempts = 3, baseDelayMs = 1000 } = {},
-): Promise<T> {
-  let lastError: unknown;
-  for (let attempt = 0; attempt < attempts; attempt++) {
-    try {
-      return await work();
-    } catch (err) {
-      lastError = err;
-      if (attempt < attempts - 1) {
-        await delay(baseDelayMs * 2 ** attempt);
-      }
-    }
-  }
-  throw lastError;
-}
-
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));

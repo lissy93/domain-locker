@@ -4,7 +4,7 @@ import {
   dedupeRegistrars,
   matchRegistrarRows,
   mergeRegistrarCounts,
-} from '~/app/services/domain-utils.service';
+} from '~/shared/registrar-names';
 import { DbDomain, Registrar } from '~/app/../types/Database';
 
 export class RegistrarQueries {

@@ -42,10 +42,14 @@ interface WhoDatResponse {
 }
 
 /* Try who-dat as the first fallback when local whois fails */
-export const tryWhoDat = async (domain: string): Promise<WhoisResult | null> => {
+export const tryWhoDat = async (
+  domain: string,
+  deadline: number,
+): Promise<WhoisResult | null> => {
   try {
     const data = await fetchJson<WhoDatResponse>(
       `${WHO_DAT_URL}/${encodeURIComponent(domain)}`,
+      deadline,
     );
     if (data.error || !data.isRegistered) return null;
 

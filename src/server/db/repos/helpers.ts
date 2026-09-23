@@ -1,8 +1,26 @@
+import type { Kysely } from 'kysely';
+import type { Database } from '../schema';
+import { matchRegistrarRows } from '../../../shared/registrar-names';
+
 /** Self-hosted has no auth provider, so every row belongs to this user */
 export const SELF_HOSTED_USER_ID = 'a0000000-aaaa-42a0-a0a0-00a000000a69';
 
 export function currentUserId(): string {
   return process.env['DL_USER_ID'] || SELF_HOSTED_USER_ID;
+}
+
+/** Ids of every registrar row whose name is a variant spelling of the given one */
+export async function matchingRegistrarIds(
+  db: Kysely<Database>,
+  name: string,
+  userId: string,
+): Promise<string[]> {
+  const rows = await db
+    .selectFrom('registrars')
+    .where('user_id', '=', userId)
+    .select(['id', 'name'])
+    .execute();
+  return matchRegistrarRows(rows, name).map((row) => row.id);
 }
 
 /** Groups rows by a foreign key, so related records can be stitched in one pass */

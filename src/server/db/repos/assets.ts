@@ -1,6 +1,17 @@
 import type { Kysely } from 'kysely';
 import type { Database } from '../schema';
-import { currentUserId, toBoolean, toNumber } from './helpers';
+import {
+  currentUserId,
+  indexBy,
+  matchingRegistrarIds,
+  toBoolean,
+  toNumber,
+} from './helpers';
+import {
+  dedupeRegistrars,
+  matchRegistrarRows,
+  mergeRegistrarCounts,
+} from '../../../shared/registrar-names';
 
 /** Groups the flat rows the queries return into one entry per asset */
 function collect<T, R>(
@@ -144,6 +155,7 @@ export function assetsRepo(db: Kysely<Database>) {
       return Object.fromEntries(rows.map((row) => [row.ip, toNumber(row.count) ?? 0]));
     },
 
+    /** Registrars with their domains, variant spellings collapsed into one entry */
     async registrars(userId = currentUserId()) {
       const rows = await db
         .selectFrom('registrars')
@@ -157,26 +169,32 @@ export function assetsRepo(db: Kysely<Database>) {
         ])
         .orderBy('registrars.name')
         .execute();
-      return collect(
-        rows.filter((row) => row.domain_name !== null),
-        (row) => row.id,
-        (row) => ({ id: row.id, name: row.name, url: row.url }),
-        (row) => row.domain_name as string,
-      );
+      return dedupeRegistrars([...indexBy(rows, 'id').values()])
+        .map(({ id, name, url }) => ({
+          id,
+          name,
+          url,
+          domains: matchRegistrarRows(rows, name)
+            .map((row) => row.domain_name)
+            .filter((domain) => domain !== null),
+        }))
+        .filter((registrar) => registrar.domains.length > 0);
     },
 
     async domainsByRegistrar(name: string, userId = currentUserId()): Promise<string[]> {
+      const registrarIds = await matchingRegistrarIds(db, name, userId);
+      if (!registrarIds.length) return [];
       const rows = await db
         .selectFrom('domains')
-        .innerJoin('registrars', 'registrars.id', 'domains.registrar_id')
-        .where('domains.user_id', '=', userId)
-        .where('registrars.name', '=', name)
-        .select('domains.domain_name')
-        .orderBy('domains.domain_name')
+        .where('user_id', '=', userId)
+        .where('registrar_id', 'in', registrarIds)
+        .select('domain_name')
+        .orderBy('domain_name')
         .execute();
       return rows.map((row) => row.domain_name);
     },
 
+    /** Domains per registrar, summed across variant spellings of its name */
     async registrarDomainCounts(
       userId = currentUserId(),
     ): Promise<Record<string, number>> {
@@ -187,7 +205,9 @@ export function assetsRepo(db: Kysely<Database>) {
         .groupBy('registrars.name')
         .select((eb) => ['registrars.name', eb.fn.count('domains.id').as('count')])
         .execute();
-      return Object.fromEntries(rows.map((row) => [row.name, toNumber(row.count) ?? 0]));
+      return mergeRegistrarCounts(
+        Object.fromEntries(rows.map((row) => [row.name, toNumber(row.count) ?? 0])),
+      );
     },
 
     async sslIssuers(userId = currentUserId()) {

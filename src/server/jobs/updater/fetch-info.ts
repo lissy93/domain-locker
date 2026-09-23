@@ -11,7 +11,8 @@ export interface FreshDomainInfo {
   host?: Record<string, unknown>;
 }
 
-const LOOKUP_TIMEOUT_MS = 10000;
+// Beyond the lookup's own limits, a 20s WHOIS budget plus 5s secondary lookups
+const LOOKUP_TIMEOUT_MS = 30000;
 
 /**
  * Resolves a domain in-process. Going over HTTP would mean the job guessing the

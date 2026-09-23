@@ -1,6 +1,7 @@
 import { runQuery } from '../../../db/raw';
 import { recordDomainUpdate } from '../record-update';
-import { normalizeRegistrarName, normalizeStr, removeUrlChars } from '../utils';
+import { normalizeStr, removeUrlChars } from '../utils';
+import { normalizeRegistrarName } from '../../../../shared/registrar-names';
 import type { DomainRow } from '../index';
 import type { FreshDomainInfo } from '../fetch-info';
 
@@ -39,8 +40,9 @@ export async function updateRegistrar(
   freshInfo: FreshDomainInfo,
   changes: string[],
 ): Promise<void> {
+  const freshName = removeUrlChars(freshInfo.registrar?.name);
   const oldName = normalizeStr(removeUrlChars(domainRow.registrar?.name));
-  const newName = normalizeStr(removeUrlChars(freshInfo?.registrar?.name));
+  const newName = normalizeStr(freshName);
 
   const userId = domainRow.user_id || 'a0000000-aaaa-42a0-a0a0-00a000000a69';
 
@@ -49,7 +51,7 @@ export async function updateRegistrar(
   }
 
   const registrarId = await upsertRegistrar(
-    newName,
+    freshName,
     freshInfo.registrar?.url ?? null,
     userId,
   );

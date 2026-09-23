@@ -152,7 +152,8 @@ This value is used by **FeatureService** to dynamically enable or disable featur
 | `DL_DEMO_PASS` | Demo user password. | ❌ (Demo mode only) |
 | `DL_DOMAIN_INFO_API` | API endpoint for domain info (`/api/domain-info`). | ✅ |
 | `DL_DOMAIN_SUBS_API` | API endpoint for domain subscription data. | ✅ |
-| `DL_WHO_DAT_URL` | Base URL of a [who-dat](https://github.com/lissy93/who-dat) instance, used as the first whois fallback (defaults to the public instance). | ❌ |
+| `DL_WHOIS_PROVIDERS` | Comma-separated order of WHOIS sources to try, from `rdap`, `whois-json`, `who-dat`, `native` and `whoisxml` (default: that order). Leave out `whois-json` on hosts which cannot reach port 43. | ❌ |
+| `DL_WHO_DAT_URL` | Base URL of a [who-dat](https://github.com/lissy93/who-dat) instance, used when the sources before it return nothing (defaults to the public instance). | ❌ |
 | `DL_WHOIS_CONCURRENCY` | Number of domains the updater processes at once (default: `5`). | ❌ |
 | `DL_WHOIS_DELAY_MS` | Milliseconds to wait between updater requests, for registries which rate limit whois (default: `0`). | ❌ |
 | `DL_STRIPE_CHECKOUT_URL` | Stripe checkout session creation URL. | ❌ |
