@@ -91,11 +91,14 @@ export function hasValidApiKey(event: H3Event): boolean {
   return Boolean(header) && safeEquals(header as string, expected);
 }
 
-/** Throws unless the caller may use the API. A no-op when auth is not configured */
+/** Whether the caller may use the API. Always true when auth is not configured */
+export function isAuthorised(event: H3Event): boolean {
+  return !isAuthEnabled() || hasValidSession(event) || hasValidApiKey(event);
+}
+
+/** Throws unless the caller may use the API */
 export function requireAuth(event: H3Event): void {
-  if (!isAuthEnabled()) return;
-  if (hasValidSession(event) || hasValidApiKey(event)) return;
-  throw apiError('unauthorized', 'Authentication required');
+  if (!isAuthorised(event)) throw apiError('unauthorized', 'Authentication required');
 }
 
 /**
