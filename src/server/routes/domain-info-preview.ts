@@ -1,4 +1,5 @@
-import { defineEventHandler, getQuery, getRequestHeader } from 'h3';
+import { defineEventHandler, getQuery } from 'h3';
+import domainInfoHandler from './domain-info';
 
 export default defineEventHandler(async (event) => {
   // Get the domain name from query params
@@ -27,17 +28,7 @@ export default defineEventHandler(async (event) => {
       });
     } else {
       // Fallback to normal /api/domain-info endpoint
-      const host = getRequestHeader(event, 'host');
-      const protocol = host?.startsWith('localhost') ? 'http' : 'https';
-      const origin = `${protocol}://${host}`;
-      const authHeader = getRequestHeader(event, 'authorization');
-      const headers = authHeader ? { Authorization: authHeader } : undefined;
-      response = await fetch(
-        `${origin}/api/domain-info?domain=${encodeURIComponent(domain)}`,
-        {
-          headers,
-        },
-      );
+      return domainInfoHandler(event);
     }
 
     // If response is anything other than 200, return the error
