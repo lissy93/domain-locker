@@ -3,6 +3,7 @@ export type ApiErrorCode =
   | 'unauthorized'
   | 'forbidden'
   | 'not_found'
+  | 'method_not_allowed'
   | 'conflict'
   | 'read_only'
   | 'internal';
@@ -12,6 +13,7 @@ export const STATUS_BY_CODE: Record<ApiErrorCode, number> = {
   unauthorized: 401,
   forbidden: 403,
   not_found: 404,
+  method_not_allowed: 405,
   conflict: 409,
   read_only: 405,
   internal: 500,

@@ -1,4 +1,4 @@
-import { defineEventHandler, setResponseStatus } from 'h3';
+import { defineEventHandler, setResponseHeader, setResponseStatus } from 'h3';
 import { runJob, type JobName } from '../jobs/runner';
 import { jobAuthMissing } from './auth';
 import { STATUS_BY_CODE } from './errors';
@@ -18,6 +18,12 @@ export function defineJobRoute(job: JobName, work: () => Promise<unknown>) {
       return {
         error: { code: 'forbidden', message: 'Only available in self-hosted mode' },
       };
+    }
+
+    if (event.method !== 'POST') {
+      setResponseHeader(event, 'Allow', 'POST');
+      setResponseStatus(event, STATUS_BY_CODE['method_not_allowed']);
+      return { error: { code: 'method_not_allowed', message: 'Only POST is allowed' } };
     }
 
     if (jobAuthMissing(event)) {
