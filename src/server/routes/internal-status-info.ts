@@ -34,8 +34,18 @@ async function fetchHealthchecks(): Promise<unknown[]> {
       signal: AbortSignal.timeout(timeout),
     });
     if (!res.ok) return [];
-    const body = (await res.json()) as { checks?: unknown[] };
-    return body.checks || [];
+    const body = (await res.json()) as { checks?: Record<string, unknown>[] };
+    return (body.checks || []).map(
+      ({ name, desc, status, last_ping, last_duration, next_ping, n_pings }) => ({
+        name,
+        desc,
+        status,
+        last_ping,
+        last_duration,
+        next_ping,
+        n_pings,
+      }),
+    );
   } catch (err) {
     console.error('[external-checks] Healthchecks error:', err);
     return [];
