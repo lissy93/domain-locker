@@ -5,6 +5,7 @@
  */
 import { defineEventHandler, getQuery, setResponseStatus } from 'h3';
 import { verifyAuth } from '../utils/auth';
+import { isValidDomain } from '../utils/domain-info';
 import Logger from '../utils/logger';
 
 const log = new Logger('domain-subs');
@@ -244,8 +245,9 @@ async function mergeResponses(
   // Deduplicate and strip full domain
   return combined.reduce((unique, sub) => {
     // Strip full domain if present
-    const strippedSubdomain =
-      sub.subdomain.replace(new RegExp(`\\.?${domain}$`), '') || '';
+    const strippedSubdomain = sub.subdomain.endsWith(domain)
+      ? sub.subdomain.slice(0, -domain.length).replace(/\.$/, '')
+      : sub.subdomain;
 
     // Find an existing entry with the same subdomain
     const existing = unique.find((u) => u.subdomain === strippedSubdomain);
@@ -304,6 +306,10 @@ export default defineEventHandler(async (event) => {
 
   if (!domain) {
     return fail(event, 400, 'Domain name is required');
+  }
+
+  if (!isValidDomain(domain)) {
+    return fail(event, 400, 'Invalid domain format');
   }
 
   // No provider is the default, and finding nothing is not a failure

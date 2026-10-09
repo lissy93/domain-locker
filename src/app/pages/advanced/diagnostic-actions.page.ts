@@ -135,6 +135,7 @@ export default class ErrorPage implements OnInit {
         url: '/api/domain-monitor',
         loading: false,
         success: null,
+        method: 'POST',
         params: { domain: 'example.com' },
       },
       {
@@ -144,6 +145,7 @@ export default class ErrorPage implements OnInit {
         url: '/api/domain-updater',
         loading: false,
         success: null,
+        method: 'POST',
         params: { domain: 'example.com' },
       },
       {
