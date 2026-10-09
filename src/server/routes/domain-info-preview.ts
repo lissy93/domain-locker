@@ -13,23 +13,18 @@ export default defineEventHandler(async (event) => {
   const AS93_DOMAIN_INFO_KEY = import.meta.env['AS93_DOMAIN_INFO_KEY'];
   const useExternalApi = AS93_DOMAIN_INFO_URL && AS93_DOMAIN_INFO_KEY;
 
-  // Create fetch request, to either the external or internal API
-  let response;
+  // Fallback to normal /api/domain-info endpoint, unless our external API is specified
+  if (!useExternalApi) return domainInfoHandler(event);
+
   try {
-    if (useExternalApi) {
-      // Use our external API if specified
-      response = await fetch(AS93_DOMAIN_INFO_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Basic ${AS93_DOMAIN_INFO_KEY}`,
-        },
-        body: JSON.stringify({ domain }),
-      });
-    } else {
-      // Fallback to normal /api/domain-info endpoint
-      return domainInfoHandler(event);
-    }
+    const response = await fetch(AS93_DOMAIN_INFO_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Basic ${AS93_DOMAIN_INFO_KEY}`,
+      },
+      body: JSON.stringify({ domain }),
+    });
 
     // If response is anything other than 200, return the error
     if (!response.ok) {
