@@ -2,6 +2,7 @@ import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import { isPlatformBrowser } from '@angular/common';
 import { REQUEST } from '@analogjs/router/tokens';
+import { selectLanguage } from '~/app/utils/language-preference';
 
 @Injectable({
   providedIn: 'root',
@@ -45,10 +46,9 @@ export class TranslationService {
       langFromUrl = urlParams?.get('lang') || null;
     }
     if (isPlatformBrowser(this.platformId)) {
-      langFromStorage =
-        localStorage.getItem('language') || langFromUrl || this.defaultLang;
+      langFromStorage = localStorage.getItem('language');
     }
-    return langFromStorage || langFromUrl || this.defaultLang;
+    return selectLanguage(langFromUrl, langFromStorage, this.defaultLang);
   }
 
   // Validate if the given language code is supported
