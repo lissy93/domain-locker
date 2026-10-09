@@ -62,7 +62,7 @@ export default defineEventHandler(async (event) => {
 });
 ```
 
-Note that `verifyAuth` only supports auth from Supabase instances. Self-hosted requests are authorized by `defineApiRoute`, using the optional password session or `DL_API_KEY`.
+On self-hosted instances, `verifyAuth` instead checks for the optional password session or `DL_API_KEY`, same as `defineApiRoute`, and lets everything through when no password is set.
 
 ---
 

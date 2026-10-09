@@ -1,11 +1,22 @@
-import { defineEventHandler, setResponseStatus } from 'h3';
+import {
+  defineEventHandler,
+  setResponseHeader,
+  setResponseStatus,
+  type H3Event,
+} from 'h3';
 import { runJob, type JobName } from '../jobs/runner';
 import { jobAuthMissing } from './auth';
-import { STATUS_BY_CODE } from './errors';
+import { STATUS_BY_CODE, type ApiErrorCode } from './errors';
 import Logger from '../utils/logger';
 
 const log = new Logger('jobs');
 const warned = new Set<JobName>();
+
+/** Sets the status and returns the same error envelope as the /v1 routes */
+function fail(event: H3Event, code: ApiErrorCode, message: string) {
+  setResponseStatus(event, STATUS_BY_CODE[code]);
+  return { error: { code, message } };
+}
 
 /**
  * Manual trigger for a scheduled job, kept so the legacy updater container
@@ -14,15 +25,16 @@ const warned = new Set<JobName>();
 export function defineJobRoute(job: JobName, work: () => Promise<unknown>) {
   return defineEventHandler(async (event) => {
     if (process.env['DL_ENV_TYPE'] !== 'selfHosted') {
-      setResponseStatus(event, STATUS_BY_CODE['forbidden']);
-      return {
-        error: { code: 'forbidden', message: 'Only available in self-hosted mode' },
-      };
+      return fail(event, 'forbidden', 'Only available in self-hosted mode');
+    }
+
+    if (event.method !== 'POST') {
+      setResponseHeader(event, 'Allow', 'POST');
+      return fail(event, 'method_not_allowed', 'Only POST is allowed');
     }
 
     if (jobAuthMissing(event)) {
-      setResponseStatus(event, STATUS_BY_CODE['unauthorized']);
-      return { error: { code: 'unauthorized', message: 'Authentication required' } };
+      return fail(event, 'unauthorized', 'Authentication required');
     }
 
     if (!warned.has(job) && process.env['DL_DISABLE_SCHEDULER'] !== 'true') {

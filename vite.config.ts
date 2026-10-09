@@ -164,6 +164,11 @@ export default defineConfig( ({ command, mode, isSsrBuild }) => {
         nitro: {
           preset: nitroPreset,
           sourceMap: false,
+          // Make browsers check for a newer version before using a cached copy
+          routeRules:
+            nitroPreset === 'vercel'
+              ? {}
+              : { '/**': { ssr: true, headers: { 'cache-control': 'no-cache' } } },
         },
         content: {
           highlighter: 'prism',
