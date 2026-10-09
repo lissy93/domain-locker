@@ -64,7 +64,7 @@ export function endSession(event: H3Event): void {
 
 export function hasValidSession(event: H3Event): boolean {
   const cookie = getCookie(event, SESSION_COOKIE);
-  if (!cookie) return false;
+  if (!cookie || !isAuthEnabled()) return false;
 
   const parts = cookie.split('.');
   if (parts.length !== 3) return false;
