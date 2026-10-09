@@ -1,5 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { H3Event } from 'h3';
+import { isAuthorised } from '../lib/auth';
 
 const IS_MANAGED = import.meta.env['DL_ENV_TYPE'] === 'managed';
 
@@ -24,7 +25,12 @@ if (IS_MANAGED) {
 export async function verifyAuth(
   event: H3Event,
 ): Promise<{ success: boolean; error?: string }> {
-  if (!IS_MANAGED) return { success: true }; // Skip auth if not in managed mode
+  // Self-hosted instances use their own optional password or API key
+  if (!IS_MANAGED) {
+    return isAuthorised(event)
+      ? { success: true }
+      : { success: false, error: 'Authentication required' };
+  }
 
   if (!SUPABASE_CLIENT) {
     return { success: false, error: 'Auth not configured' };

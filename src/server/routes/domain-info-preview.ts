@@ -1,4 +1,5 @@
-import { defineEventHandler, getQuery, getRequestHeader } from 'h3';
+import { defineEventHandler, getQuery } from 'h3';
+import domainInfoHandler from './domain-info';
 
 export default defineEventHandler(async (event) => {
   // Get the domain name from query params
@@ -12,33 +13,18 @@ export default defineEventHandler(async (event) => {
   const AS93_DOMAIN_INFO_KEY = import.meta.env['AS93_DOMAIN_INFO_KEY'];
   const useExternalApi = AS93_DOMAIN_INFO_URL && AS93_DOMAIN_INFO_KEY;
 
-  // Create fetch request, to either the external or internal API
-  let response;
+  // Fallback to normal /api/domain-info endpoint, unless our external API is specified
+  if (!useExternalApi) return domainInfoHandler(event);
+
   try {
-    if (useExternalApi) {
-      // Use our external API if specified
-      response = await fetch(AS93_DOMAIN_INFO_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Basic ${AS93_DOMAIN_INFO_KEY}`,
-        },
-        body: JSON.stringify({ domain }),
-      });
-    } else {
-      // Fallback to normal /api/domain-info endpoint
-      const host = getRequestHeader(event, 'host');
-      const protocol = host?.startsWith('localhost') ? 'http' : 'https';
-      const origin = `${protocol}://${host}`;
-      const authHeader = getRequestHeader(event, 'authorization');
-      const headers = authHeader ? { Authorization: authHeader } : undefined;
-      response = await fetch(
-        `${origin}/api/domain-info?domain=${encodeURIComponent(domain)}`,
-        {
-          headers,
-        },
-      );
-    }
+    const response = await fetch(AS93_DOMAIN_INFO_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Basic ${AS93_DOMAIN_INFO_KEY}`,
+      },
+      body: JSON.stringify({ domain }),
+    });
 
     // If response is anything other than 200, return the error
     if (!response.ok) {
