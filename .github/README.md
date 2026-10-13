@@ -147,7 +147,7 @@ Or use the [`docker-compose.yml`](https://github.com/Lissy93/domain-locker/blob/
   - The app schedules these itself:
   - `/api/domain-updater` - Runs daily, to keep domain data up-to-date and trigger notifications
   - `/api/domain-monitor` - Runs every 15 minutes, to monitor website uptime and performance
-  - `/api/cleanup-monitor-data` - Runs weekly, to aggregate old monitoring data
+  - `/api/cleanup-monitor-data` - Runs weekly, to aggregate old monitoring data and remove anything past your retention limits
 - **Example**:
   - Putting it all together, you can use our [`docker-compose.yml`](https://github.com/Lissy93/domain-locker/blob/main/docker-compose.yml) file.
   - For more details, view the [Self-Hosting Docs](https://domain-locker.com/about/self-hosting)

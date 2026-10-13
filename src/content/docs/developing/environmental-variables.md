@@ -148,6 +148,11 @@ This value is used by **FeatureService** to dynamically enable or disable featur
 | `DL_DISABLE_SCHEDULER` | Turn off the internal scheduler, and drive the jobs yourself. | ❌ |
 | `DL_UPDATER_INTERVAL_MINUTES` | How often domains are refreshed (default daily). | ❌ |
 | `DL_MONITOR_INTERVAL_MINUTES` | How often uptime is checked (default 15). | ❌ |
+| `DL_CLEANUP_INTERVAL_MINUTES` | How often old data is cleaned up (default weekly). | ❌ |
+| `DL_UPTIME_AGGREGATE_AFTER_DAYS` | Days of detailed uptime checks to keep, before they're collapsed into daily averages (default 7). | ❌ |
+| `DL_UPTIME_RETENTION_DAYS` | Days of uptime history to keep (default forever). | ❌ |
+| `DL_HISTORY_RETENTION_DAYS` | Days of domain change history to keep (default forever). | ❌ |
+| `DL_NOTIFICATIONS_RETENTION_DAYS` | Days of notifications to keep, though expiry reminders are never removed (default forever). | ❌ |
 | `DL_DEMO_USER` | Demo user email. | ❌ (Demo mode only) |
 | `DL_DEMO_PASS` | Demo user password. | ❌ (Demo mode only) |
 | `DL_DOMAIN_INFO_API` | API endpoint for domain info (`/api/domain-info`). | ✅ |

@@ -176,6 +176,17 @@ export function notificationsRepo(db: Kysely<Database>) {
       return Number(result.numUpdatedRows ?? 0);
     },
 
+    /** Drops notifications older than the retention window, except the kept type */
+    async prune(olderThanDays: number, keepType: string): Promise<number> {
+      const cutoff = new Date(Date.now() - olderThanDays * 86_400_000).toISOString();
+      const result = await db
+        .deleteFrom('notifications')
+        .where('created_at', '<', cutoff)
+        .where('change_type', '!=', keepType)
+        .executeTakeFirst();
+      return Number(result.numDeletedRows ?? 0);
+    },
+
     async add(
       domainId: string,
       changeType: string,

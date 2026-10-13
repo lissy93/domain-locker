@@ -8,7 +8,7 @@ const DAY_MS = 86_400_000;
 const DEFAULT_THRESHOLDS = [90, 30, 7, 2, 0];
 
 /** Matches the preference key the settings page writes */
-const REMINDER_TYPE = 'expiry_domain';
+export const REMINDER_TYPE = 'expiry_domain';
 
 export interface ReminderResult {
   domain: string;

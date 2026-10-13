@@ -112,6 +112,21 @@ export function adminRepo(db: Kysely<Database>, backend: Backend) {
       };
     },
 
+    /** Shrinks the SQLite file once a tenth is free, as Postgres reuses space itself */
+    async compact(): Promise<boolean> {
+      if (backend !== 'sqlite') return false;
+      const { rows } = await sql<{ free: number; total: number }>`
+        SELECT freelist_count AS free, page_count AS total
+        FROM pragma_freelist_count(), pragma_page_count()`.execute(db);
+      if (rows[0].free * 10 < rows[0].total) return false;
+      try {
+        await sql`VACUUM`.execute(db);
+      } finally {
+        await sql`PRAGMA wal_checkpoint(TRUNCATE)`.execute(db);
+      }
+      return true;
+    },
+
     /** Row count per table, reporting failures rather than throwing */
     async checkTables(): Promise<TableCheck[]> {
       return Promise.all(
