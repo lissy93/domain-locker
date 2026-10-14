@@ -1,5 +1,6 @@
 import { runJob, type JobName } from './runner';
-import { runMonitor, runUptimeCleanup } from './monitor';
+import { runMonitor } from './monitor';
+import { runCleanup } from './cleanup';
 import { runUpdater } from './updater';
 import { runReminders } from './reminders';
 import { numberFromEnv } from '../utils/config';
@@ -42,7 +43,7 @@ export function schedules(): Schedule[] {
     {
       job: 'cleanup-monitor-data',
       everyMinutes: minutesFromEnv('DL_CLEANUP_INTERVAL_MINUTES', 7 * 24 * 60),
-      run: runUptimeCleanup,
+      run: runCleanup,
     },
   ];
 }

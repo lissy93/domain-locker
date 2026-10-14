@@ -124,6 +124,16 @@ export function historyRepo(db: Kysely<Database>) {
         .execute();
       return true;
     },
+
+    /** Drops changes older than the retention window */
+    async prune(olderThanDays: number): Promise<number> {
+      const cutoff = new Date(Date.now() - olderThanDays * 86_400_000).toISOString();
+      const result = await db
+        .deleteFrom('domain_updates')
+        .where('date', '<', cutoff)
+        .executeTakeFirst();
+      return Number(result.numDeletedRows ?? 0);
+    },
   };
 }
 

@@ -289,6 +289,19 @@ environment:
 
 To drive them from your own scheduler instead, set `DL_DISABLE_SCHEDULER=true`, then POST to `/api/domain-updater`, `/api/domain-monitor`, `/api/expiration-reminders` and `/api/cleanup-monitor-data` yourself. For that, consider [Ofelia](https://github.com/mcuadros/ofelia)
 
+### Data Retention
+
+By default, nothing is deleted, though uptime checks over a week old are collapsed into daily averages. To have the cleanup job delete older data, set how many days to keep:
+
+```yaml
+environment:
+  DL_UPTIME_RETENTION_DAYS: 365
+  DL_HISTORY_RETENTION_DAYS: 365
+  DL_NOTIFICATIONS_RETENTION_DAYS: 90
+```
+
+Expiry reminders are always kept, so the same reminder is never sent twice. On SQLite, when history or notification retention removes rows and over a tenth of the database file is then free, the file is compacted to give that space back, which briefly needs free disk space of up to twice the database's size.
+
 ---
 
 ## Providing Custom Assets

@@ -1,4 +1,4 @@
 import { defineJobRoute } from '../lib/job-route';
-import { runUptimeCleanup } from '../jobs/monitor';
+import { runCleanup } from '../jobs/cleanup';
 
-export default defineJobRoute('cleanup-monitor-data', runUptimeCleanup);
+export default defineJobRoute('cleanup-monitor-data', runCleanup);
