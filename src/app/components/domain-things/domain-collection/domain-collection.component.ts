@@ -7,7 +7,6 @@ import {
   OnChanges,
   SimpleChanges,
   Output,
-  ViewChild,
   inject,
 } from '@angular/core';
 
@@ -48,9 +47,6 @@ export class DomainCollectionComponent implements OnInit, OnChanges {
     /* no-op */
   };
   @Output() $triggerReload = new EventEmitter();
-
-  @ViewChild(FieldVisibilityFilterComponent)
-  filtersComp!: FieldVisibilityFilterComponent;
 
   filteredDomains: DbDomain[] = [];
   isGridLayout = true;
@@ -106,20 +102,16 @@ export class DomainCollectionComponent implements OnInit, OnChanges {
   visibleColumns: { field: string; header: string; width: number }[] = [];
 
   ngOnInit() {
-    this.filteredDomains = this.domains;
-    this.sortDomains();
     this.initializeFuse();
     this.updateVisibleColumns();
-    if (this.initialSearch) this.onSearchChange(this.initialSearch);
+    this.onSearchChange(this.initialSearch);
   }
 
   ngOnChanges(changes: SimpleChanges) {
     // When domains input changes, update filtered domains and re-initialize Fuse
     if (changes['domains'] && !changes['domains'].firstChange) {
-      this.filteredDomains = this.domains;
       this.initializeFuse();
-      this.sortDomains();
-      if (this.searchTerm) this.filterDomains();
+      this.filterDomains();
       this.cdr.markForCheck();
     }
   }
@@ -131,7 +123,7 @@ export class DomainCollectionComponent implements OnInit, OnChanges {
 
   onSortChange(sortOption: FieldOption) {
     this.sortOrder = sortOption.value;
-    this.sortDomains();
+    this.filterDomains();
   }
 
   updateVisibleColumns() {
@@ -152,13 +144,14 @@ export class DomainCollectionComponent implements OnInit, OnChanges {
     );
   }
 
-  sortDomains() {
+  /* Returns a copy of the domains, in the chosen sort order */
+  sortDomains(domains: DbDomain[]): DbDomain[] {
+    const sorted = [...domains];
     switch (this.sortOrder) {
       case 'alphabetical':
-        this.filteredDomains.sort((a, b) => a.domain_name.localeCompare(b.domain_name));
-        break;
+        return sorted.sort((a, b) => a.domain_name.localeCompare(b.domain_name));
       case 'expiryDate':
-        this.filteredDomains.sort((a, b) => {
+        return sorted.sort((a, b) => {
           const aTime = a.expiry_date
             ? new Date(a.expiry_date).getTime()
             : Number.MAX_SAFE_INTEGER;
@@ -167,11 +160,8 @@ export class DomainCollectionComponent implements OnInit, OnChanges {
             : Number.MAX_SAFE_INTEGER;
           return aTime - bTime;
         });
-        break;
-      case 'date':
       default:
-        this.filteredDomains = [...this.domains];
-        break;
+        return sorted;
     }
   }
 
@@ -217,18 +207,18 @@ export class DomainCollectionComponent implements OnInit, OnChanges {
     this.fuse = new Fuse(this.domains, options);
   }
 
+  /* Applies the search term, then the sort order */
   filterDomains() {
-    if (!this.searchTerm) {
-      this.filteredDomains = this.domains;
-      return;
+    let matches = this.domains;
+    if (this.searchTerm) {
+      matches = this.fuse.search(this.searchTerm).map((result) => result.item);
+      if (matches.length === 0) {
+        matches = this.domains.filter((domain) =>
+          this.domainMatchesSearch(domain, this.searchTerm),
+        );
+      }
     }
-    const searchResults = this.fuse.search(this.searchTerm);
-    this.filteredDomains = searchResults.map((result) => result.item);
-    if (this.filteredDomains.length === 0) {
-      this.filteredDomains = this.domains.filter((domain) =>
-        this.domainMatchesSearch(domain, this.searchTerm.toLowerCase()),
-      );
-    }
+    this.filteredDomains = this.sortDomains(matches);
   }
 
   domainMatchesSearch(domain: DbDomain, searchTerm: string): boolean {
@@ -240,13 +230,5 @@ export class DomainCollectionComponent implements OnInit, OnChanges {
       domain.ip_addresses?.some((ip) => ip.ip_address.includes(searchTerm)) ||
       false
     );
-  }
-
-  resetFilters() {
-    this.searchTerm = '';
-    this.filtersComp.initializeSelectedFields();
-    this.filteredDomains = this.domains;
-    this.sortOrder = 'date';
-    this.sortDomains();
   }
 }
