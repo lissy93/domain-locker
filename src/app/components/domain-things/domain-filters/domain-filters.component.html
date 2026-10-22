@@ -14,8 +14,8 @@
         <input
           id="global-search"
           pInputText
-          [value]="initialSearch"
-          (input)="onSearch($event)"
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="searchChange.emit($event)"
           type="text"
           placeholder="Search"
           class="w-full"
@@ -57,6 +57,7 @@
         id="layout-toggle"
         [(ngModel)]="selectedLayout"
         [options]="layoutOptions"
+        [allowEmpty]="false"
         (onChange)="onLayoutChange($event.value)"
         optionLabel="label"
         optionValue="value"
