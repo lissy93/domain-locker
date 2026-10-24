@@ -1,6 +1,7 @@
 <!-- Domain Filters -->
 <div class="mb-4">
   <app-field-visibility-filter
+    #filters
     (visibilityChange)="onVisibilityChange($event)"
     (searchChange)="onSearchChange($event)"
     (layoutChange)="onLayoutChange($event)"
@@ -66,24 +67,20 @@
           ? ('DOMAINS.DOMAIN_COLLECTION.GRID_VIEW' | translate)
           : ('DOMAINS.DOMAIN_COLLECTION.LIST_VIEW' | translate)
       }}<br />
-      @if (searchTerm || visibleFields.length !== 3) {
+      @if (searchTerm || filters.isCustomView) {
         <button
           type="button"
-          (click)="resetFilters()"
+          (click)="filters.resetView()"
           class="text-primary opacity-70 underline cursor-pointer bg-transparent border-none p-0"
         >
           {{ 'DOMAINS.DOMAIN_COLLECTION.RESET_FILTERS' | translate }}
         </button>
       }
-      @if ((searchTerm || visibleFields.length !== 3) && preFilteredText) {
+      @if ((searchTerm || filters.isCustomView) && preFilteredText) {
         {{ 'DOMAINS.DOMAIN_COLLECTION.OR' | translate }}
       }
       @if (preFilteredText) {
-        <a
-          routerLink="/domains"
-          (click)="resetFilters()"
-          class="text-primary opacity-70 underline cursor-pointer"
-        >
+        <a routerLink="/domains" class="text-primary opacity-70 underline cursor-pointer">
           {{ 'DOMAINS.DOMAIN_COLLECTION.VIEW_ALL' | translate }}
         </a>
       }

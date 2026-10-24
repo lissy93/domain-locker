@@ -5,17 +5,26 @@ import {
   Input,
   OnInit,
   ChangeDetectorRef,
+  PLATFORM_ID,
   inject,
 } from '@angular/core';
 
+import { isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PrimeNgModule } from '~/app/prime-ng.module';
 import { Router } from '@angular/router';
 import QuickAddDomain from '~/app/pages/domains/add/quick-add/index.page';
+import { ErrorHandlerService } from '~/app/services/error-handler.service';
 
 export interface FieldOption {
   label: string;
   value: string;
+}
+
+interface ViewPrefs {
+  layout: boolean;
+  fields: string[];
+  sort: string;
 }
 
 @Component({
@@ -28,6 +37,9 @@ export interface FieldOption {
 export class FieldVisibilityFilterComponent implements OnInit {
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
+  private platformId = inject<object>(PLATFORM_ID);
+  private errorHandler = inject(ErrorHandlerService);
+  private readonly prefsKey = 'domainViewPrefs';
 
   @Input() fieldOptions: FieldOption[] = [
     { label: 'Domain Name', value: 'domainName' },
@@ -63,6 +75,7 @@ export class FieldVisibilityFilterComponent implements OnInit {
   };
   @Output() $triggerReload = new EventEmitter();
 
+  searchTerm = '';
   selectedFields: FieldOption[] = [];
   selectedFieldsList: string[] = [];
   sortOrder: FieldOption = this.sortOptions[0];
@@ -99,38 +112,88 @@ export class FieldVisibilityFilterComponent implements OnInit {
   ];
 
   ngOnInit() {
-    this.initializeSelectedFields();
+    this.searchTerm = this.initialSearch;
+    this.applyPrefs(this.loadPrefs());
   }
 
-  public initializeSelectedFields() {
-    this.selectedFields = this.fieldOptions.filter((option) =>
-      this.defaultSelectedFields.includes(option.value),
+  /* Clears the search and restores the default layout, fields and sort */
+  public resetView() {
+    localStorage.removeItem(this.prefsKey);
+    this.searchTerm = '';
+    this.searchChange.emit('');
+    this.applyPrefs({});
+  }
+
+  /* Whether the layout, fields or sort differ from the defaults */
+  get isCustomView(): boolean {
+    return (
+      !this.selectedLayout ||
+      this.sortOrder !== this.sortOptions[0] ||
+      this.selectedFieldsList.join() !== this.defaultSelectedFields.join()
     );
+  }
+
+  /* Applies layout, fields and sort, using defaults for anything missing or unknown */
+  private applyPrefs(prefs: Partial<ViewPrefs>) {
+    this.selectedLayout = typeof prefs.layout === 'boolean' ? prefs.layout : true;
+    this.sortOrder =
+      this.sortOptions.find((option) => option.value === prefs.sort) ||
+      this.sortOptions[0];
+    this.setFields(Array.isArray(prefs.fields) ? prefs.fields : []);
+    this.layoutChange.emit(this.selectedLayout);
+    this.sortChange.emit(this.sortOrder);
+  }
+
+  /* Reads the user's saved layout, fields and sort, if any */
+  private loadPrefs(): Partial<ViewPrefs> {
+    if (!isPlatformBrowser(this.platformId)) return {};
+    try {
+      return JSON.parse(localStorage.getItem(this.prefsKey) || '{}') ?? {};
+    } catch (error) {
+      this.errorHandler.handleError({
+        error,
+        message: 'Saved domain view options are invalid, using defaults',
+        location: 'FieldVisibilityFilterComponent.loadPrefs',
+      });
+      return {};
+    }
+  }
+
+  /* Saves the current layout, fields and sort for next time */
+  private savePrefs() {
+    const prefs: ViewPrefs = {
+      layout: this.selectedLayout,
+      fields: this.selectedFieldsList,
+      sort: this.sortOrder.value,
+    };
+    localStorage.setItem(this.prefsKey, JSON.stringify(prefs));
+  }
+
+  /* Shows the given fields, or the defaults if none of them are known */
+  private setFields(fields: string[]) {
+    const known = this.fieldOptions.filter((option) => fields.includes(option.value));
+    this.selectedFields = known.length
+      ? known
+      : this.fieldOptions.filter((option) =>
+          this.defaultSelectedFields.includes(option.value),
+        );
     this.selectedFieldsList = this.selectedFields.map((field) => field.value);
-    this.onSelectionChange();
+    this.visibilityChange.emit(this.selectedFields);
   }
 
   onSelectionChange() {
-    if (this.selectedFields.length === 0) {
-      this.initializeSelectedFields();
-    }
-    this.selectedFields = this.fieldOptions.filter((option) =>
-      this.selectedFieldsList.includes(option.value),
-    );
-    this.visibilityChange.emit(this.selectedFields);
+    this.setFields(this.selectedFieldsList);
+    this.savePrefs();
   }
 
   onSortChange(event: { value: FieldOption }) {
     this.sortChange.emit(event.value);
-  }
-
-  onSearch(event: Event) {
-    const searchTerm = (event.target as HTMLInputElement).value;
-    this.searchChange.emit(searchTerm);
+    this.savePrefs();
   }
 
   onLayoutChange(event: boolean) {
-    this.layoutChange.emit(event === null ? true : event);
+    this.layoutChange.emit(event);
+    this.savePrefs();
   }
 
   navigateToAddDomain() {
