@@ -149,6 +149,7 @@ export default class UpgradePage implements OnInit {
         this.billingService.getBillingData().subscribe((data) => {
           this.billingInfo = data;
         });
+        this.getBillingInfo();
         return;
       }
     }
