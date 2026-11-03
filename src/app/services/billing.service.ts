@@ -146,12 +146,12 @@ export class BillingService {
     }
   }
 
-  async createCheckoutSession(productId: string): Promise<string> {
+  async createCheckoutSession(productId: string, planId: string): Promise<string> {
     const userId = (await this.supabaseService.getCurrentUser())?.id;
     const endpoint = this.envService.getEnvVar('DL_STRIPE_CHECKOUT_URL', null, true);
     const host = this.envService.getEnvVar('DL_BASE_URL', 'https://domain-locker.com');
     const callbackUrl = host
-      ? `${host}/settings/upgrade`
+      ? `${host}/settings/upgrade?plan=${planId}`
       : typeof window !== 'undefined'
         ? window.location.href
         : '';
