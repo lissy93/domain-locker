@@ -82,7 +82,7 @@ export class BillingService {
           message: 'Failed to fetch billing info',
           location: 'billing service',
         });
-        this.userPlan$.next('free');
+        this.userPlan$.next(this.userPlan$.value ?? 'free');
         return;
       }
       this.userPlan$.next(data['current_plan'] as UserType);
@@ -90,9 +90,9 @@ export class BillingService {
       this.errorHandler.handleError({
         error,
         location: 'billing service',
-        message: 'Unable to verify billing plan, fallback to free plan',
+        message: 'Unable to verify billing plan',
       });
-      this.userPlan$.next('free');
+      this.userPlan$.next(this.userPlan$.value ?? 'free');
     }
   }
 
