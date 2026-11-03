@@ -1,4 +1,5 @@
 import { Component, Input } from '@angular/core';
+import { CurrencyPipe } from '@angular/common';
 
 import { PrimeNgModule } from '~/app/prime-ng.module';
 import { trigger, transition, style, animate } from '@angular/animations';
@@ -7,13 +8,14 @@ import {
   selfHostedFeatures,
   enterpriseFeatures,
   billingFaq,
+  pricingCurrency,
 } from '~/app/constants/pricing-features';
 
 @Component({
   standalone: true,
   selector: 'app-pricing-cards',
   templateUrl: './pricing-cards.component.html',
-  imports: [PrimeNgModule],
+  imports: [PrimeNgModule, CurrencyPipe],
   animations: [
     trigger('slideDown', [
       transition(':enter', [
@@ -28,6 +30,7 @@ export class PricingCardsComponent {
   @Input() showFullPricing = false;
 
   pricingPlans = pricingFeatures;
+  pricingCurrency = pricingCurrency;
   selfHostedFeatures = selfHostedFeatures;
   enterpriseFeatures = enterpriseFeatures;
   billingFaq = billingFaq;

@@ -16,7 +16,7 @@
         <div class="flex flex-col items-center h-full gap-2">
           <h2 class="text-2xl font-bold m-0 mb-2">{{ plan.title }}</h2>
           <p class="text-5xl font-semibold text-primary-600 m-0">
-            ${{ getPrice(plan)
+            {{ getPrice(plan) | currency: pricingCurrency : 'symbol' : '1.0-0'
             }}<span class="text-lg font-medium text-gray-500">/mo</span>
           </p>
           <p class="text-gray-400 mb-4">
@@ -239,7 +239,9 @@
       @if (showEnterprise) {
         <div @slideDown class="flex flex-col items-center h-full gap-2 mt-4">
           <p class="text-5xl font-semibold text-orange-400 m-0">
-            ${{ getPrice(enterpriseFeatures)
+            {{
+              getPrice(enterpriseFeatures)
+                | currency: pricingCurrency : 'symbol' : '1.0-0'
             }}<span class="text-lg font-medium text-gray-500">/mo</span>
           </p>
           <p class="text-gray-400 mb-4">
