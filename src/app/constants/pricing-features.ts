@@ -11,6 +11,9 @@
 
 // Self-Hosted: All features, no cloud access (uses Postgres instead)
 
+// Currency that Stripe charges plans in
+export const pricingCurrency = 'GBP';
+
 export interface PricingFeature {
   title: string;
   planId: string;

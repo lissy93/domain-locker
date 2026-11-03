@@ -2,7 +2,7 @@ import { Component, OnInit, PLATFORM_ID, NgZone, inject } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { PrimeNgModule } from '~/app/prime-ng.module';
 import { BillingService } from '~/app/services/billing.service';
-import { pricingFeatures } from '~/app/constants/pricing-features';
+import { pricingCurrency, pricingFeatures } from '~/app/constants/pricing-features';
 import { Observable } from 'rxjs';
 import { ErrorHandlerService } from '~/app/services/error-handler.service';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -83,6 +83,7 @@ export default class UpgradePage implements OnInit {
 
   currentPlan$: Observable<string | null>;
   public availablePlans = pricingFeatures;
+  public pricingCurrency = pricingCurrency;
   public billingInfo: BillingInfo | null = null;
 
   public subscriptionData: SubscriptionData | null = null;

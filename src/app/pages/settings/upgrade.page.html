@@ -250,7 +250,7 @@
               plan.suggested ? 'text-green-500' : 'text-primary-500'
             }}"
           >
-            ${{ getPrice(plan)
+            {{ getPrice(plan) | currency: pricingCurrency : 'symbol' : '1.0-0'
             }}<span class="text-lg font-medium text-gray-500">/mo</span>
           </p>
           <p class="text-gray-400 mb-4">
