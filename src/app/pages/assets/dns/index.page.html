@@ -21,7 +21,7 @@
       </ng-template>
       <ng-template pTemplate="body" let-record>
         <tr>
-          <td>{{ record.record_value }}</td>
+          <td class="[overflow-wrap:anywhere]">{{ record.record_value }}</td>
           <td>
             @for (domain of record.domains; track domain; let last = $last) {
               <a [routerLink]="'/domains/' + domain" class="text-primary">
@@ -134,7 +134,7 @@
       <ng-template pTemplate="body" let-domain>
         <tr (click)="navigateToDomain(domain.domain)" class="cursor-pointer">
           <td>{{ domain.domain }}</td>
-          <td>
+          <td class="[overflow-wrap:anywhere]">
             @for (record of domain.records; track record; let last = $last) {
               <span
                 >{{ record }}

@@ -60,6 +60,11 @@ h1 {
   font-family: inherit;
 }
 
+/* Let table columns size to whole words, not single chars */
+.p-datatable {
+  overflow-wrap: break-word;
+}
+
 .p-progress-spinner-circle {
   stroke: var(--primary-color) !important;
 }
