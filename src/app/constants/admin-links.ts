@@ -114,10 +114,10 @@ export const serviceLinks: LinkItem[] = [
   },
   {
     purpose: 'Support',
-    provider: 'Freshdesk',
-    url: 'https://as93.freshdesk.com/',
-    description: 'Customer support and ticketing',
-    upstreamSite: 'https://www.freshworks.com/',
+    provider: 'Proton Mail',
+    url: 'https://mail.proton.me/',
+    description: 'Customer support inbox',
+    upstreamSite: 'https://proton.me/mail',
   },
   {
     purpose: 'Source',
