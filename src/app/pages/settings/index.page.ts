@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PrimeNgModule } from '~/app/prime-ng.module';
 import { AccountIssuesComponent } from '~/app/components/settings/account-issues/account-issues.component';
@@ -25,6 +25,7 @@ export default class SettingsPage {
   private supabaseService = inject(SupabaseService);
   private translationService = inject(TranslationService);
   private databaseService = inject(DatabaseService);
+  private cdr = inject(ChangeDetectorRef);
 
   currentPlan$?: Observable<string | null>;
   user$?: Observable<User | null>;
@@ -81,6 +82,7 @@ export default class SettingsPage {
     // Async call for notifications
     this.getNotificationPreferences().finally(() => {
       this.isAccountInfoLoading = false;
+      this.cdr.markForCheck();
     });
   }
 
