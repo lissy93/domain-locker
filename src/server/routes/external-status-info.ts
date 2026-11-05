@@ -69,10 +69,6 @@ const services: Service[] = [
     rss: 'https://status.formbricks.com/feed.xml',
   },
   {
-    service: 'Freshdesk',
-    rss: 'https://freshdesk.freshstatus.io/rss',
-  },
-  {
     service: 'GitHub',
     rss: 'https://www.githubstatus.com/history.rss',
   },

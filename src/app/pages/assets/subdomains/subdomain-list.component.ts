@@ -28,9 +28,9 @@ type SubdomainRow = SubdomainView & { kvList: { key: string; value: string }[] }
   template: `
     <ul
       [class]="
-        ' list-none p-0 m-0 grid grid-cols-1 ' +
+        ' list-none p-0 m-0 grid grid-cols-1 wide-grid ' +
         (embeddedView
-          ? 'xl:grid-cols-4 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 gap-3 '
+          ? 'xl:grid-cols-4 lg:grid-cols-3 md:grid-cols-2 sm:grid-cols-1 gap-3 [--wide-grid-min:16rem] '
           : ' md:grid-cols-2 lg:grid-cols-3 gap-4 ')
       "
     >

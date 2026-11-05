@@ -58,7 +58,7 @@ export default defineEventHandler(async (event) => {
       },
       body: JSON.stringify({
         from: 'noreply@domain-locker.com',
-        to: ['support@as93.freshdesk.com'],
+        to: ['support@as93.net'],
         reply_to: email,
         subject: `Support Request: ${sanitiseHeader(queryType)} from ${sanitiseHeader(name)}`,
         html: emailContent,

@@ -32,13 +32,15 @@
         class="no-underline text-default flex items-center"
       >
         <app-domain-favicon [domain]="domain.domain_name" [size]="24" class="mr-2 mt-2" />
-        <span class="text-primary">{{
-          domainUtils.splitDomain(domain.domain_name).domain
-        }}</span>
-        <span class="text-default">.</span>
-        <span class="text-secondary">{{
-          domainUtils.splitDomain(domain.domain_name).tld
-        }}</span>
+        <span>
+          <span class="text-primary">{{
+            domainUtils.splitDomain(domain.domain_name).domain
+          }}</span>
+          <span class="text-default">.</span>
+          <span class="text-secondary">{{
+            domainUtils.splitDomain(domain.domain_name).tld
+          }}</span>
+        </span>
       </a>
     </h2>
   }

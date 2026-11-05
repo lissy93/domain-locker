@@ -14,7 +14,7 @@
   </ng-template>
   <ng-template pTemplate="body" let-tag>
     <tr class="hover:bg-highlight">
-      <td class="border-l-4 border-l-{{ tag.color }}-400">
+      <td class="border-l-4 border-l-{{ tag.color }}-400 whitespace-nowrap">
         <a
           [routerLink]="['/assets/tags', tag.name]"
           class="text-{{
@@ -31,43 +31,43 @@
         </a>
       </td>
       <td>
-        <span class="italic truncate">
-          {{ tag.description }}
-        </span>
+        <span class="italic whitespace-pre-line">{{ tag.description }}</span>
       </td>
       <td>
         {{ tag.domainCount }}
       </td>
-      <td class="flex gap-2 justify-end">
-        <a [routerLink]="'/assets/tags/' + tag.name">
-          <p-button size="small" label="View" icon="pi pi-eye" styleClass="py-2 px-2" />
-        </a>
-        <a [routerLink]="'/assets/tags/' + tag.name + '/edit'">
+      <td>
+        <div class="flex gap-2 justify-end whitespace-nowrap">
+          <a [routerLink]="'/assets/tags/' + tag.name">
+            <p-button size="small" label="View" icon="pi pi-eye" styleClass="py-2 px-2" />
+          </a>
+          <a [routerLink]="'/assets/tags/' + tag.name + '/edit'">
+            <p-button
+              size="small"
+              label="Edit"
+              icon="pi pi-pencil"
+              styleClass="py-2 px-2"
+              severity="info"
+            />
+          </a>
+          <a [routerLink]="'/assets/tags/' + tag.name + '/add-domains'">
+            <p-button
+              size="small"
+              label="Add Domains"
+              icon="pi pi-check-square"
+              styleClass="py-2 px-2"
+              severity="success"
+            />
+          </a>
           <p-button
             size="small"
-            label="Edit"
-            icon="pi pi-pencil"
+            label="Delete"
+            icon="pi pi-trash"
             styleClass="py-2 px-2"
-            severity="info"
+            severity="danger"
+            (onClick)="deleteTag(tag)"
           />
-        </a>
-        <a [routerLink]="'/assets/tags/' + tag.name + '/add-domains'">
-          <p-button
-            size="small"
-            label="Add Domains"
-            icon="pi pi-check-square"
-            styleClass="py-2 px-2"
-            severity="success"
-          />
-        </a>
-        <p-button
-          size="small"
-          label="Delete"
-          icon="pi pi-trash"
-          styleClass="py-2 px-2"
-          severity="danger"
-          (onClick)="deleteTag(tag)"
-        />
+        </div>
       </td>
     </tr>
   </ng-template>

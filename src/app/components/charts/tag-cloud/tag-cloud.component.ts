@@ -5,8 +5,10 @@ import {
   ViewChild,
   HostListener,
   OnDestroy,
+  PLATFORM_ID,
   inject,
 } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { select } from 'd3-selection';
 import cloud from 'd3-cloud';
 
@@ -48,6 +50,7 @@ export class DomainTagCloudComponent implements OnInit, OnDestroy {
   private databaseService = inject(DatabaseService);
   private errorHandler = inject(ErrorHandlerService);
   private router = inject(Router);
+  private platformId = inject(PLATFORM_ID);
 
   @ViewChild('wordCloudContainer', { static: true }) wordCloudContainer!: ElementRef;
   private resizeTimeout: ReturnType<typeof setTimeout> | undefined;
@@ -59,7 +62,9 @@ export class DomainTagCloudComponent implements OnInit, OnDestroy {
   loading = true;
 
   ngOnInit(): void {
-    this.loadTagsWithCounts();
+    if (isPlatformBrowser(this.platformId)) {
+      this.loadTagsWithCounts();
+    }
   }
 
   ngOnDestroy(): void {

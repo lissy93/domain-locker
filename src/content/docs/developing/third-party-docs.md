@@ -47,7 +47,6 @@ To manage these services, you can find the admin portal for each, under **[Advan
 - <img src="https://icon.horse/icon/glitchtip.com" width="16" /> **[GlitchTip](https://glitchtip.com/docs)** - _Open-source error tracking_
 - <img src="https://icon.horse/icon/opentelemetry.io" width="16" /> **[OpenTelemetry](https://opentelemetry.io/docs/)** - _Observability framework_
 - <img src="https://icon.horse/icon/formbricks.com" width="16" /> **[Formbricks](https://formbricks.com/docs)** - _Experience management suite_
-- <img src="https://icon.horse/icon/freshdesk.com" width="16" /> **[Freshdesk](https://freshdesk.com/docs)** - _Customer support software_
 
 
 <style>

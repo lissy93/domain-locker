@@ -1,8 +1,8 @@
 # DOMAIN LOCKER SECURITY POLICY
 Contact: mailto:security@domain-locker.com
-Contact: mailto: support@as93.freshdesk.com
+Contact: mailto:support@domain-locker.com
 Contact: https://aliciasykes.com
 Preferred-Languages: en
 Canonical: https://domain-locker.com/security.txt
 Policy: https://domain-locker.com/about/legal/security
-Expires: 2025-12-31T23:59:00.000Z
+Expires: 2027-10-31T23:59:00.000Z
