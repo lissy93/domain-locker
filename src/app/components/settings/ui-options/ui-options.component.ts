@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 
 import { PrimeNgModule } from '~/app/prime-ng.module';
-import { ThemeService, Theme, FontOption } from '~/app/services/theme.service';
+import { ThemeService, Theme, FontOption, Scale } from '~/app/services/theme.service';
 import { AuthService } from '~/app/services/auth.service';
 import { TranslationService } from '~/app/services/translation.service';
 import { Subscription } from 'rxjs';
@@ -47,7 +47,7 @@ export class UiSettingsComponent implements OnInit, OnDestroy {
   ];
 
   // Selected scale, and scale options
-  scale: 'small' | 'medium' | 'large' = 'medium';
+  scale: Scale = 'medium';
   scaleOptions = [
     { label: 'Small', value: 'small', icon: 'pi pi-minus-circle' },
     { label: 'Medium', value: 'medium', icon: 'pi pi-circle-off' },
@@ -110,6 +110,13 @@ export class UiSettingsComponent implements OnInit, OnDestroy {
       }),
     );
 
+    // Scale
+    this.subscriptions.add(
+      this.themeService.scale$.subscribe((scale) => {
+        this.scale = scale;
+      }),
+    );
+
     // Wide mode
     this.subscriptions.add(
       this.themeService.isWideMode$.subscribe((isWide) => {
@@ -147,14 +154,10 @@ export class UiSettingsComponent implements OnInit, OnDestroy {
 
   // Update scale
   onScaleChange() {
-    localStorage.setItem('scale', this.scale);
-    this.syncLargeTextAndScale('scale');
-    this.setScale();
-  }
-
-  setScale() {
-    const scales = { small: '14px', medium: '16px', large: '18px' };
-    document.documentElement.style.fontSize = scales[this.scale] || scales.medium;
+    this.themeService.setScale(this.scale);
+    this.accessibility.largeText = this.scale === 'large';
+    this.accessibilityService.setAccessibilityOptions(this.accessibility);
+    this.accessibilityService.applyAccessibilityClasses();
   }
 
   // Update wide mode
@@ -168,19 +171,8 @@ export class UiSettingsComponent implements OnInit, OnDestroy {
     this.accessibilityService.applyAccessibilityClasses();
 
     if (key === 'largeText') {
-      this.syncLargeTextAndScale('accessibility');
+      this.themeService.setScale(this.accessibility.largeText ? 'large' : 'medium');
     }
-  }
-
-  public syncLargeTextAndScale(source: 'scale' | 'accessibility'): void {
-    if (source === 'scale') {
-      // If user changed scale => update largeText
-      this.accessibility.largeText = this.scale === 'large';
-    } else if (source === 'accessibility') {
-      // If user toggled largeText => adjust scale
-      this.scale = this.accessibility.largeText ? 'large' : 'medium';
-    }
-    this.setScale();
   }
 
   async signOut() {
