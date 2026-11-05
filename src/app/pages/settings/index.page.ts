@@ -34,6 +34,7 @@ export default class SettingsPage {
     darkMode: boolean;
     font: string;
     scale: string;
+    wideMode: boolean;
   } | null = null;
   language = 'English';
   notifications: {

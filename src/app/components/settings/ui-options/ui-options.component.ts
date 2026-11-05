@@ -47,6 +47,13 @@ export class UiSettingsComponent implements OnInit {
     { label: 'Large', value: 'large', icon: 'pi pi-plus-circle' },
   ];
 
+  // Whether content fills the full screen width, and width options
+  isWideMode = false;
+  wideModeOptions = [
+    { label: 'Normal width', value: false, icon: 'pi pi-align-center' },
+    { label: 'Wide mode', value: true, icon: 'pi pi-arrows-h' },
+  ];
+
   // Selected theme, and theme options
   selectedTheme: Theme;
   themes: Theme[];
@@ -96,6 +103,13 @@ export class UiSettingsComponent implements OnInit {
       }),
     );
 
+    // Wide mode
+    this.subscriptions.add(
+      this.themeService.isWideMode$.subscribe((isWide) => {
+        this.isWideMode = isWide;
+      }),
+    );
+
     // Accessibility
     this.accessibility = { ...this.accessibilityService.getAccessibilityOptions() };
   }
@@ -130,6 +144,11 @@ export class UiSettingsComponent implements OnInit {
   setScale() {
     const scales = { small: '14px', medium: '16px', large: '18px' };
     document.documentElement.style.fontSize = scales[this.scale] || scales.medium;
+  }
+
+  // Update wide mode
+  onWideModeChange() {
+    this.themeService.setWideMode(this.isWideMode);
   }
 
   // Update accessibility options

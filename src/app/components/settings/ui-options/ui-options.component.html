@@ -37,7 +37,7 @@
       }
     </div>
   </div>
-  <!-- Scale (size) options -->
+  <!-- Scale (size) and wide mode options -->
   <div class="mb-4 ui-settings-section {{ standAlone ? 'p-card' : '' }}">
     <h3 class="text-sm font-semibold mb-2">
       <i class="pi pi-arrow-up-right-and-arrow-down-left-from-center mr-2"></i>UI Scale
@@ -52,6 +52,19 @@
     >
       <ng-template let-option pTemplate>
         <i [class]="option.icon"></i>
+      </ng-template>
+    </p-selectButton>
+    <p-selectButton
+      [options]="wideModeOptions"
+      [(ngModel)]="isWideMode"
+      (onChange)="onWideModeChange()"
+      [allowEmpty]="false"
+      optionLabel="label"
+      optionValue="value"
+      styleClass="text-sm flex justify-center mt-3"
+    >
+      <ng-template let-option pTemplate>
+        <i [class]="option.icon" [pTooltip]="option.label"></i>
       </ng-template>
     </p-selectButton>
   </div>
