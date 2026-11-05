@@ -7,15 +7,17 @@
         [size]="32"
         class="mr-3"
       ></app-domain-favicon>
-      <span class="text-primary">{{
-        domainUtils.splitDomain(domain.domain_name).domain
-      }}</span>
-      <span class="text-default">.</span>
-      <span class="text-secondary">{{
-        domainUtils.splitDomain(domain.domain_name).tld
-      }}</span>
+      <span>
+        <span class="text-primary">{{
+          domainUtils.splitDomain(domain.domain_name).domain
+        }}</span>
+        <span class="text-default">.</span>
+        <span class="text-secondary">{{
+          domainUtils.splitDomain(domain.domain_name).tld
+        }}</span>
+      </span>
       <i class="mx-2 pi pi-angle-right"></i>
-      <span class="opacity-70">Web Monitor</span>
+      <span class="opacity-70 whitespace-nowrap">Web Monitor</span>
     </h1>
     <button
       pButton
