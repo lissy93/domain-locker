@@ -11,6 +11,7 @@ import { Observable, from } from 'rxjs';
 import { User } from '@supabase/supabase-js';
 import { settingsLinks } from '~/app/constants/navigation-links';
 import { FeatureService } from '~/app/services/features.service';
+import { ErrorHandlerService } from '~/app/services/error-handler.service';
 
 @Component({
   selector: 'app-settings-page',
@@ -25,6 +26,7 @@ export default class SettingsPage {
   private supabaseService = inject(SupabaseService);
   private translationService = inject(TranslationService);
   private databaseService = inject(DatabaseService);
+  private errorHandler = inject(ErrorHandlerService);
   private cdr = inject(ChangeDetectorRef);
 
   currentPlan$?: Observable<string | null>;
@@ -80,10 +82,19 @@ export default class SettingsPage {
     this.language = this.translationService.getLanguageToUse();
 
     // Async call for notifications
-    this.getNotificationPreferences().finally(() => {
-      this.isAccountInfoLoading = false;
-      this.cdr.markForCheck();
-    });
+    this.getNotificationPreferences()
+      .catch((error) =>
+        this.errorHandler.handleError({
+          error,
+          message: 'Unable to load notification preferences',
+          location: 'settings',
+          showToast: true,
+        }),
+      )
+      .finally(() => {
+        this.isAccountInfoLoading = false;
+        this.cdr.markForCheck();
+      });
   }
 
   private async getNotificationPreferences() {
