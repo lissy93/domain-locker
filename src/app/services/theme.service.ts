@@ -23,6 +23,8 @@ export interface FontOption {
   url: string;
 }
 
+export type Scale = 'small' | 'medium' | 'large';
+
 @Injectable({
   providedIn: 'root',
 })
@@ -90,6 +92,19 @@ export class ThemeService {
   private selectedFontSubject = new BehaviorSubject<FontOption | null>(null);
   selectedFont$ = this.selectedFontSubject.asObservable();
 
+  // Wide mode, lets content fill the whole screen width
+  private isWideModeSubject = new BehaviorSubject<boolean>(false);
+  isWideMode$ = this.isWideModeSubject.asObservable();
+
+  // UI scale, and font sizes
+  private scaleSubject = new BehaviorSubject<Scale>('medium');
+  scale$ = this.scaleSubject.asObservable();
+  private scaleSizes: Record<Scale, string> = {
+    small: '14px',
+    medium: '16px',
+    large: '18px',
+  };
+
   // All available fonts
   private fonts: FontOption[] = [
     {
@@ -148,6 +163,8 @@ export class ThemeService {
     this.renderer = rendererFactory.createRenderer(null, null);
     this.initializeTheme();
     this.initializeFont();
+    this.initializeWideMode();
+    this.initializeScale();
   }
 
   getThemes(): Theme[] {
@@ -259,17 +276,54 @@ export class ThemeService {
     this.document.documentElement.style.setProperty('--heading-font', font.headingFont);
   }
 
+  private initializeWideMode() {
+    if (isPlatformBrowser(this.platformId)) {
+      this.applyWideMode(localStorage.getItem('wideMode') === 'true');
+    }
+  }
+
+  setWideMode(isWide: boolean) {
+    localStorage.setItem('wideMode', isWide.toString());
+    this.applyWideMode(isWide);
+  }
+
+  private applyWideMode(isWide: boolean) {
+    this.isWideModeSubject.next(isWide);
+    this.document.documentElement.classList.toggle('wide-mode', isWide);
+  }
+
+  private initializeScale() {
+    if (isPlatformBrowser(this.platformId)) {
+      const savedScale = localStorage.getItem('scale');
+      if (savedScale && Object.hasOwn(this.scaleSizes, savedScale)) {
+        this.applyScale(savedScale as Scale);
+      }
+    }
+  }
+
+  setScale(scale: Scale) {
+    localStorage.setItem('scale', scale);
+    this.applyScale(scale);
+  }
+
+  private applyScale(scale: Scale) {
+    this.scaleSubject.next(scale);
+    this.document.documentElement.style.fontSize = this.scaleSizes[scale];
+  }
+
   public getUserPreferences(): {
     theme: string;
     darkMode: boolean;
     font: string;
     scale: string;
+    wideMode: boolean;
   } {
     return {
       theme: this.selectedThemeSubject.value.name,
       darkMode: this.isDarkThemeSubject.value,
       font: this.selectedFontSubject.value?.name || 'Default',
-      scale: localStorage.getItem('scale') || 'medium',
+      scale: this.scaleSubject.value,
+      wideMode: this.isWideModeSubject.value,
     };
   }
 }

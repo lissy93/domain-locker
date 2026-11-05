@@ -6,7 +6,7 @@
     loadingDescription="Searching for domain statuses"
   />
 } @else {
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 wide-grid">
     @for (status of detailedStatuses; track status) {
       @if (status.statusInfo && status.statusInfo.eppCode) {
         <div class="p-card py-3 px-4 flex flex-col justify-between">
@@ -65,7 +65,7 @@
   <summary class="text-surface-400 cursor-pointer hover:underline opacity-80">
     View all Statuses
   </summary>
-  <div class="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+  <div class="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 wide-grid">
     @for (status of securityCategories; track status) {
       <div class="p-card py-3 px-4 flex flex-col justify-between">
         <div class="card-body">

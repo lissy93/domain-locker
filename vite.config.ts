@@ -26,6 +26,17 @@ function serveApiInDev(): PluginOption {
   };
 }
 
+/** Keeps build output out of the dev watcher, set here as Nx overrides server.watch */
+function ignoreBuildOutputInDev(): PluginOption {
+  return {
+    name: 'domain-locker-dev-ignore-build-output',
+    apply: 'serve',
+    config: () => ({
+      server: { watch: { ignored: ['**/dist/**', '**/.vercel/**', '**/.netlify/**'] } },
+    }),
+  };
+}
+
 const themeTargets = [
   {
     src: 'node_modules/primeng/resources/themes/lara-dark-purple/theme.css',
@@ -134,6 +145,7 @@ export default defineConfig( ({ command, mode, isSsrBuild }) => {
     },
     plugins: [
       serveApiInDev(),
+      ignoreBuildOutputInDev(),
       analog({
         prerender: {
           routes: [ // Unauthenticated SSG routes

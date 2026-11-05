@@ -15,7 +15,7 @@
   @for (section of sections; track section) {
     <p-accordionTab [header]="section.heading">
       <ul
-        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-3 list-none p-0"
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-3 list-none p-0 wide-grid"
       >
         @for (item of section.items; track item) {
           <li>

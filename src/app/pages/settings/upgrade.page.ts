@@ -2,8 +2,8 @@ import { Component, OnInit, PLATFORM_ID, NgZone, inject } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { PrimeNgModule } from '~/app/prime-ng.module';
 import { BillingService } from '~/app/services/billing.service';
-import { pricingFeatures } from '~/app/constants/pricing-features';
-import { Observable } from 'rxjs';
+import { pricingCurrency, pricingFeatures } from '~/app/constants/pricing-features';
+import { Observable, firstValueFrom } from 'rxjs';
 import { ErrorHandlerService } from '~/app/services/error-handler.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
@@ -83,6 +83,7 @@ export default class UpgradePage implements OnInit {
 
   currentPlan$: Observable<string | null>;
   public availablePlans = pricingFeatures;
+  public pricingCurrency = pricingCurrency;
   public billingInfo: BillingInfo | null = null;
 
   public subscriptionData: SubscriptionData | null = null;
@@ -114,33 +115,53 @@ export default class UpgradePage implements OnInit {
     this.getBillingInfo();
 
     const shouldRefresh = this.route.snapshot.queryParamMap.get('refresh');
-
-    const sessionId = this.route.snapshot.queryParamMap.get('session_id');
+    const purchasedPlan = this.route.snapshot.queryParamMap.get('plan');
     const success = this.route.snapshot.queryParamMap.get('success');
     const cancelled = this.route.snapshot.queryParamMap.get('canceled');
 
-    if (success && sessionId) {
+    if (success) {
       this.status = 'success';
     } else if (cancelled) {
       this.status = 'failed';
     }
 
-    if (shouldRefresh) {
-      setTimeout(() => {
-        this.billingService.getBillingData().subscribe((data) => {
-          this.billingInfo = data;
-        });
-        this.router.navigate([], {
-          relativeTo: this.route,
-          queryParams: { refresh: null },
-          queryParamsHandling: 'merge',
-          replaceUrl: true,
-        });
-      }, 500);
+    if (shouldRefresh && isPlatformBrowser(this.platformId)) {
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { refresh: null },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
+      if (purchasedPlan) this.awaitPlanUpgrade(purchasedPlan);
     }
 
     this.billingService.getBillingData().subscribe((data) => {
       this.billingInfo = data;
+    });
+  }
+
+  /** After checkout, re-check the plan until the Stripe webhook has applied it */
+  private async awaitPlanUpgrade(purchasedPlan: string): Promise<void> {
+    for (let attempt = 0; attempt < 10; attempt++) {
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      await this.billingService.fetchUserPlan();
+      if ((await firstValueFrom(this.currentPlan$)) === purchasedPlan) {
+        this.billingService.getBillingData().subscribe((data) => {
+          this.billingInfo = data;
+        });
+        this.getBillingInfo();
+        return;
+      }
+    }
+    this.messagingService.showWarn(
+      'Plan not updated yet',
+      'Your payment went through, but your plan has not updated yet. ' +
+        'Refresh in a minute, or contact support if it still has not changed.',
+    );
+    this.errorHandler.handleError({
+      error: new Error(`Plan was not ${purchasedPlan} 30 seconds after checkout`),
+      message: 'Plan not updated after checkout',
+      location: 'Upgrade Page',
     });
   }
 
@@ -163,8 +184,10 @@ export default class UpgradePage implements OnInit {
       return;
     }
     try {
-      const stripeSessionUrl =
-        await this.billingService.createCheckoutSession(stripePlanId);
+      const stripeSessionUrl = await this.billingService.createCheckoutSession(
+        stripePlanId,
+        planId,
+      );
       window.location.href = stripeSessionUrl;
     } catch (error) {
       this.errorHandler.handleError({

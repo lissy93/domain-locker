@@ -11,7 +11,9 @@ import { PrimeNgModule } from '~/app/prime-ng.module';
       The following free online tools can give you greater insight into your domain and
       website.
     </p>
-    <ul class="grid gap-3 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 p-0">
+    <ul
+      class="grid gap-3 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 p-0 wide-grid [--wide-grid-min:16rem]"
+    >
       @for (resource of resourcesToShow; track resource) {
         <li class="flex flex-col justify-between border-2 border-surface-100 rounded">
           <a

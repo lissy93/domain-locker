@@ -1,7 +1,14 @@
-import { ChangeDetectorRef, Component, Input, OnInit, inject } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  Input,
+  OnDestroy,
+  OnInit,
+  inject,
+} from '@angular/core';
 
 import { PrimeNgModule } from '~/app/prime-ng.module';
-import { ThemeService, Theme, FontOption } from '~/app/services/theme.service';
+import { ThemeService, Theme, FontOption, Scale } from '~/app/services/theme.service';
 import { AuthService } from '~/app/services/auth.service';
 import { TranslationService } from '~/app/services/translation.service';
 import { Subscription } from 'rxjs';
@@ -19,7 +26,7 @@ import {
   templateUrl: './ui-options.component.html',
   styleUrls: ['./ui-options.component.scss'],
 })
-export class UiSettingsComponent implements OnInit {
+export class UiSettingsComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private themeService = inject(ThemeService);
   private languageService = inject(TranslationService);
@@ -40,11 +47,18 @@ export class UiSettingsComponent implements OnInit {
   ];
 
   // Selected scale, and scale options
-  scale: 'small' | 'medium' | 'large' = 'medium';
+  scale: Scale = 'medium';
   scaleOptions = [
     { label: 'Small', value: 'small', icon: 'pi pi-minus-circle' },
     { label: 'Medium', value: 'medium', icon: 'pi pi-circle-off' },
     { label: 'Large', value: 'large', icon: 'pi pi-plus-circle' },
+  ];
+
+  // Whether content fills the full screen width, and width options
+  isWideMode = false;
+  wideModeOptions = [
+    { label: 'Normal width', value: false, icon: 'pi pi-align-center' },
+    { label: 'Wide mode', value: true, icon: 'pi pi-arrows-h' },
   ];
 
   // Selected theme, and theme options
@@ -96,8 +110,26 @@ export class UiSettingsComponent implements OnInit {
       }),
     );
 
+    // Scale
+    this.subscriptions.add(
+      this.themeService.scale$.subscribe((scale) => {
+        this.scale = scale;
+      }),
+    );
+
+    // Wide mode
+    this.subscriptions.add(
+      this.themeService.isWideMode$.subscribe((isWide) => {
+        this.isWideMode = isWide;
+      }),
+    );
+
     // Accessibility
     this.accessibility = { ...this.accessibilityService.getAccessibilityOptions() };
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
   }
 
   // Update language
@@ -122,14 +154,15 @@ export class UiSettingsComponent implements OnInit {
 
   // Update scale
   onScaleChange() {
-    localStorage.setItem('scale', this.scale);
-    this.syncLargeTextAndScale('scale');
-    this.setScale();
+    this.themeService.setScale(this.scale);
+    this.accessibility.largeText = this.scale === 'large';
+    this.accessibilityService.setAccessibilityOptions(this.accessibility);
+    this.accessibilityService.applyAccessibilityClasses();
   }
 
-  setScale() {
-    const scales = { small: '14px', medium: '16px', large: '18px' };
-    document.documentElement.style.fontSize = scales[this.scale] || scales.medium;
+  // Update wide mode
+  onWideModeChange() {
+    this.themeService.setWideMode(this.isWideMode);
   }
 
   // Update accessibility options
@@ -138,19 +171,8 @@ export class UiSettingsComponent implements OnInit {
     this.accessibilityService.applyAccessibilityClasses();
 
     if (key === 'largeText') {
-      this.syncLargeTextAndScale('accessibility');
+      this.themeService.setScale(this.accessibility.largeText ? 'large' : 'medium');
     }
-  }
-
-  public syncLargeTextAndScale(source: 'scale' | 'accessibility'): void {
-    if (source === 'scale') {
-      // If user changed scale => update largeText
-      this.accessibility.largeText = this.scale === 'large';
-    } else if (source === 'accessibility') {
-      // If user toggled largeText => adjust scale
-      this.scale = this.accessibility.largeText ? 'large' : 'medium';
-    }
-    this.setScale();
   }
 
   async signOut() {
