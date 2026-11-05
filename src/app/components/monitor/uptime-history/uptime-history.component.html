@@ -3,6 +3,7 @@
     <div class="p-card p-3 flex-1 flex flex-col gap-3">
       @if (calendarHeatmap) {
         <apx-chart
+          class="w-full max-w-5xl mx-auto"
           [series]="calendarHeatmap.series!"
           [chart]="calendarHeatmap.chart!"
           [plotOptions]="calendarHeatmap.plotOptions!"
