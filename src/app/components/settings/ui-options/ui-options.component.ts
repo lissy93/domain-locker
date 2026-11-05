@@ -1,4 +1,11 @@
-import { ChangeDetectorRef, Component, Input, OnInit, inject } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  Input,
+  OnDestroy,
+  OnInit,
+  inject,
+} from '@angular/core';
 
 import { PrimeNgModule } from '~/app/prime-ng.module';
 import { ThemeService, Theme, FontOption } from '~/app/services/theme.service';
@@ -19,7 +26,7 @@ import {
   templateUrl: './ui-options.component.html',
   styleUrls: ['./ui-options.component.scss'],
 })
-export class UiSettingsComponent implements OnInit {
+export class UiSettingsComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private themeService = inject(ThemeService);
   private languageService = inject(TranslationService);
@@ -112,6 +119,10 @@ export class UiSettingsComponent implements OnInit {
 
     // Accessibility
     this.accessibility = { ...this.accessibilityService.getAccessibilityOptions() };
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
   }
 
   // Update language
