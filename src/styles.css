@@ -60,6 +60,11 @@ h1 {
   font-family: inherit;
 }
 
+/* Let table columns size to whole words, not single chars */
+.p-datatable {
+  overflow-wrap: break-word;
+}
+
 .p-progress-spinner-circle {
   stroke: var(--primary-color) !important;
 }
@@ -75,12 +80,23 @@ h1 {
   margin: 0 auto;
   width: 100%;
   flex: 1;
+  .wide-mode & {
+    max-width: none;
+  }
   &.full {
     width: 98vw;
     padding: 0;
     display: block;
     height: 100%;
     min-height: 87vh;
+  }
+}
+
+/* In wide mode, card grids and masonry fit more columns, rather than stretching */
+@media (min-width: 1280px) {
+  .wide-mode .wide-grid {
+    grid-template-columns: repeat(auto-fill, minmax(var(--wide-grid-min, 22rem), 1fr));
+    columns: var(--wide-grid-min, 22rem) auto;
   }
 }
 

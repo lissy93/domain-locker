@@ -1,4 +1,5 @@
-import { Injectable } from '@angular/core';
+import { Injectable, PLATFORM_ID, inject } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 
 // Types for all the accessibility options
 export interface AccessibilityOptions {
@@ -45,6 +46,8 @@ export const accessibilityOptionsInfo: readonly {
 
 @Injectable({ providedIn: 'root' })
 export class AccessibilityService {
+  private platformId = inject(PLATFORM_ID);
+
   // Key used to store accessibility options in localStorage
   private readonly LOCAL_STORAGE_KEY = 'accessibilityOptions';
 
@@ -56,6 +59,7 @@ export class AccessibilityService {
    * falling back to defaults if parsing fails or key is missing.
    */
   public getAccessibilityOptions(): AccessibilityOptions {
+    if (!isPlatformBrowser(this.platformId)) return { ...this.defaultOptions };
     try {
       const saved = localStorage.getItem(this.LOCAL_STORAGE_KEY);
       if (saved) {

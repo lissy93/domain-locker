@@ -70,7 +70,13 @@ export default class DebugInfoPage implements OnInit {
   // Observables / data from services
   currentPlan$?: Observable<string | null>;
   user$?: Observable<User | null>;
-  displayOptions?: { theme: string; darkMode: boolean; font: string; scale: string };
+  displayOptions?: {
+    theme: string;
+    darkMode: boolean;
+    font: string;
+    scale: string;
+    wideMode: boolean;
+  };
   accessibilityOptions?: AccessibilityOptions;
   language = 'English';
   localStorageKeys = '';

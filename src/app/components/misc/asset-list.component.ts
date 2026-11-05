@@ -22,7 +22,7 @@ interface Asset {
   selector: 'app-asset-list',
   template: `
     <h2 class="my-4 block">{{ 'HOME.SUBHEADINGS.ASSETS' | translate }}</h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 relative">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 relative wide-grid">
       @for (asset of assets; track asset) {
         <a
           pAnimateOnScroll

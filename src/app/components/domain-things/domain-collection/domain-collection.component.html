@@ -30,7 +30,7 @@
 @if (!loading) {
   <!-- Domain Grid (cards) -->
   @if (isGridLayout) {
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 wide-grid">
       @for (domain of filteredDomains; track domain) {
         <app-domain-card
           [domain]="domain"

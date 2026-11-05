@@ -1,8 +1,7 @@
-import { Component, OnInit, PLATFORM_ID, inject, OnDestroy } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { PrimeNgModule } from '~/app/prime-ng.module';
 import { SupabaseService } from '~/app/services/supabase.service';
-import { isPlatformBrowser } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { HelpfulLinksComponent } from '~/app/components/misc/helpful-links.component';
 import { ErrorHandlerService } from '~/app/services/error-handler.service';
@@ -28,11 +27,10 @@ type QueryInfo = Record<
   imports: [PrimeNgModule, FormsModule, ReactiveFormsModule, HelpfulLinksComponent],
   templateUrl: './index.page.html',
 })
-export default class ContactPageComponent implements OnInit, OnDestroy {
+export default class ContactPageComponent implements OnInit {
   private fb = inject(FormBuilder);
   private supabaseService = inject(SupabaseService);
   private errorHandler = inject(ErrorHandlerService);
-  private platformId = inject<object>(PLATFORM_ID);
 
   contactForm!: FormGroup;
   isAuthenticated = false;
@@ -124,13 +122,7 @@ export default class ContactPageComponent implements OnInit, OnDestroy {
 
   queryTypes = Object.keys(this.queryInfo);
 
-  private initScript?: HTMLScriptElement;
-  private freshdeskScript?: HTMLScriptElement;
-
   async ngOnInit(): Promise<void> {
-    // Init chat widget
-    this.registerFreshChat();
-
     this.contactForm = this.fb.group({
       name: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
@@ -156,18 +148,7 @@ export default class ContactPageComponent implements OnInit, OnDestroy {
 
       // Update permissions based on user type
       this.updateQueryPermissions();
-
-      // Init Fresh widget with user details
-      if (isPlatformBrowser(this.platformId)) {
-        (
-          window as unknown as { FreshworksWidget: (...args: unknown[]) => void }
-        ).FreshworksWidget('identify', 'ticketForm', { name, email });
-      }
     }
-  }
-
-  ngOnDestroy(): void {
-    this.deregisterFreshChat();
   }
 
   onQueryTypeChange(queryType: string): void {
@@ -200,49 +181,5 @@ export default class ContactPageComponent implements OnInit, OnDestroy {
         location: 'contact.page',
       });
     }
-  }
-
-  openFreshChat(): void {
-    if (isPlatformBrowser(this.platformId)) {
-      (
-        window as unknown as { FreshworksWidget: (...args: unknown[]) => void }
-      ).FreshworksWidget('open');
-    }
-  }
-
-  registerFreshChat(): void {
-    if (!isPlatformBrowser(this.platformId)) return;
-
-    this.initScript = document.createElement('script');
-    this.initScript.innerHTML = `
-      window.fwSettings = {
-        'widget_id': 204000000781
-      };
-      !function(){
-        if("function" != typeof window.FreshworksWidget){
-          var n=function(){n.q.push(arguments)};n.q=[];window.FreshworksWidget=n
-        }
-      }();
-    `;
-    document.body.appendChild(this.initScript);
-
-    this.freshdeskScript = document.createElement('script');
-    this.freshdeskScript.type = 'text/javascript';
-    this.freshdeskScript.src =
-      'https://euc-widget.freshworks.com/widgets/204000000781.js';
-    this.freshdeskScript.async = true;
-    this.freshdeskScript.defer = true;
-    document.body.appendChild(this.freshdeskScript);
-
-    (
-      window as unknown as { FreshworksWidget: (...args: unknown[]) => void }
-    ).FreshworksWidget('hide');
-  }
-
-  deregisterFreshChat(): void {
-    if (!isPlatformBrowser(this.platformId)) return;
-    (
-      window as unknown as { FreshworksWidget: (...args: unknown[]) => void }
-    ).FreshworksWidget('hide');
   }
 }

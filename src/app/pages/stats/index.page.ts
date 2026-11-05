@@ -18,7 +18,9 @@ import { ExtendedMenuItem, statsLinks } from '~/app/constants/navigation-links';
         security profiles to SSL lifespans and upcoming expirations.
       </p>
       <!-- List of stats pages -->
-      <ul class="mt-4 p-0 list-none grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+      <ul
+        class="mt-4 p-0 list-none grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 wide-grid [--wide-grid-min:18rem]"
+      >
         @for (item of items; track item.label) {
           <li
             class="rounded-lg py-2 px-3 transition-all ease-in-out hover:surface-50 text-default p-card hover:text-primary"

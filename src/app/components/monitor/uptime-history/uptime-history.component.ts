@@ -156,7 +156,7 @@ export class UptimeHistoryComponent implements OnInit {
     const colors = labels.map((code) => this.getResponseCodeColor(Number(code)));
 
     this.responseCodePieChart = {
-      chart: { type: 'pie', height: 300 },
+      chart: { type: 'pie', height: 240 },
       series,
       labels,
       colors,

@@ -13,13 +13,15 @@
           [size]="32"
           class="mr-3"
         ></app-domain-favicon>
-        <span class="text-primary">{{
-          domainUtils.splitDomain(domain.domain_name).domain
-        }}</span>
-        <span class="text-default">.</span>
-        <span class="text-secondary">{{
-          domainUtils.splitDomain(domain.domain_name).tld
-        }}</span>
+        <span>
+          <span class="text-primary">{{
+            domainUtils.splitDomain(domain.domain_name).domain
+          }}</span>
+          <span class="text-default">.</span>
+          <span class="text-secondary">{{
+            domainUtils.splitDomain(domain.domain_name).tld
+          }}</span>
+        </span>
       </h1>
       <div class="flex">
         <p-button
