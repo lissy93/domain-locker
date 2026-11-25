@@ -144,8 +144,18 @@
     "BUTTONS": {
       "ADD_DOMAIN": "Add Domain"
     },
+    "ARCHIVED": {
+      "TITLE": "Archived Domains",
+      "DESCRIPTION": "Domains you've let go or lost. They're kept for your records, but hidden from your domain list and get no expiry reminders. To unarchive one, right-click it or open its settings.",
+      "EMPTY_TITLE": "No Archived Domains",
+      "EMPTY_TEXT": "You can archive a domain from its settings, or by right-clicking it in your domain list.",
+      "BACK_TO_DOMAINS": "Back to your domains",
+      "VIEW_LINK": "Archived domains ({{count}})"
+    },
     "DOMAIN_COLLECTION": {
       "NO_DOMAINS_FOUND": "No Domains Found",
+      "ARCHIVED": "Archived",
+      "ARCHIVED_ON": "Archived on {{date}}",
       "NO_DOMAINS_TEXT_1": "You don't yet have any domains in this collection. Get started by ",
       "ADD_FIRST_DOMAIN": "adding your first domain",
       "VIEWING": "Viewing",
@@ -228,6 +238,14 @@
           "DELETE": "Delete",
           "COPY_URL": "Copy URL",
           "VISIT_URL": "Visit URL",
+          "ARCHIVE": "Archive",
+          "UNARCHIVE": "Unarchive",
+          "ARCHIVE_SUCCESS_SUMMARY": "Domain archived",
+          "ARCHIVE_SUCCESS_DETAIL": "{{domain}} was moved to your archived domains, and its monitoring and updates are paused",
+          "ARCHIVE_ERROR": "Failed to archive domain",
+          "UNARCHIVE_SUCCESS_SUMMARY": "Domain unarchived",
+          "UNARCHIVE_SUCCESS_DETAIL": "{{domain}} is back in your domain list, with monitoring and updates on",
+          "UNARCHIVE_ERROR": "Failed to unarchive domain",
           "DELETE_HEADER": "Destructive Action",
           "DELETE_MESSAGE": "Are you sure you want to delete this domain?",
           "DELETE_SUCCESS_SUMMARY": "Success",

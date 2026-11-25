@@ -41,7 +41,7 @@
     />
   }
 
-  @if (!loading && domains.length === 0) {
+  @if (!loading && domains.length === 0 && !hasArchivedDomains) {
     <app-welcome />
   } @else if (!loading) {
     <h2 class="my-4 block">{{ 'HOME.SUBHEADINGS.DASHBOARD' | translate }}</h2>
@@ -117,6 +117,7 @@
         [showFooter]="false"
         [loading]="loading"
         ($triggerReload)="newDomainAdded($event)"
+        (archivedChange)="onArchivedChange($event)"
         pAnimateOnScroll
         enterClass="fadeIn"
         leaveClass="fadeOut"

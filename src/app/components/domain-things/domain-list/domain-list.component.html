@@ -37,6 +37,9 @@
                   ></app-domain-favicon>
                   {{ domain.domain_name }}
                 </a>
+                @if (domain.archived_at) {
+                  <app-archived-tag [archivedAt]="domain.archived_at" />
+                }
               </span>
             }
             @case ('registrar') {
