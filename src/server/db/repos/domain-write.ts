@@ -13,6 +13,8 @@ export interface SaveDomainInput {
     updated_date?: string | null;
     notes?: string | null;
     registrar?: string | { name?: string; url?: string | null } | null;
+    monitor_enabled?: boolean;
+    updates_enabled?: boolean;
   };
   tags?: string[];
   notifications?: { type: string; isEnabled: boolean }[];
@@ -93,11 +95,13 @@ const EDITABLE_COLUMNS = [
   'registration_date',
   'updated_date',
   'notes',
+  'monitor_enabled',
+  'updates_enabled',
 ] as const;
 
 /** Omitted columns keep their value, so an edit cannot wipe a date it never carried */
 function editableChanges(domain: SaveDomainInput['domain'], registrarId: string | null) {
-  const changes: Record<string, string | null> = {};
+  const changes: Record<string, string | boolean | null> = {};
   for (const column of EDITABLE_COLUMNS) {
     if (domain[column] !== undefined) changes[column] = domain[column] ?? null;
   }

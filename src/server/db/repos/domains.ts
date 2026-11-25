@@ -24,6 +24,9 @@ export interface DomainRecord {
   registration_date: string | null;
   updated_date: string | null;
   notes: string | null;
+  archived_at: string | null;
+  monitor_enabled: boolean;
+  updates_enabled: boolean;
   created_at: string;
   registrar_id: string | null;
   registrar: { name: string; url: string | null } | null;
@@ -75,6 +78,9 @@ export function domainsRepo(db: Kysely<Database>) {
         'domains.registration_date',
         'domains.updated_date',
         'domains.notes',
+        'domains.archived_at',
+        'domains.monitor_enabled',
+        'domains.updates_enabled',
         'domains.created_at',
         'domains.registrar_id',
         'registrars.name as registrar_name',
@@ -190,6 +196,9 @@ export function domainsRepo(db: Kysely<Database>) {
         registration_date: row.registration_date,
         updated_date: row.updated_date,
         notes: row.notes,
+        archived_at: row.archived_at,
+        monitor_enabled: row.monitor_enabled,
+        updates_enabled: row.updates_enabled,
         created_at: row.created_at,
         registrar_id: row.registrar_id,
         registrar: row.registrar_name
@@ -239,12 +248,13 @@ export function domainsRepo(db: Kysely<Database>) {
       return withRelations(rows);
     },
 
-    /** Least recently refreshed first, so a capped updater run reaches every domain in turn */
+    /** Updatable domains, stalest first, so a capped run reaches each in turn */
     async listStalest(limit: number, userId = currentUserId()): Promise<DomainRecord[]> {
       // Picked before the joins, so a domain with duplicate rows takes one slot
       const stalest = db
         .selectFrom('domains')
         .where('user_id', '=', userId)
+        .where('updates_enabled', '=', true)
         .select('id')
         .orderBy('updated_at')
         .limit(limit);
@@ -291,21 +301,23 @@ export function domainsRepo(db: Kysely<Database>) {
       return row?.domain_name ?? null;
     },
 
-    /** Id and name only, for the monitor job */
+    /** Id and name of domains with monitoring on, for the monitor job */
     async listForMonitoring(userId = currentUserId()) {
       return db
         .selectFrom('domains')
         .where('user_id', '=', userId)
+        .where('monitor_enabled', '=', true)
         .select(['id', 'domain_name'])
         .orderBy('domain_name')
         .execute();
     },
 
-    /** Domains that carry an expiry date, for the reminder job */
+    /** Active domains that carry an expiry date, for the reminder job */
     async listExpiring(userId = currentUserId()) {
       return db
         .selectFrom('domains')
         .where('user_id', '=', userId)
+        .where('archived_at', 'is', null)
         .where('expiry_date', 'is not', null)
         .select(['id', 'domain_name', 'expiry_date'])
         .orderBy('expiry_date')
@@ -347,6 +359,7 @@ export function domainsRepo(db: Kysely<Database>) {
       const rows = await db
         .selectFrom('domains')
         .where('user_id', '=', userId)
+        .where('archived_at', 'is', null)
         .select(['domain_name', 'expiry_date'])
         .execute();
       return rows.map((row) => ({
@@ -516,6 +529,25 @@ export function domainsRepo(db: Kysely<Database>) {
     ): Promise<DomainRecord | null> {
       const updated = await updateDomain(db, id, input, userId);
       return updated ? this.getById(id, userId) : null;
+    },
+
+    /** Archiving pauses monitoring and updates, and unarchiving resumes both */
+    async setArchived(
+      id: string,
+      archived: boolean,
+      userId = currentUserId(),
+    ): Promise<boolean> {
+      const result = await db
+        .updateTable('domains')
+        .set({
+          archived_at: archived ? new Date().toISOString() : null,
+          monitor_enabled: !archived,
+          updates_enabled: !archived,
+        })
+        .where('id', '=', id)
+        .where('user_id', '=', userId)
+        .executeTakeFirst();
+      return Number(result.numUpdatedRows) > 0;
     },
 
     async remove(id: string, userId = currentUserId()): Promise<boolean> {
