@@ -95,7 +95,7 @@
 
     <!-- Links Section -->
     <fieldset class="field border-none p-0 m-0">
-      <legend class="p-0">Links</legend>
+      <legend>Links</legend>
       <div class="flex flex-col mr-2">
         @for (link of links.controls; track link; let i = $index) {
           <div formArrayName="links">
@@ -147,7 +147,7 @@
     </fieldset>
 
     <fieldset formGroupName="notifications" class="border-none p-0 m-0">
-      <legend class="p-0">Notifications</legend>
+      <legend>Notifications</legend>
       @for (type of notificationTypes; track type) {
         <div class="flex align-items-center gap-1 pb-0 mb-0 field">
           <label [for]="type.key" class="ml-2">
@@ -163,7 +163,7 @@
     </fieldset>
 
     <fieldset class="border-none p-0 m-0">
-      <legend class="p-0">Monitoring and Updates</legend>
+      <legend>Monitoring and Updates</legend>
       @for (option of trackingOptions; track option.key) {
         @if (!option.requiresMonitor || (monitorFeature$ | async)) {
           <div class="flex align-items-center gap-1 pb-0 mb-0 field">
@@ -182,7 +182,7 @@
     </fieldset>
 
     <fieldset class="border-none p-0 m-0">
-      <legend class="p-0">Archive</legend>
+      <legend>Archive</legend>
       <div class="flex align-items-center gap-1 field">
         <div class="field-text ml-2">
           @if (domain?.archived_at) {

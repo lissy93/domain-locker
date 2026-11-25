@@ -32,6 +32,13 @@
   }
 }
 
+// Section headings, set apart from the rows within them
+legend {
+  padding: 2rem 0 0.75rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
 ::ng-deep .p-panel {
   .p-panel-header {
     display: none;
