@@ -12,7 +12,8 @@
     align-items: stretch;
   }
 
-  label {
+  label,
+  .field-text {
     flex: 1;
     padding-top: 0.5rem;
     display: flex;
