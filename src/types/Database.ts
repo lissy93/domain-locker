@@ -73,6 +73,9 @@ export interface DbDomain extends Timestamps {
   registration_date?: Date;
   updated_date?: Date;
   notes: string;
+  archived_at: string | null;
+  monitor_enabled: boolean;
+  updates_enabled: boolean;
   ip_addresses?: { ip_address: string; is_ipv6: boolean }[];
   ssl?: Ssl;
   whois?: Contact;
@@ -104,8 +107,17 @@ export interface NotificationOptions extends Timestamps {
 export interface SaveDomainData {
   domain: Omit<
     DbDomain,
-    'id' | 'user_id' | 'created_at' | 'updated_at' | 'dns' | 'ipAddresses'
-  >;
+    | 'id'
+    | 'user_id'
+    | 'created_at'
+    | 'updated_at'
+    | 'dns'
+    | 'ipAddresses'
+    | 'archived_at'
+    | 'monitor_enabled'
+    | 'updates_enabled'
+  > &
+    Partial<Pick<DbDomain, 'monitor_enabled' | 'updates_enabled'>>;
   tags: string[];
   notifications: { type: string; isEnabled: boolean }[];
   statuses?: string[];
@@ -166,6 +178,7 @@ export abstract class DatabaseService {
   ): Observable<Record<string, { domainId: string; domainName: string }[]>>;
   abstract getDomainExpirations(): Observable<DomainExpiration[]>;
   abstract deleteDomain(domainId: string): Observable<void>;
+  abstract setDomainArchived(domainId: string, archived: boolean): Observable<void>;
   abstract getAssetCount(assetType: AssetType): Observable<number>;
   abstract listDomainNames(): Observable<string[]>;
   abstract getDomainsByStatus(statusCode: string): Observable<DbDomain[]>;

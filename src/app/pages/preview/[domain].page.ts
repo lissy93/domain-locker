@@ -153,6 +153,9 @@ export default class DomainDetailsPage implements OnInit {
       created_at: now,
       updated_at: now,
       notes: '',
+      archived_at: null,
+      monitor_enabled: true,
+      updates_enabled: true,
       ip_addresses: [
         ...(domain.ip_addresses?.ipv4 || []).map((ip: string) => ({
           ip_address: ip,
