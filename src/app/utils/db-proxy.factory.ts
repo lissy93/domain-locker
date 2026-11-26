@@ -6,6 +6,7 @@ import { BUILD_ENV } from '~/app/utils/client-env';
 const defaultWriteMethods = new Set([
   // Save domain and assets
   'saveDomain',
+  'setDomainArchived',
   'saveDnsRecords',
   'saveHost',
   'saveIpAddresses',

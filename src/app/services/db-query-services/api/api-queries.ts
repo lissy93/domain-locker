@@ -50,6 +50,8 @@ export function toSavePayload(data: SaveDomainData) {
       updated_date: toIsoDate(domain.updated_date),
       notes: domain.notes,
       registrar: domain.registrar ?? data.registrar,
+      monitor_enabled: domain.monitor_enabled,
+      updates_enabled: domain.updates_enabled,
     }),
     tags: data.tags,
     notifications: data.notifications,

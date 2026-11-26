@@ -1,6 +1,14 @@
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, catchError, isObservable, shareReplay, tap, throwError } from 'rxjs';
+import {
+  Observable,
+  catchError,
+  isObservable,
+  map,
+  shareReplay,
+  tap,
+  throwError,
+} from 'rxjs';
 import { EnvService } from '~/app/services/environment.service';
 import SbDatabaseService from '~/app/services/db-query-services/sb-database.service';
 import ApiDatabaseService from '~/app/services/db-query-services/api-database.service';
@@ -61,10 +69,10 @@ export default class DatabaseService {
   }
 
   /**
-   * The domain list, fetched once and shared. Most pages need the same data,
-   * so this replaces a fetch per page with a fetch per change.
+   * Every domain, archived or not, fetched once and shared. Most pages need the
+   * same data, so this replaces a fetch per page with a fetch per change
    */
-  public get domains$(): Observable<DbDomain[]> {
+  public get allDomains$(): Observable<DbDomain[]> {
     this.domainsCache ??= this.service.listDomains().pipe(
       catchError((error: unknown) => {
         this.invalidateDomains();
@@ -73,6 +81,26 @@ export default class DatabaseService {
       shareReplay({ bufferSize: 1, refCount: false }),
     );
     return this.domainsCache;
+  }
+
+  /** The shared domain list, split into active and archived */
+  public get domainGroups$(): Observable<{ active: DbDomain[]; archived: DbDomain[] }> {
+    return this.allDomains$.pipe(
+      map((domains) => ({
+        active: domains.filter((domain) => !domain.archived_at),
+        archived: domains.filter((domain) => domain.archived_at),
+      })),
+    );
+  }
+
+  /** Active domains, which is what almost every page lists */
+  public get domains$(): Observable<DbDomain[]> {
+    return this.domainGroups$.pipe(map((groups) => groups.active));
+  }
+
+  /** Archived domains, listed on their own page */
+  public get archivedDomains$(): Observable<DbDomain[]> {
+    return this.domainGroups$.pipe(map((groups) => groups.archived));
   }
 
   public invalidateDomains(): void {

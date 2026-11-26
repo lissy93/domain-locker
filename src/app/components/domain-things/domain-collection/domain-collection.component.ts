@@ -47,6 +47,8 @@ export class DomainCollectionComponent implements OnInit, OnChanges {
     /* no-op */
   };
   @Output() $triggerReload = new EventEmitter();
+  /** Emits a domain once it's been archived or unarchived from its card */
+  @Output() archivedChange = new EventEmitter<DbDomain>();
 
   filteredDomains: DbDomain[] = [];
   isGridLayout = true;

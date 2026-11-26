@@ -95,7 +95,7 @@
 
     <!-- Links Section -->
     <fieldset class="field border-none p-0 m-0">
-      <legend class="p-0">Links</legend>
+      <legend>Links</legend>
       <div class="flex flex-col mr-2">
         @for (link of links.controls; track link; let i = $index) {
           <div formArrayName="links">
@@ -147,7 +147,7 @@
     </fieldset>
 
     <fieldset formGroupName="notifications" class="border-none p-0 m-0">
-      <legend class="p-0">Notifications</legend>
+      <legend>Notifications</legend>
       @for (type of notificationTypes; track type) {
         <div class="flex align-items-center gap-1 pb-0 mb-0 field">
           <label [for]="type.key" class="ml-2">
@@ -162,6 +162,57 @@
       }
     </fieldset>
 
+    <fieldset class="border-none p-0 m-0">
+      <legend>Monitoring and Updates</legend>
+      @for (option of trackingOptions; track option.key) {
+        @if (!option.requiresMonitor || (monitorFeature$ | async)) {
+          <div class="flex align-items-center gap-1 pb-0 mb-0 field">
+            <label [for]="option.key" class="ml-2">
+              {{ option.label }}
+              <small class="block text-gray-500">{{ option.description }}</small>
+            </label>
+            <p-inputSwitch
+              [formControlName]="option.key"
+              [inputId]="option.key"
+              class="mr-2"
+            ></p-inputSwitch>
+          </div>
+        }
+      }
+    </fieldset>
+
+    <fieldset class="border-none p-0 m-0">
+      <legend>Archive</legend>
+      <div class="flex align-items-center gap-1 field">
+        <div class="field-text ml-2">
+          @if (domain?.archived_at) {
+            Archived on {{ domain?.archived_at | date: 'mediumDate' }}
+            <small class="block text-gray-500">
+              Hidden from your domain list, with no expiry reminders. Unarchiving moves it
+              back, and turns monitoring and updates on again
+            </small>
+          } @else {
+            Archive this domain
+            <small class="block text-gray-500">
+              For domains you've let go or lost. It's hidden from your domain list, gets
+              no expiry reminders, and monitoring and updates are paused
+            </small>
+          }
+        </div>
+        <button
+          pButton
+          type="button"
+          class="p-button-secondary p-button-outlined mr-2"
+          [icon]="domain?.archived_at ? 'pi pi-replay' : 'pi pi-archive'"
+          [label]="domain?.archived_at ? 'Unarchive' : 'Archive'"
+          [attr.aria-label]="domain?.archived_at ? 'Unarchive domain' : 'Archive domain'"
+          [loading]="isArchiving"
+          [disabled]="!domain || isArchiving || isLoading"
+          (click)="toggleArchived()"
+        ></button>
+      </div>
+    </fieldset>
+
     <div class="flex justify-content-between mt-4">
       <p-button
         type="button"
@@ -169,7 +220,12 @@
         styleClass="p-button-secondary mr-2"
         [routerLink]="'/domains/' + (domain?.domain_name || '')"
       ></p-button>
-      <p-button type="submit" label="Save Changes" [loading]="isLoading"></p-button>
+      <p-button
+        type="submit"
+        label="Save Changes"
+        [loading]="isLoading"
+        [disabled]="isArchiving"
+      ></p-button>
     </div>
   </form>
 </p-panel>

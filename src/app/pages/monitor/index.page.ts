@@ -88,9 +88,9 @@ export default class MonitorPage implements OnInit {
 
   loadDomains(): void {
     this.loading = true;
-    this.databaseService.domains$.subscribe({
+    this.databaseService.allDomains$.subscribe({
       next: (domains) => {
-        this.domains = domains;
+        this.domains = domains.filter((domain) => domain.monitor_enabled);
         this.loading = false;
         this.loadDomainSummaries();
       },
