@@ -110,6 +110,9 @@ CREATE TABLE IF NOT EXISTS "public"."domains" (
     registrar_id uuid,
     registration_date date,
     updated_date date,
+    archived_at timestamp with time zone,
+    monitor_enabled boolean DEFAULT true NOT NULL,
+    updates_enabled boolean DEFAULT true NOT NULL,
     CONSTRAINT domains_pkey PRIMARY KEY (id),
     CONSTRAINT domains_user_id_domain_name_key UNIQUE (user_id, domain_name)
 );

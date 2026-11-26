@@ -16,6 +16,8 @@ export const saveDomainSchema = z.object({
         z.object({ name: z.string().trim().max(255).optional(), url: optionalText }),
       ])
       .nullish(),
+    monitor_enabled: z.boolean().optional(),
+    updates_enabled: z.boolean().optional(),
   }),
   tags: z.array(z.string().trim().min(1).max(100)).optional(),
   notifications: z

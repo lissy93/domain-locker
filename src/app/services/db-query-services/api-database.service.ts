@@ -131,6 +131,13 @@ export default class ApiDatabaseService extends DatabaseService {
     );
   }
 
+  setDomainArchived(domainId: string, archived: boolean): Observable<void> {
+    return this.api.put<void>(`/v1/domains/${domainId}/archive`, { archived }).pipe(
+      map(() => undefined),
+      catchError((error) => this.fail(error)),
+    );
+  }
+
   getDomainsByTag(tagName: string): Observable<DbDomain[]> {
     return this.domains(`/v1/domains/by-tag/${encodeURIComponent(tagName)}`);
   }

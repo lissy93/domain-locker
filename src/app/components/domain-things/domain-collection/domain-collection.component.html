@@ -35,6 +35,7 @@
         <app-domain-card
           [domain]="domain"
           [visibleFields]="visibleFields"
+          (archivedChange)="archivedChange.emit(domain)"
         ></app-domain-card>
       }
     </div>

@@ -22,6 +22,14 @@
             domainUtils.splitDomain(domain.domain_name).tld
           }}</span>
         </span>
+        @if (domain.archived_at) {
+          <p-tag
+            icon="pi pi-archive"
+            severity="secondary"
+            styleClass="ml-3 text-sm"
+            [value]="'Archived on ' + (domain.archived_at | date: 'mediumDate')"
+          />
+        }
       </h1>
       <div class="flex">
         <p-button
@@ -93,7 +101,22 @@
             ></app-dl-icon>
           </div>
         </ng-template>
-        @if (shouldMountMonitor) {
+        @if (!domain.monitor_enabled) {
+          <div class="text-center">
+            <p class="my-4 text-2xl italic text-surface-400">
+              <i class="pi pi-pause-circle text-2xl mr-2"></i>
+              Monitoring is off for this domain
+            </p>
+            <p class="mt-0 text-surface-400">
+              Uptime monitoring can be turned back on in the
+              <a
+                [routerLink]="'/domains/' + domain.domain_name + '/edit'"
+                class="text-primary"
+                >domain's settings</a
+              >
+            </p>
+          </div>
+        } @else if (shouldMountMonitor) {
           @if (hasMonitorHistory) {
             @if (domain && domain.id && domain.user_id && !domainNotFound) {
               <div class="flex flex-col domain-perf-monitor">

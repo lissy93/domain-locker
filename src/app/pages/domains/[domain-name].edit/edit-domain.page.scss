@@ -12,7 +12,8 @@
     align-items: stretch;
   }
 
-  label {
+  label,
+  .field-text {
     flex: 1;
     padding-top: 0.5rem;
     display: flex;
@@ -29,6 +30,13 @@
     min-width: 0; // Allow shrinking below content size
     width: 100%; // Take full width on small screens
   }
+}
+
+// Section headings, set apart from the rows within them
+legend {
+  padding: 2rem 0 0.75rem;
+  font-size: 1.25rem;
+  font-weight: 600;
 }
 
 ::ng-deep .p-panel {

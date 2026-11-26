@@ -413,6 +413,27 @@ export default class MainDatabaseService extends DatabaseService {
     );
   }
 
+  /** Archiving pauses monitoring and updates, and unarchiving resumes both */
+  setDomainArchived(domainId: string, archived: boolean): Observable<void> {
+    return from(
+      this.supabase.supabase
+        .from('domains')
+        .update({
+          archived_at: archived ? new Date().toISOString() : null,
+          monitor_enabled: !archived,
+          updates_enabled: !archived,
+        })
+        .eq('id', domainId)
+        .select('id')
+        .single(),
+    ).pipe(
+      map(({ error }) => {
+        if (error) throw error;
+      }),
+      catchError((error) => this.handleError(error)),
+    );
+  }
+
   getDomain(domainName: string): Observable<DbDomain> {
     return from(
       this.supabase.supabase
@@ -527,6 +548,8 @@ export default class MainDatabaseService extends DatabaseService {
         expiry_date: domain.expiry_date,
         notes: domain.notes,
         registrar_id: await this.registrarQueries.getOrInsertRegistrarId(registrarName),
+        monitor_enabled: domain.monitor_enabled,
+        updates_enabled: domain.updates_enabled,
       })
       .eq('id', domainId)
       .select()
@@ -678,7 +701,10 @@ export default class MainDatabaseService extends DatabaseService {
 
   getDomainExpirations(): Observable<DomainExpiration[]> {
     return from(
-      this.supabase.supabase.from('domains').select('domain_name, expiry_date'),
+      this.supabase.supabase
+        .from('domains')
+        .select('domain_name, expiry_date')
+        .is('archived_at', null),
     ).pipe(
       map(({ data, error }) => {
         if (error) throw error;

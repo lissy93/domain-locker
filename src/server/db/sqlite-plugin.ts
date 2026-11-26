@@ -16,8 +16,10 @@ const BOOLEAN_COLUMNS = new Set([
   'is_enabled',
   'is_ipv6',
   'is_up',
+  'monitor_enabled',
   'read',
   'sent',
+  'updates_enabled',
 ]);
 
 /** Columns stored as TEXT in SQLite but exposed as parsed JSON */

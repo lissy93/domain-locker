@@ -11,6 +11,7 @@
   (keydown.enter)="onCardKeydown($event)"
   (keydown.space)="onCardKeydown($event)"
   class="domain-card p-card bg-surface-card text-default px-4 py-2 mb-4 shadow-md border-radius-custom h-full flex flex-col gap-4 relative overflow-hidden"
+  [class.archived]="domain.archived_at"
 >
   <!-- Action buttons - visible only on hover -->
   <div class="edit-button-container absolute top-2 right-2 gap-2 align-items-center">
@@ -26,7 +27,7 @@
 
   <!-- Domain Name -->
   @if (isVisible('domainName')) {
-    <h2 class="m-0">
+    <h2 class="m-0 flex items-center">
       <a
         [routerLink]="'/domains/' + domain.domain_name"
         class="no-underline text-default flex items-center"
@@ -42,6 +43,9 @@
           }}</span>
         </span>
       </a>
+      @if (domain.archived_at) {
+        <app-archived-tag [archivedAt]="domain.archived_at" />
+      }
     </h2>
   }
 

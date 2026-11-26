@@ -510,7 +510,7 @@ export default class AddDomainComponent implements OnInit, OnDestroy {
   public getDomainErrorMessage(): string {
     const domainControl = this.domainForm.get('domainName');
     if (domainControl?.errors?.['domainExists']) {
-      return 'This domain has already been added.';
+      return "This domain has already been added. If you can't see it, it may be archived.";
     }
     if (domainControl?.errors?.['required']) {
       return 'Domain name is required.';

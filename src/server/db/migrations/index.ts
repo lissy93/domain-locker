@@ -5,6 +5,7 @@ import type { Backend } from '../client';
 import { SQLITE_INITIAL_SCHEMA } from './sqlite-initial';
 import { POSTGRES_JOB_RUNS, SQLITE_JOB_RUNS } from './002-job-runs';
 import { POSTGRES_DOMAIN_DATES } from './003-domain-dates';
+import { POSTGRES_DOMAIN_TRACKING, SQLITE_DOMAIN_TRACKING } from './004-domain-tracking';
 import Logger from '../../utils/logger';
 
 const log = new Logger('migrations');
@@ -44,6 +45,13 @@ export const MIGRATIONS: Migration[] = [
     version: '003_domain_dates',
     statements: {
       postgres: () => POSTGRES_DOMAIN_DATES,
+    },
+  },
+  {
+    version: '004_domain_tracking',
+    statements: {
+      postgres: () => POSTGRES_DOMAIN_TRACKING,
+      sqlite: () => SQLITE_DOMAIN_TRACKING,
     },
   },
 ];

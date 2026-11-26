@@ -91,6 +91,7 @@ export default class HomePageComponent implements OnInit, OnDestroy {
   private platformId = inject<object>(PLATFORM_ID);
 
   domains: DbDomain[] = [];
+  hasArchivedDomains = false;
   loading = true;
   isAuthenticated = false;
   isDemoInstance = false;
@@ -127,9 +128,10 @@ export default class HomePageComponent implements OnInit, OnDestroy {
     this.loading = true;
 
     this.subscriptions.add(
-      this.databaseService.domains$.subscribe({
-        next: (domains) => {
-          this.domains = domains;
+      this.databaseService.domainGroups$.subscribe({
+        next: ({ active, archived }) => {
+          this.domains = active;
+          this.hasArchivedDomains = archived.length > 0;
           this.loading = false;
           this.cdr.markForCheck();
         },
@@ -151,6 +153,12 @@ export default class HomePageComponent implements OnInit, OnDestroy {
   newDomainAdded(newDomainName: string) {
     this.domains.push({ domain_name: newDomainName } as DbDomain);
     this.loadDomains();
+  }
+
+  /** Takes a domain archived from its card off the dashboard list */
+  onArchivedChange(domain: DbDomain) {
+    this.domains = this.domains.filter((item) => item.id !== domain.id);
+    this.hasArchivedDomains = true;
   }
 
   /* Show/hide the insights stats */
