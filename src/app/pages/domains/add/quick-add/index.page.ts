@@ -89,7 +89,7 @@ export default class QuickAddDomain {
       if (alreadyExists) {
         this.messagingService.showError(
           'Duplicate domain',
-          `The domain "${domainName}" has already been added to your collection.`,
+          `The domain "${domainName}" has already been added. If you can't see it, it may be archived.`,
         );
         return;
       }

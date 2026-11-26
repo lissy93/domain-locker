@@ -4,6 +4,7 @@ export const DOMAIN_WRITE_METHODS = new Set([
   'saveDomain',
   'updateDomain',
   'deleteDomain',
+  'setDomainArchived',
   'deleteAllData',
   // Domain assets
   'saveDnsRecords',

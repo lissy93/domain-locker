@@ -6,6 +6,7 @@ import { DomainFaviconComponent } from '~/app/components/misc/favicon.component'
 import { DomainUtils } from '~/app/services/domain-utils.service';
 import { TranslateModule } from '@ngx-translate/core';
 import { TableModule } from 'primeng/table';
+import { ArchivedTagComponent } from '~/app/components/misc/archived-tag.component';
 
 @Component({
   standalone: true,
@@ -19,6 +20,7 @@ import { TableModule } from 'primeng/table';
     DomainFaviconComponent,
     TranslateModule,
     TableModule,
+    ArchivedTagComponent,
   ],
 })
 export class DomainListComponent {

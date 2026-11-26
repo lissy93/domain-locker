@@ -47,6 +47,9 @@ export interface DomainsTable {
   registrar_id: string | null;
   registration_date: string | null;
   updated_date: string | null;
+  archived_at: string | null;
+  monitor_enabled: Generated<boolean>;
+  updates_enabled: Generated<boolean>;
   created_at: Timestamp;
   updated_at: Timestamp;
 }

@@ -20,6 +20,9 @@
   &:active {
     transform: scale(0.98);
   }
+  &.archived {
+    filter: grayscale(0.8);
+  }
 }
 
 .custom-pannel {

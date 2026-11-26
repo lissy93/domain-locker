@@ -1,4 +1,12 @@
-import { Component, ElementRef, Input, OnInit, inject } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  OnInit,
+  Output,
+  inject,
+} from '@angular/core';
 import { MenuItem } from 'primeng/api';
 import { Router } from '@angular/router';
 import { ConfirmationService, MessageService } from 'primeng/api';
@@ -14,6 +22,7 @@ import { animate, state, style, transition, trigger } from '@angular/animations'
 import { ErrorHandlerService } from '~/app/services/error-handler.service';
 import { TranslateService, TranslateModule } from '@ngx-translate/core';
 import { CurrencyService } from '~/app/services/currency.service';
+import { ArchivedTagComponent } from '~/app/components/misc/archived-tag.component';
 
 @Component({
   standalone: true,
@@ -26,6 +35,7 @@ import { CurrencyService } from '~/app/services/currency.service';
     CommonModule,
     DomainFaviconComponent,
     TranslateModule,
+    ArchivedTagComponent,
   ],
   providers: [ConfirmationService, MessageService],
   animations: [
@@ -61,6 +71,7 @@ export class DomainCardComponent implements OnInit {
 
   @Input() domain!: DbDomain;
   @Input() visibleFields: FieldOption[] = [];
+  @Output() archivedChange = new EventEmitter<void>();
   contextMenuItems: MenuItem[] | undefined;
   cardVisible = true;
 
@@ -69,7 +80,12 @@ export class DomainCardComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.contextMenuItems = [
+    this.contextMenuItems = this.buildContextMenu();
+  }
+
+  /** Right-click actions, where archive or unarchive follows the domain's state */
+  private buildContextMenu(): MenuItem[] {
+    return [
       {
         label: this.translate.instant('DOMAINS.DOMAIN_COLLECTION.GRID.CONTEXT_MENU.VIEW'),
         icon: 'pi pi-reply',
@@ -79,6 +95,15 @@ export class DomainCardComponent implements OnInit {
         label: this.translate.instant('DOMAINS.DOMAIN_COLLECTION.GRID.CONTEXT_MENU.EDIT'),
         icon: 'pi pi-pencil',
         command: () => this.editDomain(),
+      },
+      {
+        label: this.translate.instant(
+          this.domain.archived_at
+            ? 'DOMAINS.DOMAIN_COLLECTION.GRID.CONTEXT_MENU.UNARCHIVE'
+            : 'DOMAINS.DOMAIN_COLLECTION.GRID.CONTEXT_MENU.ARCHIVE',
+        ),
+        icon: this.domain.archived_at ? 'pi pi-replay' : 'pi pi-archive',
+        command: () => this.toggleArchived(),
       },
       {
         label: this.translate.instant(
@@ -148,6 +173,40 @@ export class DomainCardComponent implements OnInit {
               showToast: true,
             });
           },
+        });
+      },
+    });
+  }
+
+  /** Moves the domain to or from the archive, and tells the page it changed */
+  toggleArchived() {
+    const archive = !this.domain.archived_at;
+    const action = archive ? 'ARCHIVE' : 'UNARCHIVE';
+    const key = `DOMAINS.DOMAIN_COLLECTION.GRID.CONTEXT_MENU.${action}`;
+    this.databaseService.instance.setDomainArchived(this.domain.id, archive).subscribe({
+      next: () => {
+        this.globalMessageService.showMessage({
+          severity: 'success',
+          summary: this.translate.instant(`${key}_SUCCESS_SUMMARY`),
+          detail: this.translate.instant(`${key}_SUCCESS_DETAIL`, {
+            domain: this.domain.domain_name,
+          }),
+        });
+        this.domain = {
+          ...this.domain,
+          archived_at: archive ? new Date().toISOString() : null,
+          monitor_enabled: !archive,
+          updates_enabled: !archive,
+        };
+        this.contextMenuItems = this.buildContextMenu();
+        this.archivedChange.emit();
+      },
+      error: (error) => {
+        this.errorHandler.handleError({
+          error,
+          message: this.translate.instant(`${key}_ERROR`),
+          location: 'DomainCardComponent.toggleArchived',
+          showToast: true,
         });
       },
     });

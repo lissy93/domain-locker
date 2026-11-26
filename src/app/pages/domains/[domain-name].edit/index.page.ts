@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject } from '@angular/core';
+import { AsyncPipe, DatePipe } from '@angular/common';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
@@ -12,6 +13,7 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { GlobalMessageService } from '~/app/services/messaging.service';
 import { ErrorHandlerService } from '~/app/services/error-handler.service';
 import { RegistrarAutocompleteService } from '~/app/services/registrar-autocomplete.service';
+import { FeatureService } from '~/app/services/features.service';
 import { Subject, takeUntil } from 'rxjs';
 
 @Component({
@@ -19,7 +21,7 @@ import { Subject, takeUntil } from 'rxjs';
   templateUrl: './edit-domain.page.html',
   styleUrls: ['./edit-domain.page.scss'],
   standalone: true,
-  imports: [ReactiveFormsModule, PrimeNgModule],
+  imports: [ReactiveFormsModule, PrimeNgModule, AsyncPipe, DatePipe],
   providers: [MessageService],
 })
 export default class EditDomainComponent implements OnInit, OnDestroy {
@@ -30,12 +32,30 @@ export default class EditDomainComponent implements OnInit, OnDestroy {
   private errorHandler = inject(ErrorHandlerService);
   private globalMessageService = inject(GlobalMessageService);
   private cdr = inject(ChangeDetectorRef);
+  private featureService = inject(FeatureService);
   registrarAutocomplete = inject(RegistrarAutocompleteService);
 
   domainForm: FormGroup;
   domain: DbDomain | undefined;
   notificationTypes: NotificationType[] = notificationTypes;
   public isLoading = true;
+  public isArchiving = false;
+  monitorFeature$ = this.featureService.isFeatureEnabled('domainMonitor');
+
+  trackingOptions = [
+    {
+      key: 'monitorEnabled',
+      label: 'Uptime monitoring',
+      description: 'Regularly check the website is up, and track its response time',
+      requiresMonitor: true,
+    },
+    {
+      key: 'updatesEnabled',
+      label: 'Automatic updates',
+      description: 'Regularly refresh WHOIS, DNS, SSL and host info, to pick up changes',
+      requiresMonitor: false,
+    },
+  ];
 
   // Registrar autocomplete properties
   public filteredRegistrars: string[] = [];
@@ -51,6 +71,8 @@ export default class EditDomainComponent implements OnInit, OnDestroy {
       notifications: this.fb.group({}),
       subdomains: [[]],
       links: this.fb.array([]),
+      monitorEnabled: [true],
+      updatesEnabled: [true],
     });
 
     this.notificationTypes.forEach((type) => {
@@ -130,6 +152,8 @@ export default class EditDomainComponent implements OnInit, OnDestroy {
       tags: this.domain!.tags,
       notes: this.domain!.notes,
       subdomains: this.domain!.sub_domains?.map((sd: { name: string }) => sd.name) || [],
+      monitorEnabled: this.domain!.monitor_enabled,
+      updatesEnabled: this.domain!.updates_enabled,
     });
 
     // Set link values
@@ -194,6 +218,8 @@ export default class EditDomainComponent implements OnInit, OnDestroy {
           registrar: formValue.registrar,
           expiry_date: formValue.expiryDate,
           notes: formValue.notes,
+          monitor_enabled: formValue.monitorEnabled,
+          updates_enabled: formValue.updatesEnabled,
         },
         tags: formValue.tags,
         notifications: Object.entries(formValue.notifications).map(
@@ -236,6 +262,39 @@ export default class EditDomainComponent implements OnInit, OnDestroy {
         detail: 'Please fill all required fields correctly',
       });
     }
+  }
+
+  /** Archives or restores the domain right away, apart from the form */
+  toggleArchived() {
+    const archive = !this.domain!.archived_at;
+    this.isArchiving = true;
+    this.databaseService.instance.setDomainArchived(this.domain!.id, archive).subscribe({
+      next: () => {
+        const archivedAt = archive ? new Date().toISOString() : null;
+        this.domain = { ...this.domain!, archived_at: archivedAt };
+        this.domainForm.patchValue({
+          monitorEnabled: !archive,
+          updatesEnabled: !archive,
+        });
+        this.globalMessageService.showMessage({
+          severity: 'success',
+          summary: archive ? 'Domain archived' : 'Domain unarchived',
+          detail: archive
+            ? 'Monitoring and updates are paused'
+            : 'Monitoring and updates are back on',
+        });
+        this.isArchiving = false;
+      },
+      error: (error) => {
+        this.errorHandler.handleError({
+          error,
+          showToast: true,
+          message: archive ? 'Failed to archive domain' : 'Failed to unarchive domain',
+          location: 'Edit Domain',
+        });
+        this.isArchiving = false;
+      },
+    });
   }
 
   createLinkGroup(name = '', url = '', description = ''): FormGroup {
